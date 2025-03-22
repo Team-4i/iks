@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <!-- Overall Statistics -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold mb-4">Game Performance Report</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Overall Accuracy</h3>
+                    <p class="text-2xl">{{ statistics.accuracy|floatformat:1 }}%</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Questions Answered</h3>
+                    <p class="text-2xl">{{ statistics.correct_answers }}/{{ statistics.total_questions }}</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Avg. Response Time</h3>
+                    <p class="text-2xl">{{ statistics.avg_time|floatformat:1 }}s</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Game Score</h3>
+                    <p class="text-2xl">{{ statistics.total_score }}</p>
+                </div>
+                <div class="bg-indigo-50 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Overall Points</h3>
+                    <p class="text-2xl">{{ statistics.overall_score }}</p>
+                </div>
+            </div>
+
+            <!-- Performance Graphs -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Performance Trends</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Response Time Graph -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Your Response Times</h3>
+                        <div class="aspect-w-16 aspect-h-9">
+                            <canvas id="timeGraph" style="min-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Comparative Time Graph -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Response Times Comparison</h3>
+                        <div class="aspect-w-16 aspect-h-9">
+                            <canvas id="comparativeTimeGraph" style="min-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topics Covered -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Educational Content Covered</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% for cell in visited_cells %}
+                    <div class="bg-{% if cell.type == 'SNAKE_LADDER' %}yellow-50{% else %}blue-50{% endif %} p-4 rounded-lg cursor-pointer hover:bg-{% if cell.type == 'SNAKE_LADDER' %}yellow-100{% else %}blue-100{% endif %} transition-colors"
+                         onclick="toggleContent('cell-{{ cell.number }}')">
+                        <h3 class="font-semibold">Cell {{ cell.number }} {% if cell.type == 'SNAKE_LADDER' %}(Snake/Ladder){% endif %}</h3>
+                        <div id="cell-{{ cell.number }}" class="hidden mt-2">
+                            <div class="text-sm text-gray-600 bg-white p-3 rounded">
+                                {{ cell.content|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-3 text-center text-gray-500">
+                        No cells visited yet
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Areas for Improvement -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4 text-red-600">Areas for Improvement</h2>
+                {% for topic in improvement_areas %}
+                <div class="bg-red-50 p-4 rounded-lg mb-4">
+                    <h3 class="font-semibold">{{ topic.name }}</h3>
+                    <p>{{ topic.suggestion }}</p>
+                    <div class="mt-2">
+                        <h4 class="font-medium">Practice Questions:</h4>
+                        <ul class="list-disc list-inside">
+                            {% for question in topic.sample_questions %}
+                            <li>{{ question }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- AI Analysis Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">AI Performance Analysis</h2>
+            
+            {% if ai_analysis.error %}
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <p class="text-red-600">{{ ai_analysis.summary }}</p>
+                    <p class="text-sm text-red-500 mt-2">Error: {{ ai_analysis.error }}</p>
+                </div>
+            {% else %}
+                <!-- Overall Performance -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-2">Overall Performance</h3>
+                    <div class="prose max-w-none">
+                        {{ ai_analysis.detailed_analysis.overall_performance|linebreaks }}
+                    </div>
+                </div>
+
+                <!-- Time Analysis -->
+                <div class="bg-purple-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-2">Time Management Analysis</h3>
+                    <div class="prose max-w-none">
+                        {{ ai_analysis.detailed_analysis.time_analysis|linebreaks }}
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="bg-yellow-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-2">Recommendations</h3>
+                    <div class="prose max-w-none">
+                        {{ ai_analysis.detailed_analysis.recommendations|linebreaks }}
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-500 mt-4">
+                    Analysis generated at: {{ ai_analysis.generated_at }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Question Analysis Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Question History</h2>
+            
+            {% for question in question_history %}
+            <div class="{% if question.answer_correct %}bg-green-50{% else %}bg-red-50{% endif %} p-4 rounded-lg mb-4">
+                <div class="flex justify-between mb-2">
+                    <div class="font-medium">Topic: {{ question.topic_category }}</div>
+                    <div class="text-sm text-gray-600">
+                        Question from Cell {{ question.source_cell }} 
+                        (Answered at Cell {{ question.current_cell }})
+                    </div>
+                </div>
+                <div class="mb-2">Question: {{ question.question_text }}</div>
+                
+                <!-- Display all options -->
+                <div class="ml-4 mb-2">
+                    {% if question.options %}
+                        {% for option in question.options %}
+                        <div class="{% if option == question.correct_answer %}text-green-600{% elif option == question.selected_answer %}text-red-600{% endif %}">
+                            {{ option }}
+                            {% if option == question.correct_answer %}✓{% endif %}
+                            {% if option == question.selected_answer and not question.answer_correct %}✗{% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <div class="text-sm mt-2">
+                    <span class="{% if question.answer_correct %}text-green-600{% else %}text-red-600{% endif %}">
+                        Your Answer: {{ question.selected_answer }}
+                    </span>
+                    {% if not question.answer_correct %}
+                    <span class="text-green-600 ml-4">
+                        Correct Answer: {{ question.correct_answer }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text-sm text-gray-600 mt-1">
+                    Response Time: {{ question.time_to_answer }}s
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Time Graph
+    const timeCtx = document.getElementById('timeGraph').getContext('2d');
+    new Chart(timeCtx, {
+        type: 'line',
+        data: {
+            ...{{ time_data|safe }},
+            datasets: [{
+                ...{{ time_data|safe }}.datasets[0],
+                borderColor: 'rgb(59, 130, 246)', // Blue
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(59, 130, 246)',
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Your Response Time Trend',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `Response Time: ${context.parsed.y.toFixed(1)}s`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Seconds',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+
+    // Comparative Time Graph
+    const compareCtx = document.getElementById('comparativeTimeGraph').getContext('2d');
+    new Chart(compareCtx, {
+        type: 'line',
+        data: {{ comparative_time_data|safe }},
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Response Times by Player',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: 20
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y || 'N/A';
+                            return `${label}: ${typeof value === 'number' ? value.toFixed(1) + 's' : value}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Seconds',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4,
+                    borderWidth: 2
+                },
+                point: {
+                    radius: 4,
+                    hoverRadius: 6,
+                    borderWidth: 2
+                }
+            }
+        }
+    });
+
+    function toggleContent(cellId) {
+        const content = document.getElementById(cellId);
+        if (content) {
+            content.classList.toggle('hidden');
+        }
+    }
+</script>
+{% endblock %} 

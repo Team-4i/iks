@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="intro-container">
+    <div class="video-wrapper">
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="{% static '/videos/introspin.mp4' %}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>            
+    </div>
+    
+    <div class="content-overlay">
+        <div class="button-container">
+            <button id="play-button" class="play-btn">
+                <div class="btn-border"></div>
+                <span class="btn-text">ENTER GAME</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .intro-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .video-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    #intro-video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: translate(-50%, -50%);
+    }
+
+    .content-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+    }
+
+    .button-container {
+
+        position: absolute;
+        bottom: 13vh;
+        transform: translateY(-50%);
+        width: 100%;
+        text-align: center;
+    }
+
+    .play-btn {
+        position: relative;
+        padding: 20px 50px;
+        font-size: clamp(1.2rem, 4vw, 1.8rem);
+        font-weight: bold;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #fff;
+        background: linear-gradient(135deg, #1a1c2c 0%, #2a2d3f 100%);
+        border: none;
+        border-radius: 15px;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 30px rgba(33, 150, 243, 0.3);
+        opacity: 1;
+        letter-spacing: 2px;
+    }
+
+    .btn-border {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        padding: 2px;
+        border-radius: 15px;
+    }
+
+    .play-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(78, 205, 196, 0.5);
+    }
+
+    .btn-text {
+        position: relative;
+        z-index: 1;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .button-container {
+            bottom: 15%;
+        }
+        
+        .play-btn {
+            padding: 15px 40px;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .button-container {
+            bottom: 12%;
+        }
+        
+        .play-btn {
+            padding: 12px 30px;
+        }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        .button-container {
+            bottom: 10%;
+        }
+        
+        .play-btn {
+            padding: 10px 25px;
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const video = document.getElementById('intro-video');
+        const playButton = document.getElementById('play-button');
+
+        video.addEventListener('timeupdate', function() {
+            if (video.currentTime >= 4.5) {
+                video.pause();
+            }
+        });
+
+        playButton.addEventListener('click', function() {
+            window.location.href = "{% url 'spinwheel:index' %}";
+        });
+
+        video.addEventListener('click', function(e) {
+            e.preventDefault();
+        });
+    });
+</script>
+{% endblock %} 

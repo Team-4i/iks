@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<style>
+    .container {
+        min-height: 100vh;
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{% static "images/constitution_bg.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+    }
+
+    .selection-panel {
+        background: rgba(245, 224, 195, 0.95);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .historic-title {
+        font-family: 'IM Fell English SC', serif;
+        color: #8B4513;
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-group {
+        margin-bottom: 2rem;
+    }
+
+    .filter-label {
+        display: block;
+        color: #5a3e2b;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #8B4513;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        color: #5a3e2b;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:hover {
+        border-color: #654321;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+    }
+
+    .preview-section {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+        display: none;
+    }
+
+    .preview-section.visible {
+        display: block;
+    }
+
+    .preview-title {
+        color: #8B4513;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-count {
+        color: #5a3e2b;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .create-btn {
+        background-color: #8B4513;
+        color: #FFE4B5;
+    }
+
+    .create-btn:hover {
+        background-color: #654321;
+        transform: translateY(-2px);
+    }
+
+    .back-btn {
+        background-color: #DEB887;
+        color: #5a3e2b;
+    }
+
+    .back-btn:hover {
+        background-color: #CD853F;
+        transform: translateY(-2px);
+    }
+
+    .disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="container">
+    <div class="selection-panel">
+        <h1 class="historic-title">Constitutional Chamber Selection</h1>
+        
+        <div class="filter-group">
+            <label class="filter-label">Select Constitutional Part:</label>
+            <select id="partSelect" class="filter-select" onchange="updatePreview()">
+                <option value="">Choose a Part...</option>
+                <option value="1">Part I - Union and its Territory</option>
+                <option value="2">Part II - Citizenship</option>
+                <option value="3">Part III - Fundamental Rights</option>
+                <option value="4">Part IV - Directive Principles</option>
+                <option value="5">Part V - The Union</option>
+                <option value="6">Part VI - The States</option>
+                <option value="7">Part VII - States in Part B</option>
+                <option value="8">Part VIII - Union Territories</option>
+                <option value="9">Part IX - Panchayats</option>
+                <option value="10">Part X - Scheduled Areas</option>
+                <option value="11">Part XI - Centre-State Relations</option>
+                <option value="12">Part XII - Finance</option>
+            </select>
+
+            <label class="filter-label">Select Type:</label>
+            <select id="typeSelect" class="filter-select" onchange="updatePreview()">
+                <option value="">Choose a Type...</option>
+                <option value="JUD">Judicial</option>
+                <option value="LEG">Legislative</option>
+                <option value="EXE">Executive</option>
+                <option value="FIN">Financial</option>
+            </select>
+        </div>
+
+        <div id="previewSection" class="preview-section">
+            <h3 class="preview-title">Available Cases:</h3>
+            <p class="preview-count">Loading...</p>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{% url 'housie_consti:create_room' %}" class="action-btn back-btn">
+                Back
+            </a>
+            <button onclick="createFilteredRoom()" id="createBtn" class="action-btn create-btn disabled">
+                Create Chamber
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function updatePreview() {
+        const part = document.getElementById('partSelect').value;
+        const type = document.getElementById('typeSelect').value;
+        const previewSection = document.getElementById('previewSection');
+        const createBtn = document.getElementById('createBtn');
+
+        if (part && type) {
+            previewSection.classList.add('visible');
+            try {
+                const response = await fetch(`/housie-consti/preview/${part}/${type}/`);
+                const data = await response.json();
+                
+                if (data.count > 0) {
+                    document.querySelector('.preview-count').textContent = 
+                        `${data.count} cases available for ${data.part_display} (${data.type_display})`;
+                    createBtn.classList.remove('disabled');
+                } else {
+                    document.querySelector('.preview-count').textContent = 
+                        'No cases available for this combination';
+                    createBtn.classList.add('disabled');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.querySelector('.preview-count').textContent = 
+                    'Error loading preview';
+            }
+        } else {
+            previewSection.classList.remove('visible');
+            createBtn.classList.add('disabled');
+        }
+    }
+
+    function createFilteredRoom() {
+        const part = document.getElementById('partSelect').value;
+        const type = document.getElementById('typeSelect').value;
+        
+        if (!part || !type) {
+            alert('Please select both Part and Type');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'housie_consti:create_room' %}";
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        form.appendChild(csrfToken);
+        
+        const partInput = document.createElement('input');
+        partInput.type = 'hidden';
+        partInput.name = 'part';
+        partInput.value = part;
+        form.appendChild(partInput);
+        
+        const typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'type';
+        typeInput.value = type;
+        form.appendChild(typeInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,534 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static '/css/housie_board.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+
+<div class="min-h-screen bg-gradient">
+  
+    
+    <div class="game-container">
+        <!-- Left Sidebar -->
+        <div class="game-sidebar">
+            <!-- Players Section -->
+            <div class="game-info-container">
+                <div class="player-section">
+                    <h3>Players in Game</h3>
+                    <div class="player-list">
+                        {% for player in room.players.all %}
+                            <div class="player-item {% if player == request.user %}current-player{% endif %}">
+                                <div class="player-info">
+                                    <span class="player-name">{{ player.username }}</span>
+                                    {% if player == request.user %}
+                                        <span class="current-badge">Current</span>
+                                    {% endif %}
+                                </div>
+                                <div class="points-badge">
+                                    <span class="points-value">{{ player.playerpoints_set.0.points }}</span>
+                                    <span class="points-label">pts</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case Display -->
+            <div class="case-display">
+                <div id="timerContainer">
+                    <span id="timer" class="timer-display">Time remaining: --s</span>
+                    <div id="timerBar" class="timer-bar"></div>
+                </div>
+                <div id="warningMessage" class="hidden warning-message">
+                    ⚠️ Last 5 seconds!
+                </div>
+                <div id="caseDisplay">
+                    <div class="case-text">
+                        <h3 id="caseTitle">{{ current_case.title }}</h3>
+                        <p id="caseDescription">{{ current_case.description }}</p>
+                        <div class="speech-controls">
+                            <button onclick="readCurrentCase()" class="read-case-btn">
+                                <i class="fas fa-volume-up"></i> Read
+                            </button>
+                            <button onclick="stopReading()" class="stop-read-btn">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </div>
+                        <p class="text-sm">
+                            Related Articles: 
+                            <span id="relatedArticles" class="text-gold">
+                                {% for article in current_case.articles %}
+                                    Article {{ article.article_number }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Main Content -->
+        <div class="game-main">
+            <div class="housie-card">
+                <h3 class="historic-title text-center">Samvidhaan Squares</h3>
+                <div class="card-grid">
+                    {% for article in housie_articles %}
+                        <div class="card-cell" 
+                             data-article-id="{{ article.id }}"
+                             data-index="{{ forloop.counter0 }}"
+                             onclick="selectArticle(this)">
+                            {{ article.title|truncatechars:30 }}
+                        </div>
+                    {% empty %}
+                        {% for i in "123456789012345" %}
+                            <div class="card-cell">No articles</div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div data-room-id="{{ room.room_id }}" style="display: none;"></div>
+
+<!-- Winner Popup -->
+<div id="winnerPopup" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50">
+    <div class="bg-gradient p-8 rounded-lg shadow-2xl max-w-md w-full text-center">
+        <h2 class="historic-title text-4xl mb-6">🎉 Winner! 🎉</h2>
+        <div id="winnerContent" class="text-xl"></div>
+        <div class="mt-8">
+            <a href="" id="leaderboardLink" class="bg-gold hover:bg-gold-dark text-black font-bold px-8 py-3 rounded-full transition-all duration-300">
+                View Leaderboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add this getCookie function at the top of your script section
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const roomId = document.querySelector('[data-room-id]').getAttribute('data-room-id');
+    let currentCase = null;
+    let hasSelectedForCurrentCase = false;  // Track if selection made for current case
+    let lastCaseId = null;
+    let gameStateInterval; // Define interval variable at the top
+    let isGameCompleted = false; // Add flag to track game completion
+    let selectionStartTime = null;
+
+    // Add this near the top of your script section, after the variable declarations
+    const initialPlayerPoints = {% if player_points %}{{ player_points|safe }}{% else %}{} {% endif %};
+
+    function updateCaseDisplay(caseData) {
+        if (!caseData) return;
+        
+        // Check if case has changed
+        if (lastCaseId !== caseData.id) {
+            lastCaseId = caseData.id;
+            hasSelectedForCurrentCase = false;
+            selectionStartTime = Date.now();
+            
+            // Auto-read new case
+            setTimeout(readCurrentCase, 500);  // Small delay toensure DOM is updated
+            
+            // Reset all card cells except permanently selected ones
+            document.querySelectorAll('.card-cell').forEach(cell => {
+                if (!cell.classList.contains('permanent-selected')) {
+                    cell.classList.remove('selected', 'incorrect');
+                    cell.style.pointerEvents = 'auto';  // Re-enable clicking for new case
+                }
+            });
+        }
+        
+        // Update case display
+        const caseTitleElement = document.getElementById('caseTitle');
+        const caseDescriptionElement = document.getElementById('caseDescription');
+        const relatedArticlesElement = document.getElementById('relatedArticles');
+        
+        caseTitleElement.textContent = caseData.title || '';
+        caseDescriptionElement.textContent = caseData.description || '';
+        
+        const articleDisplays = caseData.articles ? 
+            caseData.articles.map(art => `Article ${art.article_number}`).join(', ') : '';
+        relatedArticlesElement.textContent = articleDisplays;
+    }
+
+    function updateTimer(timeRemaining) {
+        if (isGameCompleted) return;
+        
+        const timerElement = document.getElementById('timer');
+        const timerBar = document.getElementById('timerBar');
+        const warningMessage = document.getElementById('warningMessage');
+        
+        // Check if timeRemaining is a valid number and not undefined
+        if (typeof timeRemaining === 'number') {
+            const remainingSeconds = Math.max(0, Math.floor(timeRemaining));
+            
+            // Update timer text
+            timerElement.textContent = `Time remaining: ${remainingSeconds}s`;
+            
+            // Update timer bar
+            const percentage = (remainingSeconds / 15) * 100;
+            timerBar.style.width = `${percentage}%`;
+            
+            // Show warning in last 5 seconds
+            warningMessage.classList.toggle('hidden', remainingSeconds > 5);
+            
+            // When timer hits 0, advance to next case
+            if (remainingSeconds <= 0 && !isGameCompleted) {
+                // Disable selections
+                document.querySelectorAll('.card-cell').forEach(cell => {
+                    if (!cell.classList.contains('permanent-selected')) {
+                        cell.style.pointerEvents = 'none';
+                    }
+                });
+                
+                // Force case advancement after a short delay
+                setTimeout(() => {
+                    fetch(`/housie-consti/advance-case/${roomId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                }, 1000);
+            }
+        } else {
+            // Handle invalid timeRemaining value
+            console.error('Invalid timeRemaining value:', timeRemaining);
+            timerElement.textContent = 'Time remaining: --s';
+        }
+    }
+
+    function updatePlayerPoints(playerPoints) {
+        if (!playerPoints || Object.keys(playerPoints).length === 0) return;
+        
+        document.querySelectorAll('.player-item').forEach(playerItem => {
+            const playerName = playerItem.querySelector('.player-name').textContent.trim();
+            const pointsValue = playerItem.querySelector('.points-value');
+            
+            if (pointsValue && playerPoints.hasOwnProperty(playerName)) {
+                pointsValue.textContent = playerPoints[playerName] || '0';
+            }
+        });
+    }
+
+    function showWinnerPopup(winner, finalPoints) {
+        const winnerPopup = document.getElementById('winnerPopup');
+        const winnerContent = document.getElementById('winnerContent');
+        const leaderboardLink = document.getElementById('leaderboardLink');
+        
+        // Update popup content
+        winnerContent.innerHTML = `
+            <p class="text-2xl mb-4">🎉 ${winner} has won! 🎉</p>
+            <div class="text-lg">
+                <h3 class="font-bold mb-2">Final Scores:</h3>
+                ${Object.entries(finalPoints)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([player, points]) => `
+                        <p class="${player === winner ? 'text-green-600 font-bold' : ''}">${player}: ${points} points</p>
+                    `).join('')}
+            </div>
+        `;
+        
+        // Set the leaderboard link href
+        leaderboardLink.href = `/housie-consti/leaderboard/${roomId}/`;
+        
+        // Show popup
+        winnerPopup.classList.remove('hidden');
+        
+        // Add confetti effect
+        addConfetti();
+        
+        // Force redirect to leaderboard after 3 seconds
+        setTimeout(() => {
+            window.location.href = `/housie-consti/leaderboard/${roomId}/`;
+        }, 3000);
+    }
+
+    function addConfetti() {
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 3 + 's';
+            document.body.appendChild(confetti);
+            
+            // Remove confetti after animation
+            setTimeout(() => confetti.remove(), 5000);
+        }
+    }
+
+    function updateGameState(data) {
+        if (data.game_completed || data.winner) {
+            isGameCompleted = true;
+            
+            // Show winner popup
+            showWinnerPopup(data.winner, data.player_points || data.final_points);
+            
+            // Disable all game interactions
+            document.querySelectorAll('.card-cell').forEach(cell => {
+                cell.style.pointerEvents = 'none';
+                cell.style.opacity = '0.5';
+            });
+            
+            // Update game status display
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = 'Game Completed!';
+            
+            // Hide timer bar and warning
+            const timerBar = document.getElementById('timerBar');
+            const warningMessage = document.getElementById('warningMessage');
+            timerBar.style.width = '0%';
+            warningMessage.classList.add('hidden');
+            
+            // Stop all intervals
+            clearInterval(gameStateInterval);
+            
+            // Redirect to leaderboard
+            setTimeout(() => {
+                window.location.href = `/housie-consti/leaderboard/${roomId}/`;
+            }, 3000);
+        }
+    }
+
+    // Update the fetchGameState function
+    function fetchGameState() {
+        if (isGameCompleted) return;
+        
+        fetch(`/housie-consti/get-game-state/${roomId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Check if game is completed for any player
+                if (data.game_completed || data.winner || data.points >= 100) {
+                    isGameCompleted = true;
+                    
+                    // Show winner popup for all players
+                    showWinnerPopup(data.winner, data.player_points || data.final_points);
+                    
+                    // Disable all game interactions
+                    document.querySelectorAll('.card-cell').forEach(cell => {
+                        cell.style.pointerEvents = 'none';
+                    });
+                    
+                    // Stop timer updates
+                    clearInterval(gameStateInterval);
+                    
+                    // Redirect all players to leaderboard
+                    setTimeout(() => {
+                        window.location.href = `/housie-consti/leaderboard/${roomId}/`;
+                    }, 3000);
+                    return;
+                }
+                
+                // Update current case if provided
+                if (data.current_case) {
+                    currentCase = data.current_case;
+                    updateCaseDisplay(currentCase);
+                }
+                
+                // Update timer if provided
+                if (typeof data.time_remaining === 'number') {
+                    updateTimer(data.time_remaining);
+                }
+                
+                // Update points for all players
+                if (data.player_points) {
+                    updatePlayerPoints(data.player_points);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching game state:', error);
+            });
+    }
+
+    function selectArticle(element) {
+        if (!currentCase || hasSelectedForCurrentCase) return;
+        
+        const articleId = parseInt(element.dataset.articleId);
+        const timeTaken = selectionStartTime ? (Date.now() - selectionStartTime) / 1000 : 0;
+        
+        fetch(`/housie-consti/mark-card-selected/${roomId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                article_id: articleId,
+                case_id: currentCase.id,
+                time_taken: timeTaken
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                element.classList.add('permanent-selected');
+                element.style.backgroundColor = '#4CAF50';
+                element.style.color = 'white';
+                element.classList.remove('incorrect');
+                element.style.pointerEvents = 'none';
+                hasSelectedForCurrentCase = true;
+                
+                // Update points display
+                if (data.points !== undefined) {
+                    const currentPlayer = document.querySelector('.current-player');
+                    if (currentPlayer) {
+                        const pointsValue = currentPlayer.querySelector('.points-value');
+                        if (pointsValue) {
+                            pointsValue.textContent = data.points;
+                        }
+                    }
+                }
+                
+                // Check if game is completed
+                if (data.game_completed) {
+                    isGameCompleted = true;
+                    showWinnerPopup(data.winner, data.final_points);
+                    
+                    // Redirect to leaderboard after a delay
+                    setTimeout(() => {
+                        window.location.href = data.leaderboard_url;
+                    }, 5000);
+                }
+            } else {
+                element.classList.add('incorrect');
+                setTimeout(() => {
+                    element.classList.remove('incorrect');
+                }, 1000);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            element.classList.remove('incorrect', 'permanent-selected');
+        });
+    }
+
+    function showCaseChangeNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg';
+        notification.textContent = 'New Case!';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    function restorePermanentSelections() {
+        // First try to get from localStorage
+        const storedCards = JSON.parse(localStorage.getItem(`selectedCards_${roomId}`) || '[]');
+        
+        // Then fetch from server to ensure we have the latest state
+        fetch(`/housie-consti/get-selected-cards/${roomId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const selectedCards = data.selected_cards || [];
+                
+                // Combine stored and server cards, removing duplicates
+                const allSelectedCards = [...new Set([...storedCards, ...selectedCards])];
+                
+                // Update localStorage with the combined set
+                localStorage.setItem(`selectedCards_${roomId}`, JSON.stringify(allSelectedCards));
+                
+                // Apply the selections to the UI
+                document.querySelectorAll('.card-cell').forEach(cell => {
+                    const articleId = cell.dataset.articleId;
+                    if (articleId && allSelectedCards.includes(parseInt(articleId))) {
+                        cell.classList.add('permanent-selected');
+                        cell.style.backgroundColor = '#4CAF50';
+                        cell.style.color = 'white';
+                        cell.style.pointerEvents = 'none'; // Prevent re-selection
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // If server fetch fails, still apply localStorage selections
+                document.querySelectorAll('.card-cell').forEach(cell => {
+                    const articleId = cell.dataset.articleId;
+                    if (articleId && storedCards.includes(parseInt(articleId))) {
+                        cell.classList.add('permanent-selected');
+                        cell.style.backgroundColor = '#4CAF50';
+                        cell.style.color = 'white';
+                        cell.style.pointerEvents = 'none'; // Prevent re-selection
+                    }
+                });
+            });
+    }
+
+    // Update the initializePoints function
+    function initializePoints() {
+        // First set the initial points from the server
+        if (Object.keys(initialPlayerPoints).length > 0) {
+            updatePlayerPoints(initialPlayerPoints);
+        }
+        
+        // Then fetch current state
+        fetch(`/housie-consti/get-game-state/${roomId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.player_points) {
+                    updatePlayerPoints(data.player_points);
+                }
+            })
+            .catch(error => {
+                console.error('Error initializing points:', error);
+            });
+    }
+
+    // Update the DOMContentLoaded event listener
+    document.addEventListener('DOMContentLoaded', () => {
+        restorePermanentSelections();
+        initializePoints(); // Initialize points
+        fetchGameState(); // Initial game state fetch
+        gameStateInterval = setInterval(fetchGameState, 1000);
+        
+        // Initialize selection tracking
+        hasSelectedForCurrentCase = false;
+        selectionStartTime = Date.now();
+        
+        // Clear interval when page is unloaded
+        window.addEventListener('beforeunload', () => {
+            clearInterval(gameStateInterval);
+        });
+    });
+
+    // Update the reading functions in your script section
+    function readCurrentCase() {
+        // Get only the description
+        const description = document.getElementById('caseDescription').textContent;
+        
+        // Stop any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        // Create new utterance with just the description
+        const utterance = new SpeechSynthesisUtterance(description);
+        utterance.rate = 0.9;  // Slightly slower for better clarity
+        utterance.pitch = 1;
+        
+        // Start new speech
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function stopReading() {
+        window.speechSynthesis.cancel();
+    }
+</script>
+{% endblock %}

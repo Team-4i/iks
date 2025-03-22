@@ -1,0 +1,1071 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constitutional Duties - Memory Game</title>
+    <!-- Add Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --parchment-light: #F5E6D3;   /* Light parchment */
+            --parchment-dark: #DBC1A4;    /* Darker parchment */
+            --ink-color: #2C1810;         /* Dark brown ink */
+            --seal-red: #8B0000;          /* Constitutional seal red */
+            --gold-accent: #996515;       /* Antique gold */
+            --border-brown: #4A3728;      /* Dark brown for borders */
+            --success-green: #2E5C4B;     /* Muted vintage green */
+            --error-red: #8B0000;         /* Deep vintage red */
+        }
+
+        body {
+            font-family: 'Crimson Text', serif;
+            margin: 0;
+            min-height: 100vh;
+            background: var(--parchment-light);
+            background-image: url('parchment-texture.png');
+            color: var(--ink-color);
+        }
+        #volumeButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #volumeButton:hover {
+            background: #6b0000; /* Darker red on hover */
+            transform: scale(1.1); /* Slightly enlarge on hover */
+        }
+        /* Main Container */
+        .container {
+  
+            
+
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-image: 
+                url('parchment-texture.png'),
+                radial-gradient(circle at 50% 50%, var(--parchment-light) 0%, var(--parchment-dark) 100%);
+            position: relative;
+        }
+
+        /* Decorative Background */
+        .container::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                url('constitution-watermark.png') center/contain no-repeat,
+                repeating-linear-gradient(45deg, 
+                    rgba(44, 24, 16, 0.03) 0px,
+                    rgba(44, 24, 16, 0.03) 2px,
+                    transparent 2px,
+                    transparent 8px
+                );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Enhanced Header */
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            text-align: center;
+            margin: 0 auto;
+            padding: 20px 60px;
+            max-width: 900px;
+            background: 
+                url('scroll-left.png') left center/contain no-repeat,
+                url('scroll-right.png') right center/contain no-repeat;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 
+                2px 2px 0 var(--parchment-light),
+                4px 4px 0 var(--border-brown);
+        }
+
+        /* Enhanced Stats Panel */
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 0 auto 30px;
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+        }
+
+        .stat-box {
+            flex: 1;
+            max-width: 200px;
+            padding: 15px;
+            text-align: center;
+            background: var(--parchment-light);
+            border: 3px double var(--border-brown);
+            border-radius: 10px;
+            transform: skew(-5deg);
+            box-shadow: 0 5px 15px rgba(44, 24, 16, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Enhanced Rules Section */
+        .rules {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+            background: rgba(219, 193, 164, 0.3);
+            border-radius: 15px;
+            position: relative;
+            transform: rotate(-1deg);
+            box-shadow: 
+                0 0 0 3px var(--border-brown),
+                0 10px 20px rgba(44, 24, 16, 0.1);
+        }
+
+        .rules h2 {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            margin-bottom: 15px;
+        }
+
+        .rules h4 {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            margin: 10px 0;
+        }
+
+        /* Enhanced Game Board */
+        .game-board {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            gap: 15px;
+            justify-content: center;
+            grid-template-columns: repeat(7, minmax(150px, 1fr));
+            background: 
+                linear-gradient(45deg, transparent 48%, var(--border-brown) 48%, var(--border-brown) 52%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, var(--border-brown) 48%, var(--border-brown) 52%, transparent 52%);
+            background-size: 40px 40px;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 0 3px var(--border-brown),
+                0 0 0 6px var(--parchment-light),
+                0 0 0 9px var(--border-brown),
+                0 10px 30px rgba(44, 24, 16, 0.2);
+            margin-top: 30px;
+        }
+
+        /* Enhanced Card Styling */
+        .card {
+            aspect-ratio: 2/3;
+            width: 100%;
+            margin-bottom: 20px;
+            max-width: 150px;
+            perspective: 1000px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            box-shadow: 
+                0 0 0 3px var(--border-brown),
+                0 8px 20px rgba(44, 24, 16, 0.2);
+        }
+
+        .card-front {
+            background: 
+                url('card-pattern.png') center/cover,
+                linear-gradient(135deg, var(--parchment-light), #FFFFFF);
+            transform: rotateY(180deg);
+        }
+
+        .card-back {
+            background: 
+                url('seal-watermark.png') center/80% no-repeat,
+                url('card-texture.png') center/cover;
+            background-color: var(--parchment-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-back img {
+            width: 100%;  /* Adjust size as needed */
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .card-back img:hover {
+            transform: scale(1.1);
+        }
+
+        /* Card Animations */
+        .card.flip .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card:hover:not(.flip):not(.match) .card-inner {
+            transform: translateY(-10px) scale(1.02);
+        }
+
+        .card.match .card-inner {
+            animation: matchPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .game-board {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+                padding: 15px;
+            }
+            
+            .card {
+                max-width: 120px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .game-board {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 8px;
+                padding: 10px;
+            }
+
+            .card {
+                max-width: 100px;
+            }
+
+            .card-face {
+                padding: 8px;
+                font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+            }
+
+            .stat-box {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-board {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                gap: 5px;
+                padding: 5px;
+            }
+
+            .card {
+                max-width: 80px;
+            }
+
+            .game-stats {
+                
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stat-box {
+                width: 100%;
+                max-width: 150px;
+            }
+        }
+
+        /* Animations */
+        @keyframes matchPulse {
+            0%, 100% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.05); }
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        /* Victory Screen */
+        .victory-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .victory-card {
+            background: var(--parchment-light);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            transform: perspective(1000px) rotateX(10deg);
+            animation: victoryCardIn 1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 0 0 3px var(--border-brown),
+                0 0 0 6px var(--parchment-light),
+                0 0 0 9px var(--border-brown),
+                0 20px 50px rgba(44, 24, 16, 0.3);
+        }
+
+        @keyframes victoryCardIn {
+            from {
+                opacity: 0;
+                transform: perspective(1000px) rotateX(30deg) translateY(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: perspective(1000px) rotateX(10deg) translateY(0);
+            }
+        }
+
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+        }
+
+        .notification {
+            padding: 15px;
+            border-radius: 8px;
+            background: var(--parchment-light);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: slideInNotification 0.5s forwards;
+        }
+
+        @keyframes slideInNotification {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutNotification {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .rules-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .rules-content {
+            background: var(--parchment-light);
+            padding: 50px;
+            border-radius: 15px;
+            border: 3px double var(--border-brown);
+            max-width: 800px;
+            width: 90%;
+            text-align: left;
+        }
+
+        .rules-content h2 {
+            color: var(--seal-red);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+
+        .rules-content ul {
+            margin-bottom: 30px;
+            line-height: 2;
+            font-size: 1.3em;
+        }
+
+        .rules-content li {
+            margin-bottom: 20px;
+        }
+
+        .start-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 15px 40px;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 5px;
+            font-size: 1.3em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .start-btn:hover {
+            background: #6b0000;
+        }
+
+        .back-to-levels {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            background: var(--parchment-dark);
+            color: var(--ink-color);
+            border: 2px solid var(--border-brown);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-to-levels:hover {
+            background: var(--border-brown);
+            color: var(--parchment-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-to-levels i {
+            font-size: 1em;
+        }
+
+        const cardThemes = {
+            parchment: {
+                background: 'var(--parchment-light)',
+                textColor: 'var(--ink-color)',
+                borderColor: 'var(--border-brown)'
+            },
+            modern: {
+                background: '#2C3E50',
+                textColor: '#ECF0F1',
+                borderColor: '#E74C3C'
+            }
+            // Add more themes
+        };
+
+        .points-earned {
+            color: var(--success-green);
+            font-size: 1.4em;
+            font-weight: bold;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        .victory-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .next-level-btn {
+            background: var(--success-green);
+            color: var(--parchment-light);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .next-level-btn:hover {
+            transform: scale(1.05);
+            background: #1a4535;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Store the documents data -->
+    <div id="documents-data" style="display: none;">
+        {{ documents|safe }}
+    </div>
+
+    <div id="rulesPopup" class="rules-popup">
+        <div class="rules-content">
+            <h2>How to Play</h2>
+            <ul>
+                <li>Match each Topic Title with its correct Content</li>
+                <li>Click on two cards to flip them</li>
+                <li>If they match, they'll stay face up</li>
+                <li>If they don't match, they'll flip back</li>
+                <li>Empty cards will swap positions every 10 seconds</li>
+            </ul>
+            <button onclick="closeRulesPopup()" class="start-btn">Start Game</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="{% url 'flip_card:levels_page' %}" class="back-to-levels">
+            <i class="fas fa-arrow-left"></i>
+            Back to Levels
+        </a>
+        <h1>Document Memory Game</h1>
+        
+        <div class="game-container">
+            <div class="game-stats">
+                <div class="stat-box" id="timer">Time: 0s</div>
+                <div class="stat-box" id="score">Score: 0</div>
+            </div>
+
+            <div id="swapMessage"></div>
+            <div class="game-board" id="gameBoard"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get the documents data from the hidden div
+        const documents = JSON.parse(document.getElementById('documents-data').textContent);
+        const currentLevel = parseInt(new URLSearchParams(window.location.search).get('level')) || 1;
+
+        // Debug output
+        console.log('Debug - Initial Data:', {
+            documentsReceived: documents ? 'Yes' : 'No',
+            documentCount: documents ? documents.length : 0,
+            currentLevel: currentLevel
+        });
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedCards = 0;
+        let timer = 0;
+        let interval;
+        let firstFlip = false;
+        let score = 0;
+        let swapInterval;
+
+        function initGame() {
+            // Clear any existing cards
+            cards = [];
+            
+            // Create pairs of cards from documents
+            documents.forEach((doc, index) => {
+                cards.push({ type: 'title', value: doc.title, id: index });
+                cards.push({ type: 'content', value: doc.content, id: index });
+            });
+
+            // Add empty cards (adjust number as needed)
+            const emptyCards = 4;
+            for (let i = 0; i < emptyCards; i++) {
+                cards.push({ type: 'empty', value: 'Empty Card', id: `empty-${i}` });
+            }
+
+            // Shuffle the cards
+            cards = shuffle(cards);
+            
+            // Create the game board
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.id = index;
+                cardElement.dataset.type = card.type;
+                cardElement.dataset.value = card.id;
+                
+                cardElement.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face card-front">
+                            ${card.value}
+                        </div>
+                        <div class="card-face card-back">
+                            <img src="{% static 'flip_card/images/logo1.png' %}" alt="Logo" class="card-logo">
+                        </div>
+                    </div>
+                `;
+                
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+
+            startSwapInterval();
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function flipCard() {
+            if (!firstFlip) {
+                startTimer();
+                firstFlip = true;
+            }
+
+            if (flippedCards.length === 2) return;
+            if (this.classList.contains('flip') || this.classList.contains('match')) return;
+
+            // Handle empty card click
+            if (this.dataset.type === 'empty') {
+                this.classList.add('empty-card-shake');
+                showNotification("This is an empty card! Try another one.", 'warning');
+                
+                // Remove shake animation class after animation ends
+                setTimeout(() => {
+                    this.classList.remove('empty-card-shake');
+                }, 500);
+                return;
+            }
+
+            playSound('flip');
+            this.classList.add('flip');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                setTimeout(checkMatch, 500);
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const match = card1.dataset.value === card2.dataset.value && 
+                         card1.dataset.type !== card2.dataset.type;
+
+            if (match) {
+                playSound('match');
+                showNotification("Great match!", 'success');
+                card1.classList.add('match');
+                card2.classList.add('match');
+                matchedCards += 2;
+                updateScore();
+                
+                if (matchedCards === (cards.length - emptyCards)) {
+                    setTimeout(() => {
+                        playSound('victory');
+                        endGame();
+                    }, 500);
+                }
+            } else {
+                playSound('wrong');
+                showNotification("Try again!", 'error');
+                card1.classList.add('no-match');
+                card2.classList.add('no-match');
+                
+                setTimeout(() => {
+                    card1.classList.remove('flip', 'no-match');
+                    card2.classList.remove('flip', 'no-match');
+                }, 1000);
+            }
+
+            flippedCards = [];
+        }
+
+        function startTimer() {
+            interval = setInterval(() => {
+                timer++;
+                document.getElementById('timer').innerText = `Time: ${timer} seconds`;
+            }, 1000);
+        }
+
+        function updateScore() {
+            const timeFactor = 100 - timer;
+            score += Math.max(10, timeFactor);
+            document.getElementById('score').innerText = `Score: ${score}`;
+        }
+
+        function startSwapInterval() {
+            swapInterval = setInterval(() => {
+                swapCards();
+            }, 10000);
+        }
+
+        function swapCards() {
+            const nonFlippedNonEmptyCards = Array.from(document.querySelectorAll('.card:not(.flip):not(.match)'))
+                .filter(card => card.dataset.type !== 'empty');
+            if (nonFlippedNonEmptyCards.length === 0) return;
+
+            playSound('swap');
+            showNotification("Cards are swapping positions!", 'info');
+
+            const emptyCardElements = Array.from(document.querySelectorAll('.card[data-type="empty"]'));
+            const randomEmptyCard = emptyCardElements[Math.floor(Math.random() * emptyCardElements.length)];
+            const randomNonFlippedCard = nonFlippedNonEmptyCards[Math.floor(Math.random() * nonFlippedNonEmptyCards.length)];
+
+            // Add animation classes
+            randomEmptyCard.classList.add('swapping');
+            randomNonFlippedCard.classList.add('swapping');
+
+            // Store original positions
+            const emptyRect = randomEmptyCard.getBoundingClientRect();
+            const cardRect = randomNonFlippedCard.getBoundingClientRect();
+
+            // Calculate the translation distances
+            const deltaX = cardRect.left - emptyRect.left;
+            const deltaY = cardRect.top - emptyRect.top;
+
+            // Apply transition styles
+            randomEmptyCard.style.transition = 'transform 0.8s ease-in-out';
+            randomNonFlippedCard.style.transition = 'transform 0.8s ease-in-out';
+
+            // Animate the swap
+            randomEmptyCard.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            randomNonFlippedCard.style.transform = `translate(${-deltaX}px, ${-deltaY}px)`;
+
+            // Wait for animation to complete before updating content
+            setTimeout(() => {
+                // Store temporary data
+                const temp = {
+                    type: randomEmptyCard.dataset.type,
+                    value: randomEmptyCard.querySelector('.card-front').innerText,
+                    id: randomEmptyCard.dataset.value
+                };
+
+                // Update empty card
+                randomEmptyCard.dataset.type = randomNonFlippedCard.dataset.type;
+                randomEmptyCard.dataset.value = randomNonFlippedCard.dataset.value;
+                randomEmptyCard.querySelector('.card-front').innerText = 
+                    randomNonFlippedCard.querySelector('.card-front').innerText;
+
+                // Update non-empty card
+                randomNonFlippedCard.dataset.type = temp.type;
+                randomNonFlippedCard.dataset.value = temp.id;
+                randomNonFlippedCard.querySelector('.card-front').innerText = temp.value;
+
+                // Reset transforms and remove transition
+                randomEmptyCard.style.transform = '';
+                randomNonFlippedCard.style.transform = '';
+                randomEmptyCard.style.transition = '';
+                randomNonFlippedCard.style.transition = '';
+
+                // Remove animation classes
+                randomEmptyCard.classList.remove('swapping');
+                randomNonFlippedCard.classList.remove('swapping');
+
+                // Add highlight effect
+                randomEmptyCard.classList.add('swap-highlight');
+                randomNonFlippedCard.classList.add('swap-highlight');
+
+                // Remove highlight effect after animation
+                setTimeout(() => {
+                    randomEmptyCard.classList.remove('swap-highlight');
+                    randomNonFlippedCard.classList.remove('swap-highlight');
+                }, 1000);
+
+            }, 800); // Match the animation duration
+        }
+
+        function playSound(soundType) {
+            try {
+                const sound = SOUNDS[soundType];
+                if (sound) {
+                    sound.currentTime = 0;
+                    sound.play().catch(error => console.log('Sound play failed:', error));
+                }
+            } catch (error) {
+                console.log('Sound error:', error);
+            }
+        }
+
+        function endGame() {
+            clearInterval(interval);
+            clearInterval(swapInterval);
+            playSound('victory');
+            
+            // Call completeLevel before showing victory screen
+            completeLevel();
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'victory-overlay';
+            
+            const victoryCard = document.createElement('div');
+            victoryCard.className = 'victory-card';
+            
+            victoryCard.innerHTML = `
+                <h2>Level ${currentLevel} Complete!</h2>
+                <div class="trophy-icon">🏆</div>
+                <p>Congratulations! You've mastered the Constitutional Duties!</p>
+                <p>Time: ${timer} seconds</p>
+                <p>Score: ${score} points</p>
+                <button onclick="window.location.href='{% url 'flip_card:levels_page' %}'" 
+                        style="position: absolute; top: 20px; left: 20px; 
+                               padding: 10px 20px; 
+                               background: var(--parchment-dark); 
+                               border: 2px solid var(--border-brown); 
+                               border-radius: 5px; 
+                               cursor: pointer;">
+                    ← Back to Levels
+                </button>
+                <button onclick="location.reload()">Play Again</button>
+            `;
+            
+            overlay.appendChild(victoryCard);
+            document.body.appendChild(overlay);
+
+            // Add click event to close on overlay click (optional)
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    location.reload();
+                }
+            });
+        }
+
+        // Add this notification system
+        function showNotification(message, type = 'info') {
+            // Create container if it doesn't exist
+            let container = document.querySelector('.notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'notification-container';
+                document.body.appendChild(container);
+            }
+
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            // Set icon based on type
+            let icon = '💡';
+            switch(type) {
+                case 'error':
+                    icon = '❌';
+                    break;
+                case 'warning':
+                    icon = '⚠️';
+                    break;
+                case 'success':
+                    icon = '✅';
+                    break;
+            }
+
+            notification.innerHTML = `
+                <span class="notification-icon">${icon}</span>
+                <span class="notification-message">${message}</span>
+            `;
+
+            container.appendChild(notification);
+
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutNotification 0.5s forwards';
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+
+        function showRulesPopup() {
+            const level = parseInt(new URLSearchParams(window.location.search).get('level')) || 1;
+            const levelSpecificRules = {
+                1: "Level 1: Match basic Constitutional Duties with their descriptions",
+                2: "Level 2: Match advanced Constitutional Duties with their descriptions",
+                3: "Level 3: Match expert-level Constitutional Duties with their descriptions"
+            };
+
+            document.querySelector('.rules-content h2').innerHTML = `Level ${level} - How to Play`;
+            document.querySelector('.rules-content ul').insertAdjacentHTML('afterbegin', 
+                `<li><strong>${levelSpecificRules[level]}</strong></li>`
+            );
+            
+            document.getElementById('rulesPopup').style.display = 'flex';
+        }
+
+        function closeRulesPopup() {
+            document.getElementById('rulesPopup').style.display = 'none';
+            startGame();
+        }
+
+        function startGame() {
+            resetGame();
+            firstFlip = false;
+            startSwapInterval();
+        }
+
+        function resetGame() {
+            flippedCards = [];
+            matchedCards = 0;
+            timer = 0;
+            score = 0;
+            document.getElementById('timer').innerText = 'Time: 0s';
+            document.getElementById('score').innerText = 'Score: 0';
+            if (interval) clearInterval(interval);
+            if (swapInterval) clearInterval(swapInterval);
+        }
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Initializing game...');
+            initGame();
+            document.getElementById('rulesPopup').style.display = 'flex';
+        });
+
+        async function completeLevel() {
+            try {
+                const response = await fetch('{% url "flip_card:complete_level" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        level: currentLevel,
+                        score: score,
+                        time: timer
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showVictoryScreen(data);
+                }
+            } catch (error) {
+                console.error('Error completing level:', error);
+            }
+        }
+
+        function showVictoryScreen(data) {
+            const overlay = document.createElement('div');
+            overlay.className = 'victory-overlay';
+            
+            const victoryCard = document.createElement('div');
+            victoryCard.className = 'victory-card';
+            
+            // Get current URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPart = urlParams.get('part') || '5';
+            const currentType = urlParams.get('type') || 'JUD';
+            
+            let nextLevelButton = '';
+            if (data.next_level) {
+                nextLevelButton = `
+                    <button onclick="window.location.href='{% url 'flip_card:flip_card_game' %}?level=${data.next_level}&part=${currentPart}&type=${currentType}'" class="next-level-btn">
+                        Next Level →
+                    </button>
+                `;
+            }
+
+            victoryCard.innerHTML = `
+                <h2>Level ${currentLevel} Complete!</h2>
+                <div class="trophy-icon">🏆</div>
+                <p>Congratulations! You've mastered this level!</p>
+                <p>Time: ${timer} seconds</p>
+                <p>Score: ${score} points</p>
+                ${data.points_earned ? `
+                    <p class="points-earned">+${data.points_earned} points earned!</p>
+                    <p>Flip Card Points: ${data.flipcard_points}</p>
+                    <p>Total Platform Points: ${data.total_platform_points}</p>
+                ` : ''}
+                <div class="victory-buttons">
+                    <button onclick="window.location.href='{% url 'flip_card:levels_page' %}?part=${currentPart}&type=${currentType}'" class="back-btn">
+                        ← Back to Levels
+                    </button>
+                    ${nextLevelButton}
+                </div>
+            `;
+            
+            overlay.appendChild(victoryCard);
+            document.body.appendChild(overlay);
+        }
+
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+
+    <!-- Add this before the closing </body> tag -->
+    <audio id="backgroundMusic" loop>
+        <source src="{% static 'flip_card/audio/bg.mp3' %}" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <button id="volumeButton" onclick="toggleVolume()" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <i class="fas fa-volume-up" id="volumeIcon"></i>
+    </button>
+
+    <script>
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        let isMuted = false;
+
+        function toggleVolume() {
+            isMuted = !isMuted;
+            backgroundMusic.volume = isMuted ? 0.1 : 0;
+            document.getElementById('volumeIcon').className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+        }
+    </script>
+
+    <script id="documents-data" type="application/json">
+        {{ documents|safe }}
+    </script>
+</body>
+</html>

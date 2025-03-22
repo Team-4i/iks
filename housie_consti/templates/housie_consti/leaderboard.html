@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static '/css/leaderboard.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+
+<div class="min-h-screen flex items-center justify-center">
+    <div class="bg-gradient p-8 rounded-lg shadow-xl max-w-4xl w-full">
+        <h1 class="historic-title">Constitutional Assembly Leaderboard</h1>
+        
+        <!-- Overall Statistics -->
+        <div class="stats-panel">
+            <h2 class="section-title">Assembly Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Total Members</span>
+                    <span class="stat-value">{{ total_players }}</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Session Duration</span>
+                    <span class="stat-value">{{ game_duration|floatformat:0 }} min</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Articles Covered</span>
+                    <span class="stat-value">{{ total_articles }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Rankings -->
+        <div class="rankings-panel">
+            <h2 class="section-title">Assembly Member Rankings</h2>
+            <div class="scroll-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>RANK</th>
+                            <th>ASSEMBLY MEMBER</th>
+                            <th>POINTS</th>
+                            <th>CORRECT ANSWERS</th>
+                            <th>AVG RESPONSE TIME</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if players_data %}
+                            {% for player in players_data %}
+                            <tr {% if forloop.first %}class="winner"{% endif %}>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ player.username|default:"Anonymous" }}</td>
+                                <td>{{ player.points|default:"0" }}</td>
+                                <td>{{ player.correct_answers|default:"0" }}</td>
+                                <td>{{ player.avg_response_time|default:"0" }}s</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No players have completed the game yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'housie_consti:game_analysis' room.room_id %}" class="action-btn">
+                <span class="btn-icon">📊</span>
+                View Analysis
+            </a>
+            <a href="{% url 'housie_consti:room_detail' room.room_id %}" class="action-btn">
+                <span class="btn-icon">🔙</span>
+                Return to Room
+            </a>
+            <a href="{% url 'housie_consti:create_room' %}" class="action-btn">
+                <span class="btn-icon">🎮</span>
+                New Game
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

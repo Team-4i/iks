@@ -1,0 +1,1268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(120deg, #f6f7f9 0%, #e9eef5 100%);
+            min-height: 100vh;
+        }
+
+        #chat-container { 
+            display: flex; 
+            height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            border-radius: 24px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        #character-container { 
+            flex: 1.4;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafd 100%);
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        #chat-interface {
+            width: 450px;
+            padding: 32px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.03);
+            margin: 0;
+        }
+
+        #chat-header {
+            padding-bottom: 24px;
+            border-bottom: 2px solid #f0f2f5;
+            margin-bottom: 24px;
+        }
+
+        #chat-header h1 {
+            font-size: 28px;
+            color: #1a1f36;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        #chat-header p {
+            font-size: 15px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 15px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .assistant-message {
+            background: #f8fafc;
+            color: #1e293b;
+            margin-right: auto;
+            border: 1px solid #e2e8f0;
+        }
+
+        #input-container {
+            margin-top: auto;
+            position: relative;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+            padding: 16px 0 0;
+            border-top: 2px solid #f0f2f5;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            min-width: 0;
+        }
+
+        #user-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 15px rgba(59, 130, 246, 0.1);
+        }
+
+        #send-button, #mic-button {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.1);
+            white-space: nowrap;
+        }
+
+        #send-button:hover, #mic-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.15);
+        }
+
+        #send-button:active, #mic-button:active {
+            transform: translateY(0);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            #chat-container {
+                border-radius: 0;
+                height: 100vh;
+            }
+
+            #character-container {
+                flex: 1;
+            }
+
+            #chat-interface {
+                width: 400px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            #chat-container {
+                flex-direction: column;
+            }
+
+            #character-container {
+                height: 40vh;
+            }
+
+            #chat-interface {
+                width: 100%;
+                height: 60vh;
+            }
+        }
+
+        @media (max-width: 600px) {
+            #chat-interface {
+                padding: 20px;
+            }
+
+            #chat-header h1 {
+                font-size: 24px;
+            }
+
+            #input-container {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            #user-input {
+                width: 100%;
+            }
+
+            #send-button, #mic-button {
+                padding: 14px 20px;
+                font-size: 14px;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 12px 16px;
+            }
+        }
+    </style>
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="character-container"></div>
+        <div id="chat-interface">
+            <div id="chat-header">
+                <h1>AI Assistant</h1>
+                <p>Ask me anything in Hindi or English</p>
+            </div>
+            <div id="chat-messages"></div>
+            <div id="input-container">
+                <input type="text" id="user-input" placeholder="Type your message...">
+                <button id="send-button">Send</button>
+                <button id="mic-button">🎤 Hold to Speak</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add this global variable at the start of your script (before any functions)
+        let isSpeaking = false;
+        let facialAnimations;
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff); // Set to white
+
+        // Get the character container dimensions
+        const container = document.getElementById('character-container');
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        // Camera setup specifically for half-body framing
+        const camera = new THREE.PerspectiveCamera(35, containerWidth / containerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 2.5);
+
+        // Renderer setup - match container size exactly
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(containerWidth, containerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.getElementById('character-container').appendChild(renderer.domElement);
+
+        // Add resize handler to keep canvas matched to container
+        window.addEventListener('resize', () => {
+            const newWidth = container.clientWidth;
+            const newHeight = container.clientHeight;
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+        });
+
+        // Restricted controls for better framing
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.enableZoom = false;
+        controls.minPolarAngle = Math.PI/2.2; // Restrict vertical rotation
+        controls.maxPolarAngle = Math.PI/1.8;
+        controls.minAzimuthAngle = -Math.PI/4; // Restrict horizontal rotation
+        controls.maxAzimuthAngle = Math.PI/4;
+        controls.target.set(0, 1.5, 0);
+        controls.update();
+
+        // Enhanced lighting for better visuals
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+        mainLight.position.set(5, 5, 5);
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight.position.set(-5, 0, 5);
+        scene.add(fillLight);
+
+        // Animation system
+        const clock = new THREE.Clock();
+        let mixer;
+        let character;
+        let morphTargetMeshes = [];
+        let currentExpression = { mouthOpen: 0, mouthSmile: 0 };
+        let targetExpression = { mouthOpen: 0, mouthSmile: 0 };
+
+        // Smooth animation parameters
+        const LERP_FACTOR = 0.2;
+        const EXPRESSION_SMOOTHING = 0.25;
+
+        // Define more varied mouth shapes for speaking
+        const mouthShapes = [
+            { mouthOpen: 0.2, mouthSmile: 0.1, mouthRound: 0.1 },  // slight open
+            { mouthOpen: 0.4, mouthSmile: 0.2, mouthRound: 0.2 },  // medium open
+            { mouthOpen: 0.7, mouthSmile: 0.1, mouthRound: 0.1 },  // wide open
+            { mouthOpen: 0.3, mouthSmile: 0.4, mouthRound: 0.1 },  // smile speak
+            { mouthOpen: 0.5, mouthSmile: 0.1, mouthRound: 0.6 },  // round O shape
+            { mouthOpen: 0.1, mouthSmile: 0.2, mouthRound: 0.1 },  // nearly closed
+        ];
+
+        // Update the facial animation setup function
+        function setupFacialAnimations(character) {
+            let faceMeshes = [];
+            let currentState = {
+                mouthOpen: 0,
+                mouthSmile: 0.1,
+                mouthRound: 0,
+                eyebrowRaise: 0,
+                eyesClosed: 0
+            };
+            let targetState = { ...currentState };
+            let lastMouthUpdate = Date.now();
+            let currentMouthShape = 0;
+            
+            // Find meshes with morph targets
+            character.traverse((node) => {
+                if (node.morphTargetDictionary) {
+                    faceMeshes.push(node);
+                }
+            });
+
+            function updateFacialExpression(delta) {
+                if (!isSpeaking && !isTransitioning()) {
+                    // Return to neutral position when not speaking
+                    targetState = {
+                        mouthOpen: 0.1,
+                        mouthSmile: 0.1,
+                        mouthRound: 0.1,
+                        eyebrowRaise: 0,
+                        eyesClosed: 0
+                    };
+                } else if (isSpeaking) {
+                    // Update mouth shape every 100-200ms for natural variation
+                    const now = Date.now();
+                    if (now - lastMouthUpdate > 100 + Math.random() * 100) {
+                        // Randomly select next mouth shape
+                        currentMouthShape = Math.floor(Math.random() * mouthShapes.length);
+                        targetState = {
+                            ...mouthShapes[currentMouthShape],
+                            eyebrowRaise: Math.random() * 0.3,  // Random eyebrow movement
+                            eyesClosed: 0
+                        };
+                        lastMouthUpdate = now;
+                    }
+                }
+
+                // Smooth interpolation to target state
+                Object.keys(currentState).forEach(key => {
+                    currentState[key] = THREE.MathUtils.lerp(
+                        currentState[key],
+                        targetState[key],
+                        delta * 15
+                    );
+                });
+
+                // Add subtle random movements during speech
+                if (isSpeaking) {
+                    const time = Date.now() * 0.001;
+                    const subtleMovement = Math.sin(time * 10) * 0.05;
+                    currentState.mouthOpen += subtleMovement;
+                    currentState.eyebrowRaise += subtleMovement * 0.2;
+                }
+
+                // Apply to all face meshes
+                faceMeshes.forEach(mesh => {
+                    Object.keys(currentState).forEach(key => {
+                        const idx = mesh.morphTargetDictionary[key];
+                        if (idx !== undefined) {
+                            mesh.morphTargetInfluences[idx] = currentState[key];
+                        }
+                    });
+                });
+            }
+
+            function isTransitioning() {
+                return Object.keys(currentState).some(key => 
+                    Math.abs(currentState[key] - targetState[key]) > 0.01
+                );
+            }
+
+            return {
+                update: updateFacialExpression,
+                startSpeaking: () => {
+                    isSpeaking = true;
+                    lastMouthUpdate = 0; // Force immediate mouth shape update
+                },
+                stopSpeaking: () => {
+                    isSpeaking = false;
+                    targetState = {
+                        mouthOpen: 0.1,
+                        mouthSmile: 0.1,
+                        mouthRound: 0.1,
+                        eyebrowRaise: 0,
+                        eyesClosed: 0
+                    };
+                }
+            };
+        }
+
+        // Simple blink animation
+        function setupBlinking() {
+            let leftEye, rightEye;
+            let isBlinking = false;
+            
+            // Find the eye meshes
+            character.traverse((node) => {
+                if (node.name === 'EyeLeft') leftEye = node;
+                if (node.name === 'EyeRight') rightEye = node;
+            });
+
+            if (!leftEye || !rightEye) {
+                console.log('Could not find eye meshes');
+                return;
+            }
+
+            // Store original scales separately for each eye
+            const leftOriginalScale = leftEye.scale.y;
+            const rightOriginalScale = rightEye.scale.y;
+
+            // Start random blinking
+            const blinkInterval = setInterval(() => {
+                if (!isBlinking) {
+                    isBlinking = true;
+                    
+                    // Close eyes one at a time
+                    leftEye.scale.y = 0.1;
+                    
+                    // Force update right eye
+                    rightEye.scale.set(rightEye.scale.x, 0.1, rightEye.scale.z);
+                    rightEye.updateMatrix();
+                    
+                    // Open eyes after 150ms
+                    setTimeout(() => {
+                        leftEye.scale.y = leftOriginalScale;
+                        
+                        // Force update right eye
+                        rightEye.scale.set(rightEye.scale.x, rightOriginalScale, rightEye.scale.z);
+                        rightEye.updateMatrix();
+                        
+                        isBlinking = false;
+                    }, 150);
+                }
+            }, 3000 + Math.random() * 2000); // Random interval between 3-5 seconds
+
+            // Store the interval ID on the character object so it doesn't get garbage collected
+            character.blinkInterval = blinkInterval;
+        }
+
+        // Load character
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'https://models.readyplayer.me/6737560f478002db197d3b84.glb',
+            function (gltf) {
+                character = gltf.scene;
+                scene.add(character);
+
+                // Set initial background color to white
+                renderer.setClearColor(0xffffff);
+
+                // Debug: Log initial bone rotations
+                character.traverse((node) => {
+                    if (node.type === 'Bone' && (node.name === 'Head' || node.name === 'Neck')) {
+                        console.log(`${node.name} initial rotation:`, {
+                            x: node.rotation.x,
+                            y: node.rotation.y,
+                            z: node.rotation.z
+                        });
+                    }
+                });
+
+                // Initialize facial animations
+                facialAnimations = setupFacialAnimations(character);
+                
+                // Start blinking
+                setupBlinking();
+                
+                // Add head movements
+                setupHeadMovements();
+                
+                // Add arm movements
+                setupArmMovements();
+                
+                // Center camera on face
+                const box = new THREE.Box3().setFromObject(character);
+                const center = box.getCenter(new THREE.Vector3());
+                controls.target.set(center.x, center.y + 0.5, center.z);
+                camera.position.set(center.x, center.y + 0.5, center.z + 2);
+                controls.update();
+
+                // Start animation loop only after character is loaded
+                animate();
+            },
+            // Add loading progress callback
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            // Add error callback
+            function (error) {
+                console.error('An error occurred loading the character:', error);
+            }
+        );
+
+        // Smooth expression handling
+        function lerpExpression(current, target, factor) {
+            return {
+                mouthOpen: THREE.MathUtils.lerp(current.mouthOpen, target.mouthOpen, factor),
+                mouthSmile: THREE.MathUtils.lerp(current.mouthSmile, target.mouthSmile, factor)
+            };
+        }
+
+        // Expression presets with smoother transitions
+        const expressions = {
+            'A': { mouthOpen: 0.7, mouthSmile: 0.3 },
+            'E': { mouthOpen: 0.5, mouthSmile: 0.4 },
+            'I': { mouthOpen: 0.3, mouthSmile: 0.6 },
+            'O': { mouthOpen: 0.8, mouthSmile: 0.1 },
+            'U': { mouthOpen: 0.4, mouthSmile: 0.2 },
+            'closed': { mouthOpen: 0, mouthSmile: 0.1 }
+        };
+
+        function setExpression(expressionName) {
+            if (!character || !expressions[expressionName]) return;
+            targetExpression = expressions[expressionName];
+        }
+
+        // Define more varied mouth animations that simulate talking patterns
+        const talkingAnimations = [
+            // Basic talking movements
+            { mouthOpen: 0.3, mouthSmile: 0.2, mouthRound: 0.1 },    // slight open
+            { mouthOpen: 0.5, mouthSmile: 0.3, mouthRound: 0.2 },    // medium open
+            { mouthOpen: 0.7, mouthSmile: 0.2, mouthRound: 0.1 },    // wide open
+            
+            // Side movements
+            { mouthOpen: 0.4, mouthSmile: 0.6, mouthRound: 0.1 },    // smile talk
+            { mouthOpen: 0.3, mouthSmile: -0.2, mouthRound: 0.3 },   // side movement
+            
+            // Round shapes for O and U sounds
+            { mouthOpen: 0.4, mouthSmile: 0.1, mouthRound: 0.7 },    // round shape
+            { mouthOpen: 0.6, mouthSmile: 0.1, mouthRound: 0.5 },    // oval shape
+            
+            // Nearly closed positions
+            { mouthOpen: 0.1, mouthSmile: 0.2, mouthRound: 0.1 },    // almost closed
+            { mouthOpen: 0.2, mouthSmile: 0.3, mouthRound: 0.2 }     // slightly open
+        ];
+
+        // Define speech animation states and transitions
+        const speechAnimator = {
+            currentState: 'neutral',
+            transitionTime: 0,
+            
+            states: {
+                neutral: {
+                    values: { mouthOpen: 0.1, mouthSmile: 0.1, mouthRound: 0.1, eyebrowRaise: 0, eyesClosed: 0 },
+                    transitions: ['startTalk', 'smile', 'rest']
+                },
+                startTalk: {
+                    values: { mouthOpen: 0.3, mouthSmile: 0.2, mouthRound: 0.2, eyebrowRaise: 0.1, eyesClosed: 0 },
+                    transitions: ['wideOpen', 'roundShape', 'smile'],
+                    maxDuration: 200
+                },
+                wideOpen: {
+                    values: { mouthOpen: 0.7, mouthSmile: 0.2, mouthRound: 0.1, eyebrowRaise: 0.2, eyesClosed: 0 },
+                    transitions: ['narrowOpen', 'smile', 'startTalk'],
+                    maxDuration: 150
+                },
+                narrowOpen: {
+                    values: { mouthOpen: 0.4, mouthSmile: 0.3, mouthRound: 0.2, eyebrowRaise: 0.1, eyesClosed: 0 },
+                    transitions: ['roundShape', 'wideOpen', 'rest'],
+                    maxDuration: 180
+                },
+                roundShape: {
+                    values: { mouthOpen: 0.5, mouthSmile: 0.1, mouthRound: 0.8, eyebrowRaise: 0.2, eyesClosed: 0 },
+                    transitions: ['narrowOpen', 'startTalk'],
+                    maxDuration: 160
+                },
+                smile: {
+                    values: { mouthOpen: 0.3, mouthSmile: 0.6, mouthRound: 0.1, eyebrowRaise: 0.3, eyesClosed: 0 },
+                    transitions: ['wideOpen', 'startTalk'],
+                    maxDuration: 200
+                },
+                rest: {
+                    values: { mouthOpen: 0.15, mouthSmile: 0.2, mouthRound: 0.1, eyebrowRaise: 0.1, eyesClosed: 0 },
+                    transitions: ['startTalk', 'neutral'],
+                    maxDuration: 120
+                }
+            },
+
+            // Get next state based on current transitions
+            getNextState() {
+                const currentStateObj = this.states[this.currentState];
+                const possibleTransitions = currentStateObj.transitions;
+                return possibleTransitions[Math.floor(Math.random() * possibleTransitions.length)];
+            },
+
+            // Add natural variations to movements
+            addVariation(values) {
+                const variation = Math.random() * 0.15 - 0.075;
+                const result = { ...values };
+                Object.keys(result).forEach(key => {
+                    result[key] = Math.max(0, Math.min(1, result[key] + variation));
+                });
+                return result;
+            },
+
+            // Add blink handling
+            updateBlink() {
+                const now = Date.now();
+                
+                // Start a new blink if it's time
+                if (!blinkConfig.isBlinking && 
+                    now - blinkConfig.lastBlink > Math.random() * 
+                    (blinkConfig.maxInterval - blinkConfig.minInterval) + blinkConfig.minInterval) {
+                    
+                    blinkConfig.isBlinking = true;
+                    blinkConfig.lastBlink = now;
+                    return 1; // Eyes fully closed
+                }
+                
+                // End the blink if it's been long enough
+                if (blinkConfig.isBlinking && now - blinkConfig.lastBlink > blinkConfig.blinkDuration) {
+                    blinkConfig.isBlinking = false;
+                    return 0; // Eyes fully open
+                }
+                
+                // During blink animation
+                if (blinkConfig.isBlinking) {
+                    const blinkProgress = (now - blinkConfig.lastBlink) / blinkConfig.blinkDuration;
+                    // Create a smooth blink animation
+                    if (blinkProgress < 0.5) {
+                        return blinkProgress * 2; // Close eyes
+                    } else {
+                        return 2 - (blinkProgress * 2); // Open eyes
+                    }
+                }
+                
+                return 0; // Eyes open by default
+            }
+        };
+
+        // Add eye blinking configuration
+        const blinkConfig = {
+            isBlinking: false,
+            lastBlink: Date.now(),
+            minInterval: 1000,    // Minimum time between blinks (ms)
+            maxInterval: 5000,    // Maximum time between blinks (ms)
+            blinkDuration: 150    // How long a blink lasts (ms)
+        };
+
+        // Updated speak function using state machine
+        async function speak(text) {
+            try {
+                const response = await fetch('/text-to-speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                if (data.audio) {
+                    const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+                    
+                    if (facialAnimations) {
+                        let animationFrame;
+                        
+                        audio.onplay = () => {
+                            isSpeaking = true;
+                            if (facialAnimations.startSpeaking) {
+                                facialAnimations.startSpeaking();
+                            }
+                        };
+
+                        audio.onended = () => {
+                            isSpeaking = false;
+                            if (facialAnimations.stopSpeaking) {
+                                facialAnimations.stopSpeaking();
+                            }
+                        };
+                    }
+                    
+                    await audio.play();
+                }
+            } catch (error) {
+                console.error('Error playing audio:', error);
+            }
+        }
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            if (facialAnimations) {
+                facialAnimations.update(delta);
+            }
+
+            if (controls) {
+                controls.update();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / 2 / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        });
+
+        // Chat interface
+        const input = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const messagesContainer = document.getElementById('chat-messages');
+
+        function addMessage(role, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            
+            // Create the message content
+            const contentP = document.createElement('p');
+            contentP.textContent = content;  // Use textContent instead of innerHTML for safety
+            messageDiv.appendChild(contentP);
+            
+            // Add the message to chat
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add this function before sendMessage function
+        function playAudio(base64Audio) {
+            try {
+                const audio = new Audio('data:audio/mpeg;base64,' + base64Audio);
+                
+                // Start facial animations when audio starts playing
+                audio.onplay = () => {
+                    isSpeaking = true;
+                    if (facialAnimations && facialAnimations.startSpeaking) {
+                        facialAnimations.startSpeaking();
+                    }
+                };
+
+                // Stop facial animations when audio ends
+                audio.onended = () => {
+                    isSpeaking = false;
+                    if (facialAnimations && facialAnimations.stopSpeaking) {
+                        facialAnimations.stopSpeaking();
+                    }
+                };
+
+                // Handle any errors during playback
+                audio.onerror = (error) => {
+                    console.error('Audio playback error:', error);
+                    isSpeaking = false;
+                    if (facialAnimations && facialAnimations.stopSpeaking) {
+                        facialAnimations.stopSpeaking();
+                    }
+                };
+
+                // Play the audio
+                audio.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                    isSpeaking = false;
+                    if (facialAnimations && facialAnimations.stopSpeaking) {
+                        facialAnimations.stopSpeaking();
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating audio:', error);
+                isSpeaking = false;
+                if (facialAnimations && facialAnimations.stopSpeaking) {
+                    facialAnimations.stopSpeaking();
+                }
+            }
+        }
+
+        // Update the sendMessage function with better error handling
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input').value.trim();
+            if (!userInput) return;
+
+            // Clear input
+            document.getElementById('user-input').value = '';
+            
+            // Add user message to chat
+            addMessage('user', userInput);
+
+            try {
+                // Send request with JSON data
+                const response = await fetch('/ai/get_response/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_input: userInput
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    addMessage('assistant', 'Sorry, there was an error processing your request.');
+                    return;
+                }
+
+                // Add the text response to chat
+                if (data.response) {
+                    addMessage('assistant', data.response);
+                    
+                    try {
+                        // Send text-to-speech request
+                        const audioResponse = await fetch('/ai/text_to_speech/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                text: data.response
+                            })
+                        });
+
+                        if (!audioResponse.ok) {
+                            // Handle non-200 responses
+                            const errorData = await audioResponse.json();
+                            console.warn('Text-to-speech service unavailable:', errorData);
+                            // Continue with text-only response
+                            return;
+                        }
+
+                        const audioData = await audioResponse.json();
+                        
+                        if (audioData.error) {
+                            console.warn('Audio generation error:', audioData.error);
+                            // Continue with text-only response
+                            return;
+                        }
+                        
+                        if (audioData.audio) {
+                            playAudio(audioData.audio);
+                        }
+                    } catch (audioError) {
+                        console.warn('Audio generation error:', audioError);
+                        // Continue with text-only response - the chat will still work without audio
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('assistant', 'Sorry, there was an error processing your request.');
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function setupHeadMovements() {
+            let headBone, neckBone;
+            
+            // Find the head and neck bones
+            character.traverse((node) => {
+                if (node.type === 'Bone') {
+                    if (node.name === 'Head') headBone = node;
+                    if (node.name === 'Neck') neckBone = node;
+                }
+            });
+
+            if (!headBone || !neckBone) {
+                console.log('Could not find head or neck bones');
+                return;
+            }
+
+            // Store original rotations
+            const originalRotation = {
+                x: neckBone.rotation.x - 0.1,  // Lift head up slightly
+                y: neckBone.rotation.y,
+                z: neckBone.rotation.z
+            };
+
+            function updateHeadMovement() {
+                const time = Date.now() * 0.001;
+                
+                // Base position - slightly lifted, looking forward
+                const baseX = -0.1; // Lift head up
+                const baseY = 0;
+                const baseZ = 0;
+                
+                // Engagement movements (like nodding while explaining)
+                const engagementX = Math.sin(time * 0.7) * 0.05;  // Occasional nods
+                const engagementY = Math.sin(time * 0.4) * 0.08;  // Looking side to side while explaining
+                
+                // Micro movements for naturalness
+                const microX = Math.sin(time * 2.5) * 0.02;
+                const microY = Math.cos(time * 2.1) * 0.02;
+                const microZ = Math.sin(time * 1.8) * 0.01;
+                
+                // Very slow drift
+                const driftX = Math.sin(time * 0.1) * 0.02;
+                const driftY = Math.cos(time * 0.15) * 0.02;
+                
+                // Combine all movements
+                neckBone.rotation.x = originalRotation.x + baseX + engagementX + microX + driftX;
+                neckBone.rotation.y = originalRotation.y + baseY + engagementY + microY + driftY;
+                neckBone.rotation.z = originalRotation.z + baseZ + microZ;
+
+                // Head follows neck but with slightly reduced movement
+                headBone.rotation.x = neckBone.rotation.x * 0.3;
+                headBone.rotation.y = neckBone.rotation.y * 0.3;
+                headBone.rotation.z = neckBone.rotation.z * 0.3;
+
+                // Force update matrices
+                neckBone.updateMatrix();
+                neckBone.updateMatrixWorld(true);
+                headBone.updateMatrix();
+                headBone.updateMatrixWorld(true);
+            }
+
+            // Add to main animation loop
+            const existingAnimate = animate;
+            animate = function() {
+                existingAnimate();
+                updateHeadMovement();
+            };
+        }
+
+        function setupArmMovements() {
+            let leftArm, rightArm, leftForeArm, rightForeArm, leftHand, rightHand;
+            
+            // Find arm bones
+            character.traverse((node) => {
+                if (node.type === 'Bone') {
+                    switch(node.name) {
+                        case 'LeftArm': leftArm = node; break;
+                        case 'RightArm': rightArm = node; break;
+                        case 'LeftForeArm': leftForeArm = node; break;
+                        case 'RightForeArm': rightForeArm = node; break;
+                        case 'LeftHand': leftHand = node; break;
+                        case 'RightHand': rightHand = node; break;
+                    }
+                }
+            });
+
+            // Neutral position (keep this as reference) hands are staright down
+            const neutralPosition = {
+                leftArm: { x: 1.3, y: 0.1, z: 0.1 },
+                rightArm: { x: 1.3, y: 0.1, z: -0.1 },
+                leftForeArm: { x: 0.1, y: 0, z: 0 },
+                rightForeArm: { x: 0.1, y: 0, z: 0 },
+                leftHand: { x: 0, y: 0, z: 0 },
+                rightHand: { x: 0, y: 0, z: 0 },
+                duration: 1200
+            };
+
+            // Predefined empty gesture arrays for different animations
+            const gestureArrays = {
+                explaining: [{
+        leftArm: { x: 1.2, y: 0.2, z: 0.3 },
+        rightArm: { x: 1.2, y: -0.2, z: -0.3 },
+        leftForeArm: { x: 0.1, y: 0, z: 0.1 },
+        rightForeArm: { x: 0.1, y: 0, z: -0.1 },
+        leftHand: { x: 0, y: 0.1, z: 0 },
+        rightHand: { x: 0, y: 0.1, z: 0 },
+        duration: 1500
+    }],
+
+    presenting: [{
+        leftArm: { x: 0.9, y: 0.4, z: 0.4 },
+        rightArm: { x: 0.9, y: 0.4, z: -0.4 },
+        leftForeArm: { x: 0.3, y: 0.3, z: 0.2 },
+        rightForeArm: { x: 0.3, y: 0.3, z: -0.2 },
+        leftHand: { x: 0.2, y: 0.4, z: 0.1 },
+        rightHand: { x: 0.2, y: 0.4, z: -0.1 },
+        duration: 1400
+    }],
+
+    explainRight: [{
+        leftArm: { x: 1.4, y: 0, z: 0 },
+        rightArm: { x: 1.1, y: 0.3, z: -0.4 },
+        leftForeArm: { x: 0, y: 0, z: 0 },
+        rightForeArm: { x: 0.2, y: 0.2, z: -0.1 },
+        leftHand: { x: 0, y: 0, z: 0 },
+        rightHand: { x: 0.1, y: 0.2, z: 0 },
+        duration: 1300
+    }],
+
+    explainLeft: [{
+        leftArm: { x: 1.1, y: 0.3, z: 0.4 },
+        rightArm: { x: 1.4, y: 0, z: 0 },
+        leftForeArm: { x: 0.2, y: 0.2, z: 0.1 },
+        rightForeArm: { x: 0, y: 0, z: 0 },
+        leftHand: { x: 0.1, y: 0.2, z: 0 },
+        rightHand: { x: 0, y: 0, z: 0 },
+        duration: 1300
+    }],
+
+    presentLow: [{
+        leftArm: { x: 0.8, y: 0.3, z: 0.3 },
+        rightArm: { x: 0.8, y: 0.3, z: -0.3 },
+        leftForeArm: { x: 0.2, y: 0.2, z: 0.1 },
+        rightForeArm: { x: 0.2, y: 0.2, z: -0.1 },
+        leftHand: { x: 0.1, y: 0.3, z: 0.1 },
+        rightHand: { x: 0.1, y: 0.3, z: -0.1 },
+        duration: 1400
+    }],
+
+    presentHigh: [{
+        leftArm: { x: 1.0, y: 0.5, z: 0.4 },
+        rightArm: { x: 1.0, y: 0.5, z: -0.4 },
+        leftForeArm: { x: 0.4, y: 0.4, z: 0.2 },
+        rightForeArm: { x: 0.4, y: 0.4, z: -0.2 },
+        leftHand: { x: 0.3, y: 0.5, z: 0.1 },
+        rightHand: { x: 0.3, y: 0.5, z: -0.1 },
+        duration: 1400
+    }]
+
+            };
+
+            let lastGestureTime = Date.now();
+            let currentGestureCategory = 'explaining';
+            let usedGestures = new Set();
+
+            function updateArmMovements() {
+                if (!isSpeaking) {
+                    // Return to neutral position when not speaking
+                    if (leftArm && rightArm && leftForeArm && rightForeArm && leftHand && rightHand) {
+                        ['x', 'y', 'z'].forEach(axis => {
+                            leftArm.rotation[axis] = THREE.MathUtils.lerp(leftArm.rotation[axis], neutralPosition.leftArm[axis], 0.1);
+                            rightArm.rotation[axis] = THREE.MathUtils.lerp(rightArm.rotation[axis], neutralPosition.rightArm[axis], 0.1);
+                            leftForeArm.rotation[axis] = THREE.MathUtils.lerp(leftForeArm.rotation[axis], neutralPosition.leftForeArm[axis], 0.1);
+                            rightForeArm.rotation[axis] = THREE.MathUtils.lerp(rightForeArm.rotation[axis], neutralPosition.rightForeArm[axis], 0.1);
+                            leftHand.rotation[axis] = THREE.MathUtils.lerp(leftHand.rotation[axis], neutralPosition.leftHand[axis], 0.1);
+                            rightHand.rotation[axis] = THREE.MathUtils.lerp(rightHand.rotation[axis], neutralPosition.rightHand[axis], 0.1);
+                        });
+
+                        // Update matrices
+                        [leftArm, rightArm, leftForeArm, rightForeArm, leftHand, rightHand].forEach(bone => {
+                            bone.updateMatrix();
+                        });
+                    }
+                    return;
+                }
+
+                const currentTime = Date.now();
+                if (currentTime - lastGestureTime > 2000) { // Change gesture every 2 seconds
+                    const availableGestures = Object.keys(gestureArrays).filter(gesture => !usedGestures.has(gesture));
+                    
+                    // If all gestures have been used, reset the used gestures set
+                    if (availableGestures.length === 0) {
+                        usedGestures.clear();
+                        currentGestureCategory = Object.keys(gestureArrays)[Math.floor(Math.random() * Object.keys(gestureArrays).length)];
+                    } else {
+                        // Select a random unused gesture
+                        currentGestureCategory = availableGestures[Math.floor(Math.random() * availableGestures.length)];
+                    }
+                    
+                    usedGestures.add(currentGestureCategory);
+                    lastGestureTime = currentTime;
+                    
+                    // Update the animation display
+                    const animationDisplay = document.getElementById('current-animation');
+                    if (animationDisplay) {
+                        animationDisplay.textContent = `Current Animation: ${currentGestureCategory}`;
+                    }
+                }
+
+                // Get the current gesture
+                const targetGesture = gestureArrays[currentGestureCategory][0];
+                
+                if (leftArm && rightArm && leftForeArm && rightForeArm && leftHand && rightHand) {
+                    ['x', 'y', 'z'].forEach(axis => {
+                        leftArm.rotation[axis] = THREE.MathUtils.lerp(leftArm.rotation[axis], targetGesture.leftArm[axis], 0.1);
+                        rightArm.rotation[axis] = THREE.MathUtils.lerp(rightArm.rotation[axis], targetGesture.rightArm[axis], 0.1);
+                        leftForeArm.rotation[axis] = THREE.MathUtils.lerp(leftForeArm.rotation[axis], targetGesture.leftForeArm[axis], 0.1);
+                        rightForeArm.rotation[axis] = THREE.MathUtils.lerp(rightForeArm.rotation[axis], targetGesture.rightForeArm[axis], 0.1);
+                        leftHand.rotation[axis] = THREE.MathUtils.lerp(leftHand.rotation[axis], targetGesture.leftHand[axis], 0.1);
+                        rightHand.rotation[axis] = THREE.MathUtils.lerp(rightHand.rotation[axis], targetGesture.rightHand[axis], 0.1);
+                    });
+
+                    // Update matrices
+                    [leftArm, rightArm, leftForeArm, rightForeArm, leftHand, rightHand].forEach(bone => {
+                        bone.updateMatrix();
+                    });
+                }
+            }
+
+            // Add to animation loop
+            const existingAnimate = animate;
+            animate = function() {
+                existingAnimate();
+                updateArmMovements();
+            };
+        }
+
+        // Update the voice input setup function
+        function setupVoiceInput() {
+            const micButton = document.getElementById('mic-button');
+
+            // Speech recognition setup with error handling and logging
+            let recognition;
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    console.error('Speech Recognition API not supported in this browser');
+                    micButton.innerHTML = 'Voice input not supported';
+                    micButton.disabled = true;
+                    return;
+                }
+                recognition = new SpeechRecognition();
+            } catch (e) {
+                console.error('Speech recognition error:', e);
+                micButton.innerHTML = 'Voice input error';
+                micButton.disabled = true;
+                return;
+            }
+
+            // Configure recognition settings
+            recognition.continuous = false; // Changed to false to prevent multiple results
+            recognition.interimResults = true;
+            recognition.lang = 'hi-IN'; // Set to Hindi for Hindi recognition
+            
+            let isListening = false;
+            let currentTranscript = '';
+
+            recognition.onstart = () => {
+                console.log('Speech recognition started');
+                isListening = true;
+                micButton.style.backgroundColor = '#ff4444';
+                micButton.innerHTML = '🎤 Release to Send';
+            };
+
+            recognition.onend = () => {
+                console.log('Speech recognition ended');
+                isListening = false;
+                micButton.style.background = 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)';
+                micButton.innerHTML = '🎤 Hold to Speak';
+                
+                // Automatically send message if there's a transcript
+                if (currentTranscript.trim()) {
+                    console.log('Auto-sending message:', currentTranscript);
+                    document.getElementById('user-input').value = currentTranscript;
+                    sendMessage();  // Automatically send the message
+                    currentTranscript = '';
+                }
+            };
+
+            recognition.onresult = (event) => {
+                console.log('Speech recognition result received');
+                currentTranscript = '';
+                for (const result of event.results) {
+                    if (result.isFinal) {
+                        currentTranscript += result[0].transcript;
+                        console.log('Final transcript:', currentTranscript);
+                    }
+                }
+                document.getElementById('user-input').value = currentTranscript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+                micButton.style.background = 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)';
+                micButton.innerHTML = '🎤 Hold to Speak';
+            };
+
+            function startListening() {
+                try {
+                    if (!isListening) {
+                        console.log('Starting speech recognition...');
+                        recognition.start();
+                    }
+                } catch (e) {
+                    console.error('Error starting speech recognition:', e);
+                }
+            }
+
+            function stopListening() {
+                try {
+                    if (isListening) {
+                        console.log('Stopping speech recognition...');
+                        recognition.stop();
+                        // Remove the manual send since it's handled in onend
+                    }
+                } catch (e) {
+                    console.error('Error stopping speech recognition:', e);
+                }
+            }
+
+            // Mouse events
+            micButton.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startListening();
+            });
+
+            micButton.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                stopListening();
+            });
+
+            micButton.addEventListener('mouseleave', (e) => {
+                e.preventDefault();
+                if (isListening) stopListening();
+            });
+
+            // Touch events for mobile
+            micButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startListening();
+            });
+
+            micButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopListening();
+            });
+        }
+
+        // Make sure to call setupVoiceInput after DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setupVoiceInput();
+            console.log('Voice input setup completed');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Manage Cases</h2>
+<a href="{% url 'housie_consti:add_case' %}" class="btn btn-primary">Add Case</a>
+<table>
+    <thead>
+        <tr>
+            <th>Article</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for case in cases %}
+        <tr>
+            <td>{{ case.article.title }}</td>
+            <td>{{ case.description }}</td>
+            <td>
+                <a href="{% url 'housie_consti:edit_case' case.id %}">Edit</a>
+                <a href="{% url 'housie_consti:delete_case' case.id %}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %} 

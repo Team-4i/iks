@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static '/css/game_analysis.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+
+<div class="min-h-screen flex items-center justify-center py-8">
+    <div class="container mx-auto px-4">
+        <h1 class="historic-title">Constitutional Assembly Analysis</h1>
+        
+        <!-- Room Statistics -->
+        <div class="stats-panel">
+            <h2 class="section-title">Assembly Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Total Members</div>
+                    <div class="stat-value">{{ analysis.room_stats.total_players }}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Session Duration</div>
+                    <div class="stat-value">{{ analysis.room_stats.game_duration|floatformat:1 }} min</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Winner</div>
+                    <div class="stat-value">{{ analysis.room_stats.winner|default:"In Progress" }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player Performance -->
+        <div class="performance-panel">
+            <h2 class="section-title">Member Performance</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Selections</th>
+                            <th>Accuracy</th>
+                            <th>Response Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player, stats in analysis.players.items %}
+                        <tr>
+                            <td>{{ player }}</td>
+                            <td>
+                                {{ stats.total_selections }}
+                                {% if stats.wrong_selections > 0 %}
+                                <span class="selected-article">({{ stats.wrong_selections }} wrong)</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="accuracy-bar">
+                                        <div class="accuracy-fill" style="width: {{ stats.accuracy }}%"></div>
+                                    </div>
+                                    <span>{{ stats.accuracy }}%</span>
+                                </div>
+                            </td>
+                            <td>{{ stats.avg_response_time }}s</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AI Analysis Reports -->
+        {% for player, stats in analysis.players.items %}
+            {% if stats.ai_reports %}
+                <div class="performance-panel">
+                    <h2 class="section-title">AI Analysis Report - {{ player }}</h2>
+                    {% for report in stats.ai_reports %}
+                        <div class="analysis-report">
+                            <h3 class="case-title">{{ report.case_title }}</h3>
+                            <div class="article-info">
+                                <div class="article-row">
+                                    <span class="selected-article">Selected Article:</span> 
+                                    <span class="article-text">{{ report.selected_article }}</span>
+                                </div>
+                                <div class="article-row">
+                                    <span class="correct-article">Correct Article:</span> 
+                                    <span class="article-text">{{ report.correct_article }}</span>
+                                </div>
+                            </div>
+                            <div class="analysis-text">
+                                {{ report.analysis }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

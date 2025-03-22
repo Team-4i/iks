@@ -1,0 +1,408 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --success-color: #2ecc71;
+        --warning-color: #f1c40f;
+        --danger-color: #e74c3c;
+        --light-bg: #f8f9fa;
+        --dark-bg: #2c3e50;
+        --border-radius: 8px;
+        --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f5f6fa;
+    }
+
+    /* Header and Search */
+    .page-header {
+        background: var(--dark-bg);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: var(--border-radius);
+        color: white;
+    }
+
+    .search-box {
+        background: white;
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #eee;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        outline: none;
+    }
+
+    /* App Container */
+    .app-container {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease;
+    }
+
+    .app-title {
+        background: var(--dark-bg);
+        color: white;
+        padding: 1.5rem;
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    /* Model Cards */
+    .model-card {
+        background: var(--light-bg);
+        margin: 1rem;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .model-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .model-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .model-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .model-count {
+        background: var(--secondary-color);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Actions Section */
+    .model-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-button {
+        padding: 0.75rem 1.25rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-primary {
+        background: var(--secondary-color);
+        color: white;
+    }
+
+    .action-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .action-warning {
+        background: var(--warning-color);
+        color: white;
+    }
+
+    .action-button:hover {
+        transform: translateY(-1px);
+        filter: brightness(110%);
+        color: white;
+    }
+
+    /* Import Section */
+    .import-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        margin-top: 1rem;
+        border: 2px dashed #ddd;
+    }
+
+    .import-form {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Stats and Charts */
+    .stats-container {
+        padding: 1.5rem;
+        background: white;
+        border-radius: var(--border-radius);
+        margin-top: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .model-card {
+            padding: 1rem;
+        }
+
+        .model-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .model-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .action-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .import-form {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .import-form input[type="file"] {
+            width: 100%;
+        }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Loading States */
+    .loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    /* Toast Notifications */
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 2rem;
+        border-radius: var(--border-radius);
+        background: var(--dark-bg);
+        color: white;
+        animation: slideIn 0.3s ease;
+        z-index: 1000;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@1.1.18/dist/js/BsMultiSelect.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="page-header">
+        <h1>Database Overview</h1>
+    </div>
+    
+    <div class="search-box">
+        <input type="text" class="search-input" id="modelSearch" placeholder="Search models...">
+    </div>
+    
+    {% for app in apps %}
+    <div class="app-container">
+        <h2 class="app-title">{{ app.app_name }}</h2>
+        
+        {% for model in app.models %}
+        <div class="model-card" data-model-name="{{ model.name|lower }}">
+            <div class="model-header">
+                <h3 class="model-title">
+                    {{ model.name }}
+                    <span class="model-count">{{ model.count }} entries</span>
+                </h3>
+            </div>
+            
+            <div class="import-section">
+                <form class="import-form" 
+                      action="{% url 'dbs:import_data' app.app_label model.model_name %}" 
+                      method="post" 
+                      enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" name="file" accept=".csv" required>
+                    <button type="submit" class="action-button action-primary">Import CSV</button>
+                </form>
+            </div>
+            
+            <div class="model-actions">
+                <a href="{% url 'admin:'|add:model.app_label|add:'_'|add:model.model_name|add:'_changelist' %}" 
+                   class="action-button action-primary">View All</a>
+                <a href="{% url 'admin:'|add:model.app_label|add:'_'|add:model.model_name|add:'_add' %}" 
+                   class="action-button action-success">Add New</a>
+                <a href="{% url 'dbs:export_data' app.app_label model.model_name %}" 
+                   class="action-button action-warning">Export CSV</a>
+            </div>
+        </div>
+        
+        <div class="stats-container">
+            <canvas id="chart_{{ model.app_label }}_{{ model.model_name }}"></canvas>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<div id="toast" class="toast" style="display: none;"></div>
+
+<script>
+// Search functionality
+document.getElementById('modelSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    document.querySelectorAll('.model-card').forEach(card => {
+        const modelName = card.dataset.modelName;
+        card.style.display = modelName.includes(searchTerm) ? 'flex' : 'none';
+    });
+});
+
+// Enhanced toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    toast.style.background = type === 'success' ? 'var(--success-color)' : 'var(--danger-color)';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Enhanced file upload feedback
+document.querySelectorAll('.import-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        
+        try {
+            submitButton.classList.add('loading');
+            submitButton.textContent = 'Importing...';
+            
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`Successfully imported ${data.imported} records`);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Import failed: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Import failed: ' + error, 'error');
+        } finally {
+            submitButton.classList.remove('loading');
+            submitButton.textContent = 'Import CSV';
+        }
+    });
+});
+
+// Initialize charts with animation
+{% for app in apps %}
+    {% for model in app.models %}
+    new Chart(document.getElementById('chart_{{ app.app_label }}_{{ model.model_name }}').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ['Total Entries'],
+            datasets: [{
+                label: '{{ model.name }}',
+                data: [{{ model.count }}],
+                backgroundColor: '#3498db',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    {% endfor %}
+{% endfor %}
+</script>
+{% endblock %} 

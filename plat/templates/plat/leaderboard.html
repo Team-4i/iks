@@ -1,0 +1,614 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .leaderboard-container {
+        background: #FDF6E9;
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    .leaderboard-section {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .leaderboard-section:hover {
+        transform: translateY(-5px);
+    }
+
+    .leaderboard-title {
+        color: #2D2D2D;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        text-align: center;
+        position: relative;
+    }
+
+    .leaderboard-title:after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: #B88746;
+        border-radius: 2px;
+    }
+
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .leaderboard-table tr {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .leaderboard-table tr:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 10px rgba(184, 135, 70, 0.1);
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 1.2rem;
+        text-align: left;
+    }
+
+    .leaderboard-table th {
+        background: #B88746;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+    }
+
+    .leaderboard-table th:first-child {
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    .leaderboard-table th:last-child {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .leaderboard-table tr:nth-child(even) {
+        background: rgba(184, 135, 70, 0.05);
+    }
+
+    .leaderboard-table tr:nth-child(odd) {
+        background: #FFFFFF;
+    }
+
+    .rank {
+        color: #2D2D2D;
+        font-weight: 700;
+        font-size: 1.2rem;
+        width: 60px;
+        text-align: center;
+    }
+
+    .rank-1, .rank-2, .rank-3 {
+        background: linear-gradient(45deg, #B88746, #E3A853);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .player-name {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .points {
+        color: #B88746;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .tabs {
+        background: rgba(184, 135, 70, 0.1);
+        padding: 1rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .tab {
+        padding: 0.8rem 1.5rem;
+        border: 2px solid #B88746;
+        background: transparent;
+        color: #B88746;
+        border-radius: 30px;
+        font-weight: 600;
+        min-width: 150px;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover, .tab.active {
+        background: #B88746;
+        color: white;
+    }
+
+    /* Updated colors for spinwheel section */
+    .coins {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+
+    .common { color: #78909c; font-weight: 600; }
+    .rare { 
+        background: linear-gradient(45deg, #4a90e2, #357abd);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+    .epic { 
+        background: linear-gradient(45deg, #9b59b6, #8e44ad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+
+    /* Add sorting indicators */
+    .sortable th {
+        cursor: pointer;
+        position: relative;
+        padding-right: 20px;
+    }
+
+    .sortable th:after {
+        content: '';
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+    }
+
+    .sortable th.sorttable_sorted:after {
+        border-top: none;
+        border-bottom: 5px solid #fff;
+    }
+
+    .sortable th.sorttable_sorted_reverse:after {
+        border-bottom: none;
+        border-top: 5px solid #fff;
+    }
+
+    /* Highlight sorted column */
+    .sortable td.sorted {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Ensure numbers align right */
+    .sortable td.coins,
+    .sortable td.cards {
+        text-align: right;
+        padding-right: 15px;
+    }
+
+    /* Keep rank column unsortable and left-aligned */
+    .sortable td.rank {
+        text-align: left;
+    }
+
+    /* Hide inactive leaderboard content */
+    .leaderboard-content {
+        display: none;
+    }
+
+    .leaderboard-content.active {
+        display: block;
+        animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Make tabs more prominent */
+    .tabs {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+
+    .tab {
+        min-width: 150px;
+        text-align: center;
+    }
+
+    .tab.active {
+        background: linear-gradient(135deg, #6c5ce7, #a363d9);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .leaderboard-container {
+            padding: 1rem;
+        }
+
+        .tabs {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(184, 135, 70, 0.05);
+        }
+
+        .tab {
+            min-width: calc(50% - 0.5rem);
+            padding: 0.6rem 0.5rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .leaderboard-section {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 15px;
+        }
+
+        .leaderboard-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .leaderboard-title:after {
+            width: 40px;
+            bottom: -8px;
+        }
+
+        /* Table Adjustments */
+        .leaderboard-table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        /* Spinwheel Leaderboard specific */
+        .sortable th {
+            padding-right: 25px; /* Space for sort indicator */
+            white-space: nowrap;
+        }
+
+        .sortable td.coins,
+        .sortable td.cards {
+            text-align: center;
+            padding: 0.8rem;
+        }
+
+        /* Rank Column */
+        .rank {
+            width: 40px;
+            font-size: 1rem;
+        }
+
+        /* Player Name Column */
+        .player-name {
+            font-size: 0.95rem;
+        }
+
+        /* Points Column */
+        .points {
+            font-size: 0.95rem;
+        }
+
+        /* Top 3 Ranks */
+        .rank-1, .rank-2, .rank-3 {
+            font-size: 1.1rem;
+        }
+
+        /* Animation Adjustments */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Compact view for spinwheel table */
+        .sortable th:nth-child(4),
+        .sortable th:nth-child(5),
+        .sortable th:nth-child(6),
+        .sortable td:nth-child(4),
+        .sortable td:nth-child(5),
+        .sortable td:nth-child(6) {
+            display: none;
+        }
+
+        /* Show only essential columns on mobile */
+        .sortable th.essential,
+        .sortable td.essential {
+            display: table-cell;
+        }
+
+        /* Add horizontal scroll indicator */
+        .leaderboard-section::after {
+            content: '← Scroll →';
+            display: block;
+            text-align: center;
+            padding: 0.5rem;
+            color: #666;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* Improve tab interaction area */
+        .tab {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Add loading state styles */
+        .leaderboard-content.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Improve scroll experience */
+        .leaderboard-table::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .leaderboard-table::-webkit-scrollbar-track {
+            background: rgba(184, 135, 70, 0.1);
+            border-radius: 2px;
+        }
+
+        .leaderboard-table::-webkit-scrollbar-thumb {
+            background: rgba(184, 135, 70, 0.2);
+            border-radius: 2px;
+        }
+    }
+
+    /* Additional breakpoint for very small devices */
+    @media (max-width: 360px) {
+        .tab {
+            min-width: 100%;
+            margin-bottom: 0.25rem;
+        }
+
+        .leaderboard-title {
+            font-size: 1.25rem;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        .rank {
+            width: 30px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <div class="tabs">
+        <button class="tab active" data-target="overall">Overall</button>
+        <button class="tab" data-target="snake">Snake & Ladder</button>
+        <button class="tab" data-target="housie">Constitutional Housie</button>
+        <button class="tab" data-target="spinwheel">Spin Wheel</button>
+        <button class="tab" data-target="flipcard">Flip Card</button>
+    </div>
+
+    <!-- Overall Leaderboard -->
+    <div class="leaderboard-content active" id="overall">
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Overall Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Total Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in overall_leaders %}
+                    <tr>
+                        <td class="rank rank-{{ forloop.counter }}">{{ forloop.counter }}</td>
+                        <td class="player-name">{{ player.player.username }}</td>
+                        <td class="points">{{ player.total_points }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Snake & Ladder Leaderboard -->
+    <div class="leaderboard-content" id="snake">
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Snake & Ladder Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in snake_ladder_leaders %}
+                    <tr>
+                        <td class="rank rank-{{ forloop.counter }}">{{ forloop.counter }}</td>
+                        <td class="player-name">{{ player.player.username }}</td>
+                        <td class="points">{{ player.snake_ladder_points }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Housie Leaderboard -->
+    <div class="leaderboard-content" id="housie">
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Constitutional Housie Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Points</th>
+                        <th>Games</th>
+                        <th>Wins</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in housie_leaders %}
+                    <tr>
+                        <td class="rank rank-{{ forloop.counter }}">{{ forloop.counter }}</td>
+                        <td class="player-name">{{ player.player.username }}</td>
+                        <td class="points">{{ player.housie_points }}</td>
+                        <td class="games">{{ player.housie_games }}</td>
+                        <td class="wins">{{ player.housie_wins }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Spinwheel Leaderboard -->
+    <div class="leaderboard-content" id="spinwheel">
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Spin Wheel Leaderboard</h2>
+            <table class="leaderboard-table sortable">
+                <thead>
+                    <tr>
+                        <th class="essential">Rank</th>
+                        <th class="essential sorttable_alpha">Player</th>
+                        <th class="essential sorttable_numeric">Coins</th>
+                        <th class="sorttable_numeric">Common Cards</th>
+                        <th class="sorttable_numeric">Rare Cards</th>
+                        <th class="sorttable_numeric">Epic Cards</th>
+                        <th class="essential sorttable_numeric">Total Cards</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in spinwheel_leaders %}
+                    <tr>
+                        <td class="rank rank-{{ forloop.counter }} essential">{{ forloop.counter }}</td>
+                        <td class="player-name essential">{{ player.player.username }}</td>
+                        <td class="coins essential" data-sort-value="{{ player.spinwheel_coins }}">{{ player.spinwheel_coins }}</td>
+                        <td class="cards common" data-sort-value="{{ player.common_cards }}">{{ player.common_cards }}</td>
+                        <td class="cards rare" data-sort-value="{{ player.rare_cards }}">{{ player.rare_cards }}</td>
+                        <td class="cards epic" data-sort-value="{{ player.epic_cards }}">{{ player.epic_cards }}</td>
+                        <td class="cards total essential" data-sort-value="{{ player.total_cards }}">{{ player.total_cards }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Flipcard Leaderboard -->
+    <div class="leaderboard-content" id="flipcard">
+        <div class="leaderboard-section">
+            <h2 class="leaderboard-title">Flip Card Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Points</th>
+                        <th>Levels Completed</th>
+                        <th>Best Times</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in flipcard_leaders %}
+                    <tr>
+                        <td class="rank rank-{{ forloop.counter }}">{{ forloop.counter }}</td>
+                        <td class="player-name">{{ player.player.username }}</td>
+                        <td class="points">{{ player.flipcard_points }}</td>
+                        <td class="levels">{{ player.flipcard_games }}</td>
+                        <td class="times">{{ player.flipcard_wins }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Sorttable Script -->
+<script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.leaderboard-content');
+
+    // Hide all content sections initially except the first one
+    contents.forEach((content, index) => {
+        if (index !== 0) {
+            content.style.display = 'none';
+        }
+    });
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and hide all contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+
+            // Add active class to clicked tab and show corresponding content
+            tab.classList.add('active');
+            const target = tab.dataset.target;
+            const content = document.getElementById(target);
+            content.style.display = 'block';
+            content.classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}

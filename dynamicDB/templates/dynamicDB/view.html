@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View PDF</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .image-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 24px;
+            }
+        }
+        .topics-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .topic-card {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .topic-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .topic-title {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .topic-content {
+            color: #34495e;
+            line-height: 1.6;
+            font-size: 1em;
+            white-space: pre-line;
+        }
+        
+        .confidence-score {
+            color: #27ae60;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .analyze-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .analyze-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ pdf_doc.title }}</h2>
+        
+        <div class="button-container">
+            <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}" class="analyze-btn" onclick="showLoading()">Analyze Content</a>
+            <a href="{% url 'dynamicDB:upload_pdf' %}" class="btn">Upload Another</a>
+            <a href="{% url 'dynamicDB:visualize_topics' pdf_doc.pk %}" class="btn btn-primary">
+                View Topic Visualization
+            </a>
+        </div>
+        
+        <div class="loading" id="loadingSpinner">
+            <div class="loading-spinner"></div>
+            <p>Analyzing document... Please wait...</p>
+        </div>
+        
+        <div class="image-container">
+            <img src="{{ pdf_doc.converted_image.url }}" alt="Converted PDF">
+        </div>
+        
+        {% if pdf_doc.topics.exists %}
+        <div class="topics-container">
+            <h3>Identified Topics</h3>
+            {% for topic in pdf_doc.topics.all %}
+            <div class="topic-card">
+                <div class="topic-title">{{ topic.title }}</div>
+                <div class="topic-content">{{ topic.content }}</div>
+                <div class="confidence-score">Confidence: {{ topic.confidence_score|floatformat:2 }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

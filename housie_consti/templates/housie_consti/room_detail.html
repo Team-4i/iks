@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200">
+    <div class="bg-[#f5e0c3] p-8 rounded-lg shadow-xl max-w-md w-full border-t-4 border-[#8b4513]">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-serif font-bold text-[#8b4513] mb-2">Game Chamber</h2>
+            <p class="text-sm text-[#5a3e2b] italic">"Justice through Gaming"</p>
+        </div>
+        
+        <!-- QR Code Section -->
+        <div class="bg-[#f5e0c3] p-6 rounded-lg mb-6 border border-[#8b4513]">
+            <div class="text-center">
+                <img src="data:image/png;base64,{{ qr_code }}" 
+                     alt="Room QR Code" 
+                     class="mx-auto w-48 h-48 border-4 border-[#8b4513] p-2 rounded-lg">
+            </div>
+        </div>
+        
+        <!-- Share Link Section -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-[#5a3e2b] mb-2">Share Chamber Link:</label>
+            <div class="flex gap-2">
+                <input type="text" 
+                       id="room-url"
+                       value="{{ room_url }}" 
+                       class="flex-1 p-2 border rounded bg-[#f5e0c3] text-[#5a3e2b] font-mono text-sm" 
+                       readonly>
+                <button onclick="copyToClipboard('room-url')"
+                        class="bg-[#8b4513] hover:bg-[#5a3e2b] text-white px-4 rounded transition-colors">
+                    Copy
+                </button>
+            </div>
+        </div>
+        
+        <!-- Room ID Section -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-[#5a3e2b] mb-2">Chamber ID:</label>
+            <div class="flex gap-2">
+                <input type="text" 
+                       id="room-id"
+                       value="{{ room.room_id }}" 
+                       class="flex-1 p-2 border rounded bg-[#f5e0c3] text-[#5a3e2b] font-mono text-sm" 
+                       readonly>
+                <button onclick="copyToClipboard('room-id')"
+                        class="bg-[#8b4513] hover:bg-[#5a3e2b] text-white px-4 rounded transition-colors">
+                    Copy
+                </button>
+            </div>
+        </div>
+        
+        <!-- Players Section -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-[#8b4513] mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                </svg>
+                Present Members
+            </h3>
+            <div class="bg-[#f5e0c3] rounded-lg border border-[#8b4513] p-4">
+                <ul id="player-list" class="space-y-2">
+                    {% for player in room.players.all %}
+                        <li class="flex items-center text-[#5a3e2b]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-[#8b4513]" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                            </svg>
+                            {{ player.username }}
+                            {% if player == room.creator %}
+                                <span class="ml-2 text-xs bg-[#d2b48c] text-[#8b4513] px-2 py-1 rounded-full">Creator</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Action Button Section -->
+        <div class="mt-8">
+            {% if request.user == room.creator %}
+                <button id="start-game-btn"
+                        onclick="startGame()"
+                        class="w-full bg-[#8b4513] hover:bg-[#5a3e2b] text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    Commence Proceedings
+                </button>
+            {% else %}
+                <div class="text-center p-4 bg-[#f5e0c3] rounded-lg border border-[#8b4513]">
+                    <p class="text-[#5a3e2b] italic">Awaiting the Creator to commence proceedings...</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Copy to clipboard functionality
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        element.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const button = element.nextElementSibling;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('bg-green-600');
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-green-600');
+        }, 2000);
+    }
+
+    // Existing room state and game start functionality
+    const roomId = "{{ room.room_id }}";
+    const isCreator = {% if request.user == room.creator %}true{% else %}false{% endif %};
+    const roomStateUrl = "{% url 'housie_consti:room_state' room.room_id %}";
+    const startGameUrl = "{% url 'housie_consti:start_game' room.room_id %}";
+    let lastUpdateTime = 0;
+    
+    // Function to update player list
+    function updatePlayerList() {
+        fetch(roomStateUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Received data:", data);
+            
+            if (data.timestamp > lastUpdateTime) {
+                // Update player list
+                const playerList = document.getElementById('player-list');
+                playerList.innerHTML = data.players.map(player => 
+                    `<li class="flex items-center text-[#5a3e2b]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-[#8b4513]" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                        ${player.username}
+                        ${player.is_creator ? '<span class="ml-2 text-xs bg-[#d2b48c] text-[#8b4513] px-2 py-1 rounded-full">Creator</span>' : ''}
+                    </li>`
+                ).join('');
+                
+                lastUpdateTime = data.timestamp;
+                
+                // Enable/disable start button based on game readiness
+                const startButton = document.getElementById('start-game-btn');
+                if (startButton) {
+                    startButton.disabled = !data.game_ready;
+                    if (!data.game_ready) {
+                        startButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        startButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+                
+                // Redirect if game has started
+                if (data.game_started && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching room state:', error);
+        });
+    }
+    
+    // Function for creator to start game
+    function startGame() {
+        if (!isCreator) {
+            console.log("Not the creator, cannot start game");
+            return;
+        }
+        
+        const part = '{{ part|default:"" }}';
+        const type = '{{ type|default:"" }}';
+        
+        let startUrl = startGameUrl;
+        if (part && type) {
+            startUrl = `/housie-consti/api/room/${roomId}/start/${part}/${type}/`;
+        }
+        
+        fetch(startUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to start game');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Start game response:", data);
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting game:', error);
+            alert('Error starting game: ' + error.message);
+        });
+    }
+    
+    // Start polling for updates
+    updatePlayerList();  // Initial update
+    const pollInterval = setInterval(updatePlayerList, 1000);  // Update every second
+    
+    // Cleanup interval when leaving page
+    window.addEventListener('beforeunload', () => {
+        clearInterval(pollInterval);
+    });
+</script>
+{% endblock %}

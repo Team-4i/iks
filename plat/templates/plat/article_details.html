@@ -1,0 +1,950 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load text_filters_plat %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css?family=Lovers+Quarrel" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    .articles-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+        font-size: 2.5rem;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .header p {
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .articles-list {
+        display: grid;
+        gap: 2rem;
+    }
+
+    .article-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .article-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .article-number {
+        color: #4CAF50;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .article-title {
+        font-size: 1.5rem;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-weight: bold;
+    }
+
+    .article-explanation {
+        color: #666;
+        line-height: 1.6;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    .back-btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+        background: #45a049;
+        transform: translateY(-2px);
+    }
+
+    /* Add book animation styles */
+    .book {
+        transition: opacity 0.4s 0.2s;
+        perspective: 250vw;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .book .pages {
+        width: min(60vw, 1000px);
+        height: min(44vw, 700px);
+        position: relative;
+        transform-style: preserve-3d;
+        backface-visibility: hidden;
+        border-radius: 4px;
+        margin: 0 auto;
+    }
+    
+    .page {
+        width: 50%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        transform-origin: 0 0;
+        transition: transform 1.4s;
+        backface-visibility: hidden;
+        transform-style: preserve-3d;
+        cursor: pointer;
+        user-select: none;
+        background-color: #f0f0f0;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+    .page:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0);
+        transition: background 0.7s;
+        z-index: 2;
+    }
+
+    .page:nth-child(odd) {
+        pointer-events: all;
+        transform: rotateY(0deg);
+        right: 0;
+        border-radius: 0 4px 4px 0;
+        background-image: linear-gradient(to right, rgba(0,0,0,.15) 0%, rgba(0,0,0,0) 10%);
+    }
+
+    .page:nth-child(odd):hover {
+        transform: rotateY(-15deg);
+    }
+
+    .page:nth-child(even) {
+        pointer-events: none;
+        transform: rotateY(180deg);
+        transform-origin: 100% 0;
+        left: 0;
+        border-radius: 4px 0 0 4px;
+        background-image: linear-gradient(to left, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 10%);
+    }
+
+    .page.flipped:nth-child(odd) {
+        pointer-events: none;
+        transform: rotateY(-180deg);
+    }
+
+    .page.flipped:nth-child(even) {
+        pointer-events: all;
+        transform: rotateY(0deg);
+    }
+
+    /* Article content styling */
+    .article-content {
+        height: 100%;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        font-size: clamp(0.8rem, 1.2vw, 1rem);
+        max-height: calc(100% - 2rem);
+        overflow-y: auto;
+    }
+
+    .article-header {
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+    }
+
+    .article-number {
+        color: #4CAF50;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .article-title {
+        font-size: 1.5rem;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-weight: bold;
+    }
+
+    .article-explanation {
+        color: #666;
+        line-height: 1.6;
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Add to your existing styles */
+    .page-number {
+        position: absolute;
+        bottom: 2rem;
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .page:nth-child(odd) .page-number {
+        right: 2rem;
+    }
+    
+    .page:nth-child(even) .page-number {
+        left: 2rem;
+    }
+
+    .close-book-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 2rem;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    }
+
+    .close-book-btn:hover {
+        background: #45a049;
+        transform: translateY(-2px);
+    }
+
+    .book.closed .pages {
+        transform: rotateY(-180deg);
+    }
+
+    /* Modify cover page styling */
+    .cover-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 2rem;
+    }
+
+    .cover-title {
+        font-size: 2.5rem;
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .cover-subtitle {
+        font-size: 1.8rem;
+        color: #666;
+        text-align: center;
+    }
+
+    /* Table of contents styling */
+    .toc {
+        padding: 2rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .toc-title {
+        font-size: 1.8rem;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .toc-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .toc-item {
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: baseline;
+    }
+
+    .toc-dots {
+        flex: 1;
+        border-bottom: 1px dotted #666;
+        margin: 0 0.5rem;
+    }
+
+    .toc-page {
+        color: #666;
+    }
+
+    /* Roman numeral styling for TOC pages */
+    .page-number.roman {
+        font-style: italic;
+    }
+
+    /* Enhanced Book Styling */
+    .book {
+       
+        padding: 40px;
+    }
+
+    .pages {
+        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    }
+
+    .page {
+        background: #f4e4bc; /* Vintage paper color */
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 10%),
+            url("{% static 'images/paper-texture.png' %}"); /* Add a paper texture image */
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.1);
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Decorative Corner Elements */
+    .page::after {
+        content: '';
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-right: 3px double #8B4513;
+        border-bottom: 3px double #8B4513;
+        bottom: 20px;
+        right: 20px;
+        opacity: 0.3;
+    }
+
+    .page::before {
+        content: '';
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-left: 3px double #8B4513;
+        border-top: 3px double #8B4513;
+        top: 20px;
+        left: 20px;
+        opacity: 0.3;
+    }
+
+    /* Enhanced Typography */
+    .article-title {
+        font-family: 'Playfair Display', serif; /* More elegant font */
+        color: #8B4513; /* Dark brown color */
+        text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+        border-bottom: 2px solid rgba(139, 69, 19, 0.3);
+        padding-bottom: 10px;
+    }
+
+    .article-number {
+        font-family: 'Cinzel', serif; /* Decorative font for numbers */
+        color: #8B4513;
+    }
+
+    .article-explanation {
+        font-family: 'Crimson Text', serif; /* Elegant serif font for body text */
+        line-height: 1.8;
+        color: #2c1810;
+    }
+
+    /* Page Number Styling */
+    .page-number {
+        font-family: 'Cinzel', serif;
+        color: #8B4513;
+        font-style: italic;
+        opacity: 0.7;
+    }
+
+    /* Cover Page Enhancement */
+    .cover-content {
+        background: linear-gradient(135deg, #8B4513, #654321);
+        color: #f4e4bc;
+        border: 8px double #f4e4bc;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .cover-title {
+        font-family: 'Cinzel Decorative', cursive;
+        font-size: 3rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        margin-bottom: 2rem;
+    }
+
+    .cover-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-style: italic;
+    }
+
+    /* Table of Contents Enhancement */
+    .toc {
+        font-family: 'Crimson Text', serif;
+    }
+
+    .toc-title {
+        font-family: 'Cinzel', serif;
+        color: #8B4513;
+        text-align: center;
+        border-bottom: 2px double #8B4513;
+        padding-bottom: 1rem;
+    }
+
+    .toc-item {
+        color: #2c1810;
+        margin: 1rem 0;
+    }
+
+    .toc-dots {
+        border-bottom: 2px dotted #8B4513;
+        opacity: 0.5;
+    }
+
+    /* Page Turn Effect Enhancement */
+    .page:nth-child(odd) {
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 10%),
+            url("{% static 'images/paper-texture.png' %}");
+    }
+
+    .page:nth-child(even) {
+        background-image: 
+            linear-gradient(to left, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 10%),
+            url("{% static 'images/paper-texture.png' %}");
+    }
+
+    /* Page Turn Shadow */
+ 
+    /* Ink Effect for Text */
+    .article-content {
+        position: relative;
+    }
+
+    .article-content::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("{% static 'images/ink-texture.png' %}");
+        opacity: 0.03;
+        pointer-events: none;
+    }
+
+    /* Update bookmark button styling */
+    .bookmark-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background-color: #8B4513;
+        color: #f4e4bc;
+        border: 2px solid #f4e4bc;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .bookmark-btn:hover {
+        background-color: #a0522d;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .bookmark-btn::before {
+        content: "Bookmark";
+        font-family: 'Playfair Display', serif;
+        font-size: 14px;
+    }
+
+    /* Update bookmark indicator styling */
+    .bookmark-indicator {
+        position: absolute;
+        top: 0;
+        right: 30px;
+        width: 25px;
+        height: 45px;
+        background: #ff4444;
+        border-radius: 0 0 5px 5px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+
+    .bookmark-indicator::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 0;
+        height: 0;
+        border-left: 12.5px solid transparent;
+        border-right: 12.5px solid transparent;
+        border-top: 10px solid #ff4444;
+    }
+
+    /* Add animation for bookmark actions */
+    @keyframes bookmarkPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .bookmark-btn.active {
+        animation: bookmarkPulse 0.5s ease;
+    }
+
+    /* Customize scrollbar */
+    .article-content::-webkit-scrollbar,
+    .page::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .article-content::-webkit-scrollbar-track,
+    .page::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .article-content::-webkit-scrollbar-thumb,
+    .page::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+    }
+
+    .article-content::-webkit-scrollbar-thumb:hover,
+    .page::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Add these buttons in your page template */
+    .speech-controls {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .speech-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #4CAF50;
+        color: white;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .speech-btn:hover {
+        background: #45a049;
+    }
+
+    .speech-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+    }
+
+    .speech-btn.speaking {
+        background: #f44336;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="articles-container">
+ 
+
+    <!-- Add audio element -->
+    <audio id="pageFlipSound" preload="auto">
+        <source src="{% static 'sounds/page-flip-sound.mp3' %}" type="audio/mpeg">
+    </audio>
+
+    <div class="book">
+        <div id="pages" class="pages">
+            <!-- Cover page -->
+            <div class="page">
+                <div class="cover-content">
+                    <div class="cover-title">Constitutional Articles</div>
+                    <div class="cover-subtitle">Part {{ part }} - {{ type }}</div>
+                </div>
+                <div class="page-number">Cover</div>
+            </div>
+            <!-- Table of Contents pages -->
+            {% with toc_items=articles|slice_toc_items:6 %}  <!-- 6 items per page -->
+                {% for page_items in toc_items %}
+                    <!-- Right page -->
+                    <div class="page">
+                        <div class="toc">
+                            {% if forloop.first %}
+                            <div class="toc-title">Table of Contents</div>
+                            {% endif %}
+                            <ul class="toc-list">
+                                {% for article in page_items %}
+                                <li class="toc-item">Article {{ article.article_number }} - {{ article.article_title }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="page-number">{{ forloop.counter|roman }}</div>
+                    </div>
+                    <!-- Left page -->
+                    <div class="page">
+                        <div class="toc">
+                            <ul class="toc-list">
+                                {% for article in page_items %}
+                                <li class="toc-item">
+                                    <span class="toc-page">Page {{ article.page_number }}</span>
+                                    <span class="toc-dots"></span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="page-number">{{ forloop.counter|roman }}</div>
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            <!-- Article pages -->
+            {% for article in articles %}
+                <!-- Article content -->
+                {% with explanation_parts=article.simplified_explanation|split_explanation %}
+                    <!-- First spread: Title and start of content -->
+                    <div class="page">
+                        <div class="article-content">
+                            <div class="article-header">
+                                <div class="article-number">Article {{ article.article_number }}</div>
+                                <div class="article-title">{{ article.article_title }}</div>
+                            </div>
+                            <div class="article-explanation">
+                                <strong>Explanation:</strong><br>
+                                {{ explanation_parts.0 }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Continue content across pages -->
+                    {% for part in explanation_parts|slice:"1:" %}
+                        <div class="page">
+                            <div class="article-content">
+                                <div class="article-explanation">
+                                    {{ part }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <button class="close-book-btn" onclick="closeBook()">Close Book</button>
+</div>
+
+<!-- Add this near your book content -->
+<div class="speech-controls">
+    <button id="startSpeech" class="speech-btn">Start Speaking</button>
+    <button id="stopSpeech" class="speech-btn" disabled>Stop Speaking</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var pages = document.getElementsByClassName('page');
+    var pageFlipSound = document.getElementById('pageFlipSound');
+    var book = document.querySelector('.book');
+    
+    // Function to add bookmark button to a page
+    function addBookmarkButton(page) {
+        // Remove existing bookmark button if any
+        const existingBtn = page.querySelector('.bookmark-btn');
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        
+        // Add new bookmark button
+        const bookmarkBtn = document.createElement('button');
+        bookmarkBtn.className = 'bookmark-btn';
+        bookmarkBtn.innerHTML = '🔖';
+        bookmarkBtn.onclick = (e) => {
+            e.stopPropagation();
+            addBookmark(page.pageNum);
+        };
+        page.appendChild(bookmarkBtn);
+    }
+
+    // Set initial z-index and add bookmark buttons
+    for(var i = 0; i < pages.length; i++) {
+        if (i % 2 === 0) {
+            pages[i].style.zIndex = (pages.length - i);
+        }
+        pages[i].pageNum = i + 1;
+        addBookmarkButton(pages[i]);
+    }
+
+    // Function to flip to a specific page
+    function flipToPage(pageNum) {
+        for(var i = 1; i < pageNum; i++) {
+            if(i % 2 === 1) {
+                pages[i-1].classList.add('flipped');
+                if(pages[i]) {
+                    pages[i].classList.add('flipped');
+                }
+            }
+        }
+    }
+
+    // Check if there's a bookmark and flip to that page
+    {% if bookmark.has_bookmark %}
+        // Add a small delay to ensure animations work properly
+        setTimeout(() => {
+            flipToPage({{ bookmark.page_number }});
+            updateBookmarkVisual({{ bookmark.page_number }});
+        }, 500);
+    {% endif %}
+
+    // Function to play page flip sound
+    function playPageFlipSound() {
+        pageFlipSound.currentTime = 0;
+        pageFlipSound.play().catch(function(error) {
+            console.log("Audio play failed:", error);
+        });
+    }
+
+    // Add click handlers to pages
+    for(var i = 0; i < pages.length; i++) {
+        pages[i].onclick = function() {
+            if (this.pageNum % 2 === 0) {
+                this.classList.remove('flipped');
+                this.previousElementSibling.classList.remove('flipped');
+            } else {
+                this.classList.add('flipped');
+                this.nextElementSibling.classList.add('flipped');
+            }
+            playPageFlipSound();
+        }
+    }
+
+    // Add grabbing class for animation control
+    document.addEventListener('mousedown', function() {
+        document.body.classList.add('grabbing');
+    });
+    
+    document.addEventListener('mouseup', function() {
+        document.body.classList.remove('grabbing');
+    });
+
+    // Add initialization code to load bookmark on page load
+    fetch('{% url "plat:get_bookmark" %}')
+        .then(response => response.json())
+        .then(data => {
+            if(data.success && data.part == "{{ part|escapejs }}" && data.type == "{{ type|escapejs }}") {
+                updateBookmarkVisual(data.page_number);
+            }
+        });
+
+    const startBtn = document.getElementById('startSpeech');
+    const stopBtn = document.getElementById('stopSpeech');
+    let currentAudio = null;
+    let currentPage = 0;
+    let speaking = false;
+
+    // Add this function to get bookmark page
+    function getBookmarkPage() {
+        return fetch('/plat/get_bookmark/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    return data.page_number - 1;
+                }
+                return 0;
+            })
+            .catch(error => {
+                console.error('Error getting bookmark:', error);
+                return 0;
+            });
+    }
+
+    function speakPage(pageNumber) {
+        const pages = document.querySelectorAll('.page');
+        if (pageNumber >= pages.length || !speaking) {
+            stopSpeaking();
+            return;
+        }
+
+        const pageText = pages[pageNumber].textContent.trim();
+        currentPage = pageNumber; // Update current page
+        
+        fetch(`/plat/get_speech/?text=${encodeURIComponent(pageText)}`)
+            .then(response => response.blob())
+            .then(blob => {
+                if (!speaking) return; // Don't start new audio if stopped
+                currentAudio = new Audio(URL.createObjectURL(blob));
+                currentAudio.addEventListener('ended', () => {
+                    if (speaking) {
+                        speakPage(pageNumber + 1);
+                    }
+                }, { once: true }); // Add event listener that only triggers once
+                currentAudio.play();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                stopSpeaking();
+            });
+    }
+
+    function startSpeaking() {
+        getBookmarkPage().then(bookmarkPage => {
+            speaking = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            startBtn.classList.add('speaking');
+            currentPage = bookmarkPage;
+            speakPage(currentPage);
+        });
+    }
+
+    function stopSpeaking() {
+        speaking = false;
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0; // Reset audio position
+            currentAudio = null;
+        }
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        startBtn.classList.remove('speaking');
+
+        // Add bookmark at current page when stopping
+        fetch('{% url "plat:add_bookmark" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                part: "{{ part|escapejs }}",
+                type: "{{ type|escapejs }}",
+                page_number: currentPage + 1 // Convert from 0-based to 1-based index
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                updateBookmarkVisual(currentPage + 1);
+            }
+        })
+        .catch(error => console.error('Error adding bookmark:', error));
+    }
+
+    startBtn.addEventListener('click', startSpeaking);
+    stopBtn.addEventListener('click', stopSpeaking);
+});
+
+// Function to close the book
+function closeBook() {
+    var pages = document.getElementsByClassName('page');
+    var book = document.querySelector('.book');
+    
+    // Flip all pages to closed position
+    for(var i = 0; i < pages.length; i++) {
+        if (i % 2 === 1) {
+            pages[i].classList.add('flipped');
+            if (pages[i].nextElementSibling) {
+                pages[i].nextElementSibling.classList.add('flipped');
+            }
+        }
+    }
+    
+    // Add closed class to book
+    book.classList.add('closed');
+    
+    // Redirect back to profile after a short delay
+    setTimeout(function() {
+        window.location.href = "{% url 'plat:profile' %}";
+    }, 1500);
+}
+
+function addBookmark(pageNum) {
+    fetch('{% url "plat:add_bookmark" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            part: "{{ part|escapejs }}",
+            type: "{{ type|escapejs }}",
+            page_number: pageNum
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            alert('Bookmark added successfully!');
+            updateBookmarkVisual(pageNum);
+        } else {
+            alert('Failed to add bookmark: ' + data.error);
+        }
+    });
+}
+
+function updateBookmarkVisual(pageNum) {
+    // Remove existing bookmark visual
+    document.querySelectorAll('.bookmark-indicator').forEach(el => el.remove());
+    
+    // Add new bookmark visual
+    const page = document.querySelector(`.page:nth-child(${pageNum})`);
+    const bookmark = document.createElement('div');
+    bookmark.className = 'bookmark-indicator';
+    page.appendChild(bookmark);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

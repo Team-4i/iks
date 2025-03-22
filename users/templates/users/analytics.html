@@ -1,0 +1,775 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %} Analytics Dashboard of Ai{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* Luxury Brown Theme */
+    :root {
+        --primary-brown: #8B4513;
+        --secondary-brown: #A0522D;
+        --light-brown: #DEB887;
+        --cream: #F5DEB3;
+        --soft-cream: #FAEBD7;
+        --dark-brown: #654321;
+        --accent-gold: #DAA520;
+        --background: #FDF5E6;
+        --text-dark: #2C1810;
+        --text-light: #8B7355;
+        --shadow-brown: rgba(139, 69, 19, 0.15);
+        --border-radius-lg: 1.5rem;
+        --border-radius-md: 1rem;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Main Layout */
+    .dashboard-container {
+        min-height: 100vh;
+        background: var(--background);
+        background-image: 
+            radial-gradient(at 10% 10%, rgba(139, 69, 19, 0.05) 0px, transparent 50%),
+            radial-gradient(at 90% 90%, rgba(222, 184, 135, 0.05) 0px, transparent 50%);
+        padding: 2rem;
+    }
+
+    .content-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    /* Header Section */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        padding: 2.5rem;
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 10px 30px var(--shadow-brown);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-brown), var(--accent-gold));
+    }
+
+    .dashboard-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-brown);
+        position: relative;
+        text-shadow: 2px 2px 4px var(--shadow-brown);
+    }
+
+    /* Metrics Cards */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .metric-card {
+        position: relative;
+        padding: 2.5rem;
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 10px 30px var(--shadow-brown);
+        overflow: hidden;
+        transition: var(--transition);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+    }
+
+    .metric-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.05), rgba(218, 165, 32, 0.05));
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px var(--shadow-brown);
+    }
+
+    .metric-card:hover::after {
+        opacity: 1;
+    }
+
+    .metric-icon {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        font-size: 1.8rem;
+        color: var(--light-brown);
+        opacity: 0.3;
+    }
+
+    .metric-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .metric-value {
+        font-family: 'Playfair Display', serif;
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: var(--primary-brown);
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-trend {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--accent-gold);
+        font-weight: 500;
+    }
+
+    /* Charts Section */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 2.5rem;
+        box-shadow: 0 10px 30px var(--shadow-brown);
+        transition: var(--transition);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        position: relative;
+    }
+
+    .chart-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px var(--shadow-brown);
+    }
+
+    .chart-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-brown);
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--soft-cream);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .chart-title i {
+        color: var(--accent-gold);
+    }
+
+    /* Activity Feed */
+    .activity-feed {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 2.5rem;
+        box-shadow: 0 10px 30px var(--shadow-brown);
+    }
+
+    .activity-item {
+        padding: 1.5rem;
+        background: var(--soft-cream);
+        border-radius: var(--border-radius-md);
+        margin-bottom: 1rem;
+        transition: var(--transition);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        position: relative;
+    }
+
+    .activity-item::before {
+        content: '';
+        position: absolute;
+        left: -2px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 60%;
+        background: linear-gradient(to bottom, var(--primary-brown), var(--accent-gold));
+        border-radius: 2px;
+    }
+
+    /* Export Buttons */
+    .export-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .export-button {
+        background: linear-gradient(135deg, var(--primary-brown), var(--secondary-brown));
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: var(--border-radius-md);
+        font-weight: 600;
+        text-decoration: none;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        box-shadow: 0 4px 15px var(--shadow-brown);
+    }
+
+    .export-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px var(--shadow-brown);
+        background: linear-gradient(135deg, var(--secondary-brown), var(--dark-brown));
+    }
+
+    /* Topics Section */
+    .topic-card {
+        background: white;
+        border-radius: var(--border-radius-md);
+        padding: 1.5rem;
+        transition: var(--transition);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        position: relative;
+    }
+
+    .topic-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-brown), var(--accent-gold));
+    }
+
+    .topic-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .topic-count {
+        display: inline-block;
+        padding: 0.25rem 1rem;
+        background: var(--soft-cream);
+        color: var(--primary-brown);
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--soft-cream);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--primary-brown);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--dark-brown);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .metric-card, .chart-container, .activity-item {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1280px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-container {
+            padding: 1rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="content-wrapper">
+        <h1 class="dashboard-title">Analytics Dashboard of Ai</h1>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="card-padding">
+                    <dt class="metric-label">Total Chats</dt>
+                    <dd class="metric-value">{{ total_chats }}</dd>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="card-padding">
+                    <dt class="metric-label">Unique Users</dt>
+                    <dd class="metric-value">{{ unique_users }}</dd>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="card-padding">
+                    <dt class="metric-label">Avg Response Length</dt>
+                    <dd class="metric-value">{{ avg_response_length }}</dd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <!-- Hourly Activity -->
+            <div class="chart-container">
+                <h3 class="chart-title">Hourly Chat Activity</h3>
+                <canvas id="hourlyChart"></canvas>
+            </div>
+
+            <!-- Age Distribution -->
+            <div class="chart-container">
+                <h3 class="chart-title">User Age Distribution</h3>
+                <canvas id="ageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Demographics -->
+        <div class="metrics-grid">
+            <!-- Gender Distribution -->
+            <div class="metric-card">
+                <h3 class="chart-title">Gender Distribution</h3>
+                <canvas id="genderChart"></canvas>
+            </div>
+
+            <!-- Top Locations -->
+            <div class="metric-card">
+                <h3 class="chart-title">Top Locations</h3>
+                <div class="space-y-4">
+                    {% for location in location_distribution %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">{{ location.location }}</span>
+                        <span class="text-gray-900 font-medium">{{ location.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="metric-card">
+            <div class="card-padding">
+                <h3 class="chart-title">Recent Chats</h3>
+                <div class="space-y-4">
+                    {% for chat in recent_chats %}
+                    <div class="activity-item">
+                        <div class="activity-header">
+                            <div>
+                                <p class="user-info username">{{ chat.user.username }}</p>
+                                <p class="user-info timestamp">{{ chat.created_at|localtime|date:"M d, Y H:i" }}</p>
+                            </div>
+                            <span class="message-preview">{{ chat.message|truncatechars:100 }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- After existing charts -->
+        <div class="charts-grid">
+            <!-- Daily Chat Trends -->
+            <div class="chart-container">
+                <h3 class="chart-title">Daily Chat Trends</h3>
+                <canvas id="dailyChart"></canvas>
+            </div>
+
+            <!-- Weekly Trends -->
+            <div class="chart-container">
+                <h3 class="chart-title">Weekly Chat Volume</h3>
+                <canvas id="weeklyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Peak Hours Card -->
+        <div class="metric-card">
+            <h3 class="chart-title">Peak Activity Hours</h3>
+            <div class="grid grid-cols-3 gap-4">
+                {% for hour in peak_hours %}
+                <div class="text-center p-4 bg-[#F4E4BC] rounded-lg">
+                    <p class="text-2xl font-bold text-[#8B4513]">{{ hour.hour }}:00</p>
+                    <p class="text-sm text-gray-600">{{ hour.count }} chats</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Add after existing charts -->
+        <div class="metrics-grid">
+            <!-- Today's Popular Topics -->
+            <div class="metric-card">
+                <h3 class="chart-title">Today's Popular Topics</h3>
+                <div class="space-y-3">
+                    {% if daily_topics %}
+                        {% for topic in daily_topics %}
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">{{ topic.topic }}</span>
+                            <span class="text-sm font-medium bg-[#F4E4BC] text-[#8B4513] px-2 py-1 rounded">
+                                {{ topic.count }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-sm text-gray-500">No topics recorded today</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Weekly Topics -->
+            <div class="metric-card">
+                <h3 class="chart-title">This Week's Topics</h3>
+                <div class="space-y-3">
+                    {% for topic in weekly_topics %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">{{ topic.topic }}</span>
+                        <span class="text-sm font-medium bg-[#F4E4BC] text-[#8B4513] px-2 py-1 rounded">
+                            {{ topic.count }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Monthly Topics -->
+            <div class="metric-card">
+                <h3 class="chart-title">This Month's Topics</h3>
+                <div class="space-y-3">
+                    {% for topic in monthly_topics %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">{{ topic.topic }}</span>
+                        <span class="text-sm font-medium bg-[#F4E4BC] text-[#8B4513] px-2 py-1 rounded">
+                            {{ topic.count }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Add this right after the Analytics Dashboard title -->
+        <div class="export-buttons">
+            <a href="{% url 'users:export_analytics' format='excel' %}" 
+               class="export-button">
+                Export to Excel
+            </a>
+            <a href="{% url 'users:export_analytics' format='csv' %}" 
+               class="export-button">
+                Export to CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Hourly Activity Chart
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    new Chart(hourlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ hourly_chats|safe|default:"[]" }}.map(item => {
+                const hour = parseInt(item.hour);
+                return `${hour.toString().padStart(2, '0')}:00`;
+            }),
+            datasets: [{
+                label: 'Number of Chats',
+                data: {{ hourly_chats|safe|default:"[]" }}.map(item => item.count),
+                borderColor: '#8B4513',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Chat Activity by Hour'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} chats at ${context.label}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Chats'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Hour of Day'
+                    }
+                }
+            }
+        }
+    });
+
+    // Age Distribution Chart
+    const ageCtx = document.getElementById('ageChart').getContext('2d');
+    new Chart(ageCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ age_groups|safe|default:"[]" }}.map(item => `${item.age} years`),
+            datasets: [{
+                label: 'Users',
+                data: {{ age_groups|safe|default:"[]" }}.map(item => item.count),
+                backgroundColor: '#8B4513'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'User Age Distribution'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} users aged ${context.label}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Users'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Age'
+                    }
+                }
+            }
+        }
+    });
+
+    // Gender Distribution Chart
+    const genderCtx = document.getElementById('genderChart').getContext('2d');
+    new Chart(genderCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ gender_distribution|safe|default:"[]" }}.map(item => {
+                const genderMap = {'M': 'Male', 'F': 'Female', 'O': 'Other'};
+                return genderMap[item.gender] || item.gender;
+            }),
+            datasets: [{
+                data: {{ gender_distribution|safe|default:"[]" }}.map(item => item.count),
+                backgroundColor: ['#8B4513', '#6B3410', '#4A2511']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Gender Distribution'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value * 100) / total).toFixed(1);
+                            return `${context.label}: ${value} users (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Daily Trends Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ daily_chats|safe }}.map(item => 
+                new Date(item.date).toLocaleDateString()
+            ),
+            datasets: [{
+                label: 'Daily Chats',
+                data: {{ daily_chats|safe }}.map(item => item.count),
+                borderColor: '#8B4513',
+                backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Daily Chat Activity (Last 30 Days)'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} chats`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Chats'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Weekly Trends Chart
+    const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+    new Chart(weeklyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ weekly_chats|safe|default:"[]" }}.map(item => 
+                new Date(item.week).toLocaleDateString()
+            ),
+            datasets: [{
+                label: 'Weekly Chat Volume',
+                data: {{ weekly_chats|safe|default:"[]" }}.map(item => item.count),
+                backgroundColor: '#8B4513'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Weekly Chat Volume'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} chats in week of ${context.label}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Chats'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Week Starting'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<script>
+    console.log("Weekly chats data:", {{ weekly_chats|safe }});
+</script>
+{% endblock %} 

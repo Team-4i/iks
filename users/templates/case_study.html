@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Studies - Samvidhan</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital@0;1&display=swap');
+
+        :root {
+            --parchment: #f4e4bc;
+            --ink: #2c1810;
+            --gold: #c5a572;
+            --timeline: #1a237e;
+            --glow: rgba(197, 165, 114, 0.3);
+            --bg-primary: #f4e4bc;
+            --bg-secondary: #e6d5ac;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Cormorant Garamond', serif;
+            background: var(--bg-primary);
+            color: var(--ink);
+        }
+
+        .case-studies-section {
+            padding: 80px 0;
+            background: 
+                linear-gradient(
+                    135deg,
+                    var(--bg-primary) 0%,
+                    var(--bg-secondary) 50%,
+                    var(--bg-primary) 100%
+                );
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background pattern */
+        .case-studies-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5a572' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+                linear-gradient(
+                    45deg,
+                    rgba(197, 165, 114, 0.05) 25%,
+                    transparent 25%,
+                    transparent 75%,
+                    rgba(197, 165, 114, 0.05) 75%
+                );
+            background-size: 60px 60px, 40px 40px;
+            animation: backgroundFloat 30s linear infinite;
+            opacity: 0.4;
+        }
+
+        @keyframes backgroundFloat {
+            0% { background-position: 0 0; }
+            100% { background-position: 100px 100px; }
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--ink);
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .section-header h1::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -10px;
+            width: 150px;
+            height: 3px;
+            background: var(--ink);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(44, 24, 16, 0.3);
+            animation: titleGlow 3s infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(44, 24, 16, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(44, 24, 16, 0.5); }
+        }
+
+        .case-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 40px 0;
+        }
+
+        .case-card {
+            background: var(--parchment);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(44, 24, 16, 0.15);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid var(--gold);
+        }
+
+        .case-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 0 8px 25px rgba(44, 24, 16, 0.2);
+        }
+
+        .case-image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+            border-bottom: 2px solid var(--gold);
+        }
+
+        .case-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .case-card:hover .case-image img {
+            transform: scale(1.1);
+        }
+
+        .case-content {
+            padding: 20px;
+            background: linear-gradient(
+                to bottom,
+                var(--parchment),
+                var(--bg-secondary)
+            );
+        }
+
+        .case-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--ink);
+        }
+
+        .case-article {
+            color: var(--timeline);
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: block;
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+        }
+
+        .case-description {
+            color: var(--ink);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .read-more {
+            display: inline-block;
+            padding: 8px 20px;
+            background-color: var(--gold);
+            color: var(--ink);
+            text-decoration: none;
+            border-radius: 6px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            border: 1px solid var(--ink);
+        }
+
+        .read-more:hover {
+            background-color: var(--ink);
+            color: var(--parchment);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(44, 24, 16, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .case-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .section-header h1 {
+                font-size: 2rem;
+            }
+
+            .case-card {
+                margin: 0 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+
+    <section class="case-studies-section">
+        <div class="container">
+            <div class="section-header">
+                <h1>Landmark Constitutional Cases</h1>
+                <p>Explore the cases that shaped Indian constitutional law</p>
+            </div>
+            
+            <div class="case-grid">
+                <!-- Indra Sawhney Case -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/indra_sawhney.png' %}" alt="Indra Sawhney Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Indra Sawhney vs Union of India (1992)</h2>
+                        <span class="case-article">Article 15(4)</span>
+                        <p class="case-description">This landmark case discusses the definition of the term 'State' under Article 12 of the Constitution of India.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- Shreya Singhal Case -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/shreya_singhal.jpg' %}" alt="Shreya Singhal Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Shreya Singhal vs Union of India (2015)</h2>
+                        <span class="case-article">Article 19(1)(a)</span>
+                        <p class="case-description">A pivotal case that struck down Section 66A of the IT Act, recognizing the importance of free speech in the digital era.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- Kesavananda Bharati Case -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/kesavananda.jpg' %}" alt="Kesavananda Bharati Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Kesavananda Bharati v. State of Kerala (1973)</h2>
+                        <span class="case-article">Article 198</span>
+                        <p class="case-description">This case is known for establishing the Basic Structure Doctrine, which limited the power of Parliament to amend the Constitution.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- Maneka Gandhi Case -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/maneka_gandhi.jpg' %}" alt="Maneka Gandhi Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Maneka Gandhi vs Union of India (1978)</h2>
+                        <span class="case-article">Article 21</span>
+                        <p class="case-description">This case emphasized the importance of personal liberty and the right to free speech under Article 19(1)(a).</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- The Flag Code of India Case -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/flag_code.jpg' %}" alt="flag code Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">The Flag Code of India</h2>
+                        <span class="case-article">Article 51A(b)</span>
+                        <p class="case-description">The Flag Code of India lays down the rules for the display and respect for the Indian national flag.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- Indira Nehru Gandhi -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/indira_gandhi.jpg' %}" alt="Indira Nehru Gandhi Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Indira Nehru Gandhi v. Raj Narain (1975)</h2>
+                        <span class="case-article">Article 51A(c)</span>
+                        <p class="case-description">This case led to the interpretation of the scope of Article 368 and the power of Parliament to amend the Constitution.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+
+                <!-- Ashoka Kumar Thakur -->
+                <div class="case-card">
+                    <div class="case-image">
+                        <img src="{% static 'images/ashoka.jpg' %}" alt="Ashoka Kumar Thakur Case">
+                    </div>
+                    <div class="case-content">
+                        <h2 class="case-title">Ashoka Kumar Thakur vs. Union of India</h2>
+                        <span class="case-article">Article 46</span>
+                        <p class="case-description">This case involved the issue of reservations in higher educational institutions and their impact on the rights of citizens.</p>
+                        <a href="#" class="read-more">Read More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2023 Samvidhan. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script>
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener("scroll", () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > lastScrollY) {
+                nav.classList.add('hide');
+            } else {
+                nav.classList.remove('hide');
+            }
+            lastScrollY = window.scrollY;
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,567 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samvidhan - Indian Constitution Portal</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'hi,bn,gu,kn,ml,mr,pa,ta,te,ur', // Indian languages
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <style>
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        @media (max-width: 768px) {
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+                background-color: transparent;
+            }
+            
+            .dropdown-content a {
+                padding-left: 20px;
+            }
+        }
+
+        /* Style the Google Translate dropdown */
+        .goog-te-combo {
+            padding: 8px;
+            border: 1px solid #8B4513;
+            border-radius: 4px;
+            background: #f4e4bc;
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
+            width: 200px;
+            margin: 8px;
+        }
+
+        /* Style the Google Translate widget */
+        .goog-te-banner-frame {
+            display: none;
+        }
+
+        .goog-te-menu-value {
+            color: #4A2511 !important;
+            font-family: 'Poppins', sans-serif !important;
+        }
+
+        /* Hide Google Translate attribution */
+        .goog-logo-link {
+            display: none !important;
+        }
+        .goog-te-gadget {
+            color: transparent !important;
+        }
+
+        /* Style the language dropdown */
+        #google_translate_element .goog-te-gadget-simple {
+            background-color: #f4e4bc;
+            border: 1px solid #8B4513;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Style the selected language */
+        #google_translate_element .goog-te-menu-value {
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Add animation to the dropdown */
+        .goog-te-menu-frame {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+}
+
+.logo-image {
+    height:200px; /* Adjust based on your logo size */
+    width: auto;
+    
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover .logo-image {
+    transform: scale(1.05);
+}
+
+/* Remove the previous .logo::before and .logo::after styles */
+
+/* Adjust footer logo size if needed */
+.footer-about .logo-image {
+    height: 40px; /* Slightly smaller in footer */
+}
+
+@media (max-width: 768px) {
+    .logo-image {
+        height: 40px; /* Smaller on mobile */
+    }
+    
+    .footer-about .logo-image {
+        height: 35px;
+    }
+}
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <img src="{% static 'images/logo1.png' %}" alt="Samvidhan Logo" class="logo-image" style="width: 54%; height: auto; position: relative; right : 230px;">
+            </div>
+            <div class="mobile-menu-btn">
+                <div class="menu-bar"></div>
+                <div class="menu-bar"></div>
+                <div class="menu-bar"></div>
+            </div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <div class="dropdown">
+                    <a href="#" style="cursor: pointer;">Learn</a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'users:learn' %}">Timeline</a>
+                        <a href="{% url 'users:case_study' %}">Case Studies</a>
+                    </div>
+                </div>
+                <a href="{% url 'users:game_library' %}">Games</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'plat:profile' %}" class="contact-btn">{{ user.username }}</a>
+                {% else %}
+                    <a href="/accounts/login/" class="contact-btn">Login Now</a>
+                {% endif %}
+                <div class="dropdown">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-language"></i> Translate
+                    </a>
+                    <div class="dropdown-content" id="google_translate_element"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero" id="home">
+        <div class="background-effects">
+            <div class="gradient-circle" style="left: -20%; top: -20%;"></div>
+            <div class="gradient-circle" style="right: -20%; bottom: -20%;"></div>
+        </div>
+
+        <div class="hero-content">
+            <h1>
+                Where Learning
+                <span class="highlight"> Meets Fun</span>
+                Adventure
+            </h1>
+            <p>Transform your educational journey through gamification - making learning engaging, interactive, and enjoyable.</p>
+            <div class="cta-buttons">
+                <button class="primary-btn">Start Playing</button>
+                <button class="secondary-btn">Watch Demo</button>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="chakra-container">
+                <img src="{% static 'images/game.png' %}" alt="Ashoka Chakra" class="rotating" style="width: 100%; height: auto; z-index: 999;">
+                <div class="chakra-ring ring-1"></div>
+                <div class="chakra-ring ring-2"></div>
+                <div class="chakra-ring ring-3"></div>
+            </div>
+        </div>
+
+        <div class="floating-elements">
+            <!-- Will be populated by JS -->
+        </div>
+
+        <!-- Mouse scroll indicator -->
+        <div class="mouse-scroll">
+            <div class="mouse">
+                <div class="wheel"></div>
+            </div>
+            <div class="arrows">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="info-section" id="features">
+        <div class="container">
+            <!-- Left Side: Why Learn Constitution -->
+            <div class="info-grid">
+                <div class="about-content">
+                    <h2>Why Choose GamifiEd?</h2>
+                    <div class="about-text">
+                        <p>Experience a revolutionary approach to learning that combines education with entertainment, making knowledge retention fun and effective.</p>
+                        
+                        <div class="stats-container">
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <span class="stat-number">2+</span>
+                                    <span class="stat-label">Game Modes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">100%</span>
+                                    <span class="stat-label">Customizable</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">24/7</span>
+                                    <span class="stat-label">Access</span>
+                                </div>
+                            </div>
+                            <div class="stats-text">Comprehensive gamified learning platform</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Learning Features -->
+                <div class="learning-content">
+                    <div class="cards-container">
+                        <div class="learning-card">
+                            <div class="card-icon">
+                                <i class="fas fa-gamepad"></i>
+                            </div>
+                            <h4>Subject-Agnostic</h4>
+                            <p>Works for any subject</p>
+                        </div>
+
+                        <div class="learning-card">
+                            <div class="card-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <h4>Competitive</h4>
+                            <p>Leaderboards & rewards</p>
+                        </div>
+
+                        <div class="learning-card">
+                            <div class="card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4>Multiplayer</h4>
+                            <p>Learn with peers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="games-section" id="games">
+        <div class="container">
+            <div class="section-header">
+                <h3>Learn through Games</h3>
+                <p>Test your understanding through interactive challenges</p>
+            </div>
+            
+            <div class="game-carousel">
+                <div class="carousel-container">
+                    <div class="game-card">
+                        <div class="game-image">
+                            <img src="{% static 'images/snake_ladder.png' %}" alt="Brain Ladder">
+                        </div>
+                        <div class="game-content">
+                            <span class="game-type">Educational Game</span>
+                            <h3>Brain Ladder</h3>
+                            <p>Challenge yourself with this interactive quiz-based game inspired by Snakes and Ladders. Navigate through knowledge cells and face exciting challenges!</p>
+                        </div>
+                        <div class="game-footer">
+                            <div class="difficulty">
+                                <span>Level:</span>
+                                <div class="difficulty-dots">
+                                    <span class="dot active"></span>
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                </div>
+                            </div>
+                            <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="play-btn">Start Journey</a>
+                        </div>
+                    </div>
+
+                    <div class="game-card">
+                        <div class="game-image">
+                            <img src="{% static 'images/spinwheel.png' %}" alt="Quest Wheel">
+                        </div>
+                        <div class="game-content">
+                            <span class="game-type">Educational Game</span>
+                            <h3>Quest Wheel</h3>
+                            <p>Spin the wheel to collect subject cards of varying rarities. Trade, collect, and master your knowledge through this engaging collection game!</p>
+                        </div>
+                        <div class="game-footer">
+                            <div class="difficulty">
+                                <span>Level:</span>
+                                <div class="difficulty-dots">
+                                    <span class="dot active"></span>
+                                    <span class="dot active"></span>
+                                    <span class="dot active"></span>
+                                </div>
+                            </div>
+                            <a href="{% url 'spinwheel:spinwheel_intro' %}" class="play-btn">Spin Now</a>
+                            <a href="{% url 'spinwheel:collection' %}" class="play-btn collection">View Collection</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="carousel-controls">
+                    <button class="control-btn prev">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="carousel-dots"></div>
+                    <button class="control-btn next">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="journey-section">
+        <div class="container">
+            
+
+            <div class="journey-grid">
+                <!-- Learning Path Timeline -->
+                <div class="learning-timeline">
+                    <div class="timeline-track">
+                        <div class="milestone active">
+                            <div class="milestone-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <div class="milestone-content">
+                                <h3>Constitutional Basics</h3>
+                                <p>Foundation and core principles</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="milestone-badge">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+
+                        <div class="milestone active current">
+                            <div class="milestone-icon">
+                                <i class="fas fa-balance-scale"></i>
+                            </div>
+                            <div class="milestone-content">
+                                <h3>Rights & Duties</h3>
+                                <p>Fundamental rights and citizen duties</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 60%"></div>
+                                </div>
+                            </div>
+                            <div class="milestone-badge">
+                                <span>2/5</span>
+                            </div>
+                        </div>
+
+                        <div class="milestone">
+                            <div class="milestone-icon">
+                                <i class="fas fa-landmark"></i>
+                            </div>
+                            <div class="milestone-content">
+                                <h3>Governance Structure</h3>
+                                <p>State and central administration</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="milestone-badge locked">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                        </div>
+
+                        <div class="milestone">
+                            <div class="milestone-icon">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+                            <div class="milestone-content">
+                                <h3>Constitutional Dynamics</h3>
+                                <p>Amendments and evolution</p>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="milestone-badge locked">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Hub -->
+                <div class="community-hub">
+                    <div class="hub-header">
+                        <div class="active-users">
+                            <div class="user-stack">
+                                <img src="https://i.pravatar.cc/100?img=1" alt="Learner">
+                                <img src="https://i.pravatar.cc/100?img=2" alt="Learner">
+                                <img src="https://i.pravatar.cc/100?img=3" alt="Learner">
+                                <img src="https://i.pravatar.cc/100?img=4" alt="Learner">
+                                <span class="more-users">+42</span>
+                            </div>
+                            <span>Learning Now</span>
+                        </div>
+                        <div class="hub-stats">
+                            <div class="stat">
+                                <span class="stat-value">12K+</span>
+                                <span class="stat-label">Learners</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">89%</span>
+                                <span class="stat-label">Success Rate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="achievement-cards">
+                        <div class="achievement-card">
+                            <div class="achievement-icon">
+                                <i class="fas fa-award"></i>
+                            </div>
+                            <h4>Weekly Challenge</h4>
+                            <p>Complete 5 quizzes</p>
+                            <div class="achievement-progress">
+                                <span>3/5 Completed</span>
+                                <button class="continue-btn">Continue</button>
+                            </div>
+                        </div>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <h4>Group Discussion</h4>
+                            <p>Join live debate</p>
+                            <div class="achievement-progress">
+                                <span>Today, 6:00 PM</span>
+                                <button class="join-btn">Join Now</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="start-journey">
+                        <div class="journey-prompt">
+                            <h3>Ready to Begin?</h3>
+                            <p>Start your constitutional journey today</p>
+                        </div>
+                        <button class="primary-cta">
+                            Get Started
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <div class="logo">
+                        <img src="{% static 'images/logo1.png' %}" alt="Samvidhan Logo" class="logo-image">
+                    </div>
+                    <p>Making constitutional education accessible and engaging for everyone.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#learn">Learn</a></li>
+                        <li><a href="#games">Games</a></li>
+                    </ul>
+                </div>
+                <div class="footer-resources">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="#">Study Materials</a></li>
+                        <li><a href="#">Practice Tests</a></li>
+                        <li><a href="#">Video Lectures</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-newsletter">
+                    <h3>Stay Updated</h3>
+                    <p>Subscribe to our newsletter for latest updates</p>
+                    <form class="newsletter-form">
+                        <input type="email" placeholder="Enter your email">
+                        <button type="submit" class="primary-btn">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 संविधान. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/script.js' %}" defer></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{% load socialaccount %}
+
+<div class="min-h-screen bg-[url('/static/images/parchment-bg.jpg')] bg-cover flex flex-col justify-center items-center">
+    <div class="bg-[#f4e4bc] p-12 rounded-lg shadow-2xl w-[28rem] border-4 border-[#8B4513] relative overflow-hidden">
+        <!-- Decorative Corner Elements -->
+        <div class="absolute top-0 left-0 w-16 h-16 border-l-4 border-t-4 border-[#8B4513]"></div>
+        <div class="absolute top-0 right-0 w-16 h-16 border-r-4 border-t-4 border-[#8B4513]"></div>
+        <div class="absolute bottom-0 left-0 w-16 h-16 border-l-4 border-b-4 border-[#8B4513]"></div>
+        <div class="absolute bottom-0 right-0 w-16 h-16 border-r-4 border-b-4 border-[#8B4513]"></div>
+
+        <h2 class="text-3xl font-serif text-center mb-8 text-[#4A2511] leading-tight">
+            संस्थाएं और संविधान
+            <span class="block text-xl mt-2">Sansthaein aur Samvidhaan</span>
+        </h2>
+        
+        {% if user.is_authenticated %}
+            <div class="text-center space-y-6">
+                <p class="mb-6 text-lg font-serif text-[#4A2511]">Welcome, {{ user.username }}!</p>
+                
+                <a href="{% url 'snake_ladder:create_room' %}" 
+                   class="block bg-[#8B4513] hover:bg-[#6B3410] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-6 shadow-md transform hover:scale-105 duration-200">
+                    Create Snake Ladder Game Room
+                </a>
+                
+                <a href="#" 
+                   class="block bg-[#4A2511] hover:bg-[#3A1D0E] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-6 shadow-md transform hover:scale-105 duration-200"
+                   onclick="joinRoom()">
+                    Join Snake Ladder Game Room
+                </a>
+                <!-- Matching Card Game Options -->
+                
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-serif text-[#4A2511] mb-4">Constitutional Bingo</h3>
+                    <form method="post" action="{% url 'housie_consti:create_room' %}">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="block bg-[#8B4513] hover:bg-[#6B3410] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-4 shadow-md transform hover:scale-105 duration-200">
+                            Create Bingo Room
+                        </button>
+                    </form>
+
+                    <button onclick="joinBingoRoom()" 
+                            class="block w-full bg-[#4A2511] hover:bg-[#3A1D0E] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-6 shadow-md transform hover:scale-105 duration-200">
+                        Join Bingo Room
+                    </button>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-serif text-[#4A2511] mb-4">Constitutional Spinwheel</h3>
+                    <a href="{% url 'spinwheel
+                    ' %}" 
+                       class="block bg-[#8B4513] hover:bg-[#6B3410] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-4 shadow-md transform hover:scale-105 duration-200">
+                        Play Spinwheel
+                    </a>
+                    <a href="{% url 'spinwheel:collection' %}" 
+                       class="block bg-[#4A2511] hover:bg-[#3A1D0E] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors mb-6 shadow-md transform hover:scale-105 duration-200">
+                        View Collection
+                    </a>
+                </div>
+                
+                <a href="{% url 'account_logout' %}" 
+                   class="block bg-[#A52A2A] hover:bg-[#8B2323] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors shadow-md transform hover:scale-105 duration-200">
+                    Sign Out
+                </a>
+            </div>
+
+            <script>
+                function joinRoom() {
+                    const roomId = prompt("Enter Room ID:");
+                    if (roomId) {
+                        window.location.href = `/game/join/${roomId}/`;
+                    }
+                }
+
+                
+                
+                function joinBingoRoom() {
+                    const roomId = prompt("Enter Room ID:");
+                    if (roomId) {
+                        window.location.href = `/housie-consti/join/${roomId}/`;
+                    }
+                }
+            </script>
+        {% else %}
+            <div class="text-center">
+                <p class="mb-6 text-lg font-serif text-[#4A2511]">Please sign in to continue</p>
+                <a href="{% provider_login_url 'google' %}"
+                   class="inline-block bg-[#4A2511] hover:bg-[#3A1D0E] text-[#f4e4bc] font-serif py-3 px-6 rounded-lg transition-colors shadow-md transform hover:scale-105 duration-200">
+                    Sign in with Google
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

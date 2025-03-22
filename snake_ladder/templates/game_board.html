@@ -1,0 +1,873 @@
+{% extends 'base.html' %}
+{% load game_filters %}
+{% load static %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/gameboard.css' %}">
+
+<div class="main-container">
+    <div class="w-full max-w-100xl p-0 md:p-4 mx-auto">
+        <!-- Add flex container -->
+        <div class="game-container p-2 md:p-4 flex flex-col md:flex-row gap-4">
+            <!-- Left side content -->
+            <div class="md:w-1/3 space-y-4">
+                <!-- Game info and controls -->
+                <div class="bg-white rounded-lg p-4 shadow-md">
+                    <h1 class="game-title text-xl md:text-2xl mb-4">Snake & Ladder Game</h1>
+                    <div class="turn-indicator text-sm mb-4">
+                        Current Turn: {{ current_turn.username }}
+                    </div>
+                    
+                    <!-- Player list -->
+                    <div class="player-list space-y-2">
+                        {% for player in players %}
+                            <div class="flex items-center space-x-1 p-2 rounded-lg bg-gray-50" data-player-id="{{ player.id }}">
+                                {% with color=room.get_player_color|get_item:player %}
+                                <div class="player-token w-4 h-4" style="--player-color: #{{ color.0 }}"></div>
+                                <span class="text-sm font-crimson text-gray-800">
+                                    {{ player.username }}
+                                    {% if player == current_turn %}
+                                        <span class="font-bold text-[#8b4513]">(Current Turn)</span>
+                                    {% endif %}
+                                    - <span class="position-span">Position: {{ positions|get_item:player.id }}</span>
+                                </span>
+                                {% endwith %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Dice and controls -->
+                <div class="bg-white rounded-lg p-4 shadow-md">
+                    <div class="flex flex-col items-center gap-4">
+                        <!-- Dice container -->
+                        <div class="container scale-75">
+                            <div class="dice">
+                                <div class="face front"></div>
+                                <div class="face back"></div>
+                                <div class="face top"></div>
+                                <div class="face bottom"></div>
+                                <div class="face right"></div>
+                                <div class="face left"></div>
+                            </div>
+                            <div id="dice-number" class="dice-number text-sm"></div>
+                        </div>
+
+                        <!-- Roll controls -->
+                        <div class="flex items-center space-x-2">
+                            <form method="post" class="flex items-center" action="{% url 'snake_ladder:game_board' room.room_id %}">
+                                {% csrf_token %}
+                                <button type="button" name="roll" value="true"
+                                        onclick="handleDiceRoll(event)"
+                                        class="roll-button text-sm px-4 py-2">
+                                    Roll Dice
+                                </button>
+                            </form>
+                            
+                            {% if dice_roll %}
+                            <div class="dice-display bg-white p-2 rounded-lg shadow-md">
+                                <span class="text-base font-bold text-[#8b4513]">
+                                    Dice Roll: {{ dice_roll }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right side - Game Board -->
+            <div class="md:w-2/3">
+                <div class="aspect-square w-full max-w-[600px] p-2 md:p-4 mx-auto">
+                    <div class="grid grid-cols-10 gap-0.5 md:gap-1 constitution-board p-1 md:p-4 rounded-lg h-full">
+                        {% for row in board %}
+                            {% for cell_number in row %}
+                                {% with cell=cells|get_item:cell_number %}
+                                <div class="relative aspect-square cell-constitution
+                                          {% if cell and cell.cell_type == 'SNAKE_LADDER' %}
+                                              snake-ladder-cell
+                                          {% endif %}
+                                          flex items-center justify-center transition-colors"
+                                     data-cell="{{ cell_number }}"
+                                     data-cell-type="{{ cell.cell_type|default:'NORMAL' }}"
+                                     {% if cell.current_content %}
+                                     data-content="{{ cell.current_content.content }}"
+                                     data-topic="{{ cell.current_content.topic }}"
+                                     {% endif %}>
+                                    <span class="absolute top-1 left-1 text-xs md:text-sm lg:text-base font-crimson cell-number">
+                                        {{ cell_number }}
+                                    </span>
+                                </div>
+                                {% endwith %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="content-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="constitution-modal max-w-lg w-full mx-4 p-6">
+        <div class="constitution-title text-xl mb-4">Educational Content</div>
+        <div id="modal-content" class="constitution-content text-gray-800 mb-4 text-lg"></div>
+        <div class="flex justify-between items-center">
+            <span id="timer" class="text-gray-700"></span>
+            <button onclick="document.getElementById('content-modal').classList.add('hidden')" 
+                    class="constitution-button px-4 py-2 rounded">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+<div id="mcq-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="constitution-modal max-w-lg w-full mx-4 p-6">
+        <div class="constitution-title text-xl mb-4">Answer this question!</div>
+        <div id="mcq-loading" class="hidden text-center py-8">
+            <div class="constitution-spinner h-12 w-12 mx-auto"></div>
+            <p class="mt-4 text-gray-800 font-crimson">Generating question...</p>
+        </div>
+        <div id="mcq-content" class="hidden">
+            <p id="mcq-question" class="constitution-content text-lg"></p>
+            <div id="mcq-options" class="space-y-2"></div>
+            <div id="mcq-result" class="mt-4 text-center hidden constitution-content"></div>
+        </div>
+    </div>
+</div>
+<script>
+// Add this at the top of your script section
+const diceSound = new Audio("{% static 'video/dice.mp3' %}");
+
+// Add this CSS at the top of your script section
+const style = document.createElement('style');
+style.textContent = `
+    .player-pawn {
+        transition: all 0.3s ease-in-out;
+    }
+    .highlight-turn {
+        transition: background-color 0.3s ease;
+    }
+    .player-pawn {
+        transition: all 0.3s ease-out;
+        z-index: 10;
+    }
+    .player-pawn:hover {
+        transform: scale(1.2);
+        z-index: 20;
+    }
+`;
+document.head.appendChild(style);
+
+// Replace the existing updateGameState interval setup
+let lastUpdateTime = 0;
+const UPDATE_INTERVAL = 10000; // 10 seconds interval
+
+function smoothUpdate() {
+   
+    const currentTime = Date.now();
+    
+    // Use shorter interval if animation is in progress
+    const updateInterval = window.animationInProgress ? 1000 : 3000;
+    
+    if (!diceRollInProgress && currentTime - lastUpdateTime >= updateInterval) {
+        updateGameState();
+        lastUpdateTime = currentTime;
+    }
+    requestAnimationFrame(smoothUpdate);
+
+}
+
+
+
+// Start smooth updates when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Reset manual refresh flag after a short delay
+    setTimeout(() => {
+        window.manualRefresh = false;
+    }, 100);
+    
+    // Clear shown content on page load
+    clearAllContentShown();
+    
+    // Start updates
+    requestAnimationFrame(smoothUpdate);
+
+    const rollButton = document.querySelector('button[name="roll"]');
+    if (rollButton) {
+        rollButton.addEventListener('click', function() {
+            diceSound.currentTime = 0; // Reset audio to start
+            diceSound.play().catch(err => console.log('Audio play failed:', err));
+        });
+    }
+});
+
+
+
+    // Gets the latest game state from the server
+    // Updates player positions, turns, and board state
+    // Handles redirects if game is over
+
+function updateGameState() {
+    if (window.manualRefresh || window.animationInProgress) return;
+    
+    fetch('{% url "snake_ladder:game_state" room.room_id %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+                return;
+            }
+            
+            if (data.winner) {
+                showWinnerPage(data.winner);
+                return;
+            }
+            
+            console.log('Game state update:', data); // Debug log
+            
+            requestAnimationFrame(() => {
+                updateTurnIndicator(data);
+                updatePlayerList(data);
+                updateRollButton(data);
+                updatePawnPositions(data);
+                updateCellContents(data);
+                handleDiceUpdate(data);
+            });
+            
+            // Add this block to update points
+            if (data.points) {
+                Object.entries(data.points).forEach(([playerId, points]) => {
+                    PointsManager.updatePointsDisplay(playerId, points);
+                });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+
+// Updates the text showing whose turn it is
+function updateTurnIndicator(data) {
+    const turnIndicator = document.querySelector('.text-lg.font-semibold.text-blue-600');
+    if (turnIndicator && turnIndicator.textContent !== `Current Turn: ${data.current_turn_username}`) {
+        turnIndicator.textContent = `Current Turn: ${data.current_turn_username}`;
+    }
+}
+
+
+// Updates the list of players and their positions
+    // Highlights the current player's turn
+function updatePlayerList(data) {
+    const playerElements = document.querySelectorAll('[data-player-id]');
+    playerElements.forEach(playerElement => {
+        const playerId = playerElement.getAttribute('data-player-id');
+        
+        // Update position only if changed
+        const positionSpan = playerElement.querySelector('.position-span');
+        const newPosition = `Position: ${data.positions[playerId]}`;
+        if (positionSpan && positionSpan.textContent !== newPosition) {
+            positionSpan.textContent = newPosition;
+        }
+        
+        // Update turn highlighting with subtle effect
+        const shouldHighlight = data.current_turn === parseInt(playerId);
+        playerElement.classList.toggle('player-turn-active', shouldHighlight);
+    });
+}
+
+
+// Enables/disables the roll button based on whose turn it is
+    // Changes button appearance accordingly
+function updateRollButton(data) {
+    const rollButton = document.querySelector('button[name="roll"]');
+    if (rollButton) {
+        const isCurrentTurn = data.current_turn === data.current_user_id;
+        rollButton.disabled = !isCurrentTurn;
+        
+        // Update button appearance
+        if (isCurrentTurn) {
+            rollButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            rollButton.classList.add('hover:bg-blue-600');
+        } else {
+            rollButton.classList.add('opacity-50', 'cursor-not-allowed');
+            rollButton.classList.remove('hover:bg-blue-600');
+        }
+    }
+}
+
+
+// Moves player pawns on the board
+    // Creates new pawns if needed
+    // Triggers snake/ladder effects when applicable
+// Add this function to calculate the path between two positions
+function calculatePath(start, end) {
+    const path = [];
+    let current = start;
+    while (current !== end) {
+        current += (current < end) ? 1 : -1;
+        path.push(current);
+    }
+    return path;
+}
+
+window.animationInProgress = false;
+
+function updatePawnPositions(data) {
+    window.animationInProgress = true;
+    const animationPromises = [];
+    
+    data.players.forEach(player => {
+        const newPosition = data.positions[player.id];
+        const pawnDiv = document.querySelector(`.player-pawn[data-player-id="${player.id}"]`);
+        
+        if (!pawnDiv) {
+            const cell = document.querySelector(`[data-cell="${newPosition}"]`);
+            if (cell) {
+                const pawnDiv = document.createElement('div');
+                pawnDiv.className = 'absolute inset-0 flex items-center justify-center player-pawn';
+                pawnDiv.setAttribute('data-player-id', player.id);
+                pawnDiv.setAttribute('data-current-position', newPosition);
+                pawnDiv.innerHTML = `
+                    <div class="w-5 h-5 bg-${player.color} rounded-full" title="${player.username}">
+                    </div>`;
+                cell.appendChild(pawnDiv);
+            }
+        } else {
+            const currentPosition = parseInt(pawnDiv.getAttribute('data-current-position'));
+            if (currentPosition !== newPosition) {
+                const promise = animatePawnMovement(pawnDiv, currentPosition, newPosition);
+                animationPromises.push(promise);
+            }
+        }
+    });
+
+    return Promise.all(animationPromises).then(() => {
+        window.animationInProgress = false;
+        // Check for snake/ladder cells only after ALL pawns have finished moving
+        data.players.forEach(player => {
+            const position = data.positions[player.id];
+            const cell = document.querySelector(`[data-cell="${position}"]`);
+            if (cell && cell.getAttribute('data-cell-type') === 'SNAKE_LADDER' 
+                && player.id === {{ user.id }}) {
+                setTimeout(() => handleSnakeLadderCell(position), 500);
+            }
+        });
+    });
+}
+function animatePawnMovement(pawnDiv, start, end) {
+    return new Promise((resolve) => {
+        const path = calculatePath(start, end);
+        const STEP_DURATION = 300;
+        
+        path.forEach((position, index) => {
+            setTimeout(() => {
+                const cell = document.querySelector(`[data-cell="${position}"]`);
+                if (cell) {
+                    cell.appendChild(pawnDiv);
+                    pawnDiv.setAttribute('data-current-position', position);
+                    
+                    pawnDiv.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        pawnDiv.style.transform = 'translateY(0)';
+                    }, STEP_DURATION / 2);
+                }
+                
+                if (index === path.length - 1) {
+                    setTimeout(resolve, STEP_DURATION);
+                }
+            }, index * STEP_DURATION);
+        });
+    });
+}
+
+
+
+// Update game state every 1 second (increased from 300ms to reduce server load)
+
+
+// Add this to your existing JavaScript
+const cellContents = {};
+const CONTENT_VISIBILITY_DURATION = 30000; // 30 seconds
+
+
+//Shows a popup with educational content when landing on a cell
+function showCellContent(cellNumber, contentData) {
+    const modal = document.getElementById('content-modal');
+    const modalContent = document.getElementById('modal-content');
+    
+    if (modal && modalContent) {
+        // Create a formatted content display
+        const contentHtml = `
+            <div class="mb-4">
+                <h3 class="font-bold text-lg mb-2">${contentData.topic}</h3>
+                <p>${contentData.content}</p>
+            </div>
+        `;
+        modalContent.innerHTML = contentHtml;
+        modal.classList.remove('hidden');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 30000);
+    }
+}
+
+
+// Manages which cells show educational content
+    // Triggers MCQs for snake/ladder cells
+function updateCellContents(data) {
+    console.log('Updating cell contents:', data.visible_cells);
+    
+    if (data.visible_cells) {
+        Object.entries(data.visible_cells).forEach(([cellNumber, cellData]) => {
+            console.log('Processing cell:', cellNumber, cellData);
+            
+            // Always show content for force_display
+            if (cellData.force_display) {
+                console.log('Forced display for cell:', cellNumber);
+                showCellContent(cellNumber, {
+                    content: cellData.content,
+                    topic: cellData.topic
+                });
+                return;
+            }
+            
+            // Show content for new positions
+            if (!hasContentBeenShown(cellNumber)) {
+                console.log('New content for cell:', cellNumber);
+                showCellContent(cellNumber, {
+                    content: cellData.content,
+                    topic: cellData.topic
+                });
+                markContentAsShown(cellNumber);
+                
+                // Handle snake-ladder cells
+                const cell = document.querySelector(`[data-cell="${cellNumber}"]`);
+                if (cell && cell.getAttribute('data-cell-type') === 'SNAKE_LADDER') {
+                    setTimeout(() => {
+                        handleSnakeLadderCell(cellNumber);
+                    }, 3500);
+                }
+            }
+        });
+    }
+}
+
+let mcqShown = false;
+let lastMcqPosition = null;
+let questionStartTime;
+let currentQuestionData = null;
+
+
+// Shows MCQ (Multiple Choice Question) when player lands on snake/ladder
+    // Manages the MCQ modal and loading states
+function handleSnakeLadderCell(position) {
+    if (mcqShown || lastMcqPosition === position) return;
+    
+    mcqShown = true;
+    lastMcqPosition = position;
+    questionStartTime = Date.now();
+    
+    const modal = document.getElementById('mcq-modal');
+    const loading = document.getElementById('mcq-loading');
+    const content = document.getElementById('mcq-content');
+    const question = document.getElementById('mcq-question');
+    const options = document.getElementById('mcq-options');
+    const result = document.getElementById('mcq-result');
+    
+    modal.classList.remove('hidden');
+    loading.classList.remove('hidden');
+    content.classList.add('hidden');
+    result.classList.add('hidden');
+    
+    fetch(`/game/generate-mcq/{{ room.room_id }}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) throw new Error(data.error);
+            
+            currentQuestionData = data;
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+            
+            question.textContent = data.question;
+            
+            // Simple button-based approach
+            options.innerHTML = data.options.map(option => `
+                <button 
+                    type="button" 
+                    class="w-full text-left p-4 mb-4 border rounded hover:bg-gray-100"
+                    data-letter="${option[0]}"
+                >${option}</button>
+            `).join('');
+            
+            // Add click handlers to all buttons
+            options.querySelectorAll('button').forEach(button => {
+                button.onclick = () => checkAnswer(button.dataset.letter, data.correct);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mcqShown = false;
+            currentQuestionData = null;
+        });
+}
+
+
+  // Checks if player's MCQ answer is correct
+    // Sends answer to server
+    // Moves player up (correct) or down (wrong)
+    // Shows result message
+function checkAnswer(selected, correct) {
+    if (!currentQuestionData) return;
+    
+    const timeToAnswer = Math.floor((Date.now() - questionStartTime) / 1000);
+    const result = document.getElementById('mcq-result');
+    
+    // Get all options from the options div
+    const allOptions = Array.from(document.getElementById('mcq-options').children)
+        .map(button => button.textContent.trim());
+    
+    fetch(`/game/answer-mcq/{{ room.room_id }}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            correct: selected === correct,
+            time_taken: timeToAnswer,
+            source_cell: currentQuestionData.source_cell,
+            question: currentQuestionData.question,
+            selected_option: selected,
+            correct_option: correct,
+            topic_category: currentQuestionData.topic_category || 'Constitutional Law',
+            all_options: allOptions
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('MCQ response:', data);  // Debug log
+        if (data.success) {
+            result.classList.remove('hidden');
+            if (selected === correct) {
+                result.innerHTML = `<p class="text-green-600 font-bold">Correct! Moving up ${data.move_amount} spaces...</p>`;
+            } else {
+                result.innerHTML = `<p class="text-red-600 font-bold">Wrong answer. Moving back to cell ${currentQuestionData.source_cell}...</p>`;
+                
+                // Clear the content shown status for the new position
+                const newPosition = data.new_position; // Assuming the server response includes the new position
+                clearContentShown(newPosition);
+            }
+            
+            if (data.points_earned) {
+                PointsManager.showPointsUpdate(data.points_earned);
+                PointsManager.updatePointsDisplay('{{ user.id }}', data.total_points);
+            }
+            
+            // Wait for movement animation then hide modal
+            setTimeout(() => {
+                document.getElementById('mcq-modal').classList.add('hidden');
+                mcqShown = false;
+                currentQuestionData = null;
+                
+                // Force update game state to get new cell content
+                updateGameState();
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        result.classList.remove('hidden');
+        result.innerHTML = '<p class="text-red-600 font-bold">Error processing answer. Please try again.</p>';
+        setTimeout(() => {
+            document.getElementById('mcq-modal').classList.add('hidden');
+            mcqShown = false;
+            currentQuestionData = null;
+        }, 2000);
+    });
+}
+
+// Helper function to clear content shown status
+function clearContentShown(cellNumber) {
+    const shownContents = JSON.parse(localStorage.getItem('shownContents') || '{}');
+    delete shownContents[cellNumber];
+    localStorage.setItem('shownContents', JSON.stringify(shownContents));
+}
+
+// Simplified version that tracks shown content and wrong answers
+function hasContentBeenShown(cellNumber) {
+    const shownContents = JSON.parse(localStorage.getItem('shownContents') || '{}');
+    return shownContents[cellNumber] === true;
+}
+
+function markContentAsShown(cellNumber) {
+    const shownContents = JSON.parse(localStorage.getItem('shownContents') || '{}');
+    shownContents[cellNumber] = true;
+    localStorage.setItem('shownContents', JSON.stringify(shownContents));
+}
+
+function clearContentShown(cellNumber) {
+    const shownContents = JSON.parse(localStorage.getItem('shownContents') || '{}');
+    delete shownContents[cellNumber];
+    localStorage.setItem('shownContents', JSON.stringify(shownContents));
+}
+
+// Add this near the top of your script section
+window.manualRefresh = false;
+window.addEventListener('beforeunload', () => {
+    window.manualRefresh = true;
+});
+
+
+// Displays the winner page when game ends
+    // Shows winner name and back to home button
+function showWinnerPage(winner) {
+    // Add fade-out animation to current content
+    const gameContainer = document.querySelector('.game-container');
+    if (gameContainer) {
+        gameContainer.style.transition = 'opacity 0.5s ease-out';
+        gameContainer.style.opacity = '0';
+        
+        setTimeout(() => {
+            gameContainer.innerHTML = `
+                <div class="p-8 text-center">
+                    <h1 class="text-3xl font-bold mb-4">Game Over!</h1>
+                    <div class="text-xl mb-4">
+                        🎉 Winner: <span class="text-green-600 font-bold">${winner}</span> 🎉
+                    </div>
+                    <a href="{% url 'snake_ladder:home' %}" 
+                       class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                        Back to Home
+                    </a>
+                </div>
+            `;
+            // Fade in the winner content
+            gameContainer.style.opacity = '1';
+        }, 500);
+    }
+}
+
+function clearAllContentShown() {
+    localStorage.removeItem('shownContents');
+}
+
+// Get DOM elements
+const dice = document.querySelector('.dice');
+const rollButton = document.querySelector('button[name="roll"]');
+const diceNumber = document.querySelector('#dice-number');
+
+// Add this flag at the top of your script
+let diceRollInProgress = false;
+
+// Modify handleDiceRoll to set the flag
+async function handleDiceRoll(event) {
+    event.preventDefault();
+    const button = event.target;
+    
+    if (button.disabled) return;
+    button.disabled = true;
+    window.animationInProgress = true;
+    diceRollInProgress = true; // Set flag to true
+
+    try {
+        const form = button.closest('form');
+        const formData = new FormData();
+        formData.append('roll', 'true');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        const gameState = await fetch('{% url "snake_ladder:game_state" room.room_id %}').then(r => r.json());
+        await handleDiceUpdate(gameState);
+        await updatePawnPositions(gameState);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        if (diceNumber) {
+            diceNumber.textContent = 'Error rolling dice';
+        }
+    } finally {
+        window.animationInProgress = false;
+        button.disabled = false;
+        diceRollInProgress = false; // Reset flag to false
+    }
+}
+
+// Add this at the top of your script
+let lastProcessedRollId = null;
+
+// Update the handleDiceUpdate function
+async function handleDiceUpdate(gameState) {
+    if (!gameState.latest_dice || !gameState.latest_dice.value) return;
+    
+    const rollId = gameState.latest_dice.roll_id;
+    const serverTimestamp = gameState.latest_dice.timestamp * 1000;
+    const currentTime = Date.now();
+    const timeDiff = currentTime - serverTimestamp;
+    
+    if (rollId === lastProcessedRollId) {
+        return;
+    }
+    
+    if (timeDiff < 5000) {
+        console.log('Processing dice roll:', rollId); // Debug log
+        
+        lastProcessedRollId = rollId;
+        
+        window.animationInProgress = true;
+        
+        // Await the dice roll animation
+        await rollDice(gameState.latest_dice.value);
+        
+        // Update dice display
+        const diceNumber = document.getElementById('dice-number');
+        if (diceNumber) {
+            diceNumber.textContent = `${gameState.latest_dice.player_name} rolled: ${gameState.latest_dice.value}`;
+        }
+        
+        window.animationInProgress = false;
+    }
+}
+
+// Update the rollDice function to return a promise
+function rollDice(random) {
+    return new Promise((resolve) => {
+        let finalRotationX, finalRotationY;
+        
+        switch (random) {
+            case 1:
+                finalRotationX = 0;
+                finalRotationY = 0;
+                break;
+            case 6:
+                finalRotationX = 180;
+                finalRotationY = 0;
+                break;
+            case 2:
+                finalRotationX = -90;
+                finalRotationY = 0;
+                break;
+            case 5:
+                finalRotationX = 90;
+                finalRotationY = 0;
+                break;
+            case 3:
+                finalRotationX = 0;
+                finalRotationY = 90;
+                break;
+            case 4:
+                finalRotationX = 0;
+                finalRotationY = -90;
+                break;
+        }
+
+        const targetX = finalRotationX + 1440;
+        const targetY = finalRotationY + 1440;
+        
+        const dice = document.querySelector('.dice');
+        if (!dice) {
+            resolve();
+            return;
+        }
+
+        dice.style.transition = 'none';
+        void dice.offsetHeight;
+        dice.style.transform = `rotateX(${targetX}deg) rotateY(${targetY}deg)`;
+        dice.style.transition = 'transform 2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        
+        setTimeout(() => {
+            dice.style.transition = 'none';
+            dice.style.transform = `rotateX(${finalRotationX}deg) rotateY(${finalRotationY}deg)`;
+            resolve();
+        }, 2000);
+    });
+}
+</script>
+<script src="{% static 'js/board-rotation.js' %}"></script>
+
+<!-- Add this after your existing MCQ result div -->
+<div id="points-update" class="mt-2 text-center hidden">
+    <p class="points-text text-green-600 font-bold"></p>
+</div>
+
+<!-- Add this new script at the end, after all other scripts -->
+<script>
+// Points Management System
+const PointsManager = {
+    updatePointsDisplay(playerId, points) {
+        console.log('Updating points display:', playerId, points);  // Debug log
+        const playerElement = document.querySelector(`[data-player-id="${playerId}"]`);
+        console.log('Player element:', playerElement);  // Debug log
+        
+        if (playerElement) {
+            let pointsSpan = playerElement.querySelector('.points-span');
+            if (!pointsSpan) {
+                pointsSpan = document.createElement('span');
+                pointsSpan.className = 'points-span ml-2 text-green-600';
+                playerElement.appendChild(pointsSpan);
+            }
+            pointsSpan.textContent = `Points: ${points}`;
+        }
+    },
+
+    showPointsUpdate(points) {
+        console.log('Showing points update:', points);  // Debug log
+        const pointsUpdate = document.getElementById('points-update');
+        const pointsText = pointsUpdate.querySelector('.points-text');
+        
+        pointsUpdate.classList.remove('hidden');
+        pointsText.textContent = `+${points} points!`;
+        
+        setTimeout(() => {
+            pointsUpdate.classList.add('hidden');
+        }, 3000);
+    },
+
+    init() {
+        console.log('Initializing points display');  // Debug log
+        const players = document.querySelectorAll('[data-player-id]');
+        players.forEach(player => {
+            const playerId = player.getAttribute('data-player-id');
+            const points = {{ room.points|safe }}[playerId] || 0;  // Add safe filter
+            console.log('Initial points for player:', playerId, points);  // Debug log
+            this.updatePointsDisplay(playerId, points);
+        });
+    }
+};
+
+// Initialize points display when document loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing points');  // Debug log
+    PointsManager.init();
+});
+
+// Modify the existing checkAnswer function to include points
+const originalCheckAnswer = window.checkAnswer;
+window.checkAnswer = function(selected, correct) {
+    if (originalCheckAnswer) {
+        const promise = originalCheckAnswer(selected, correct);
+        promise.then(data => {
+            if (data.success && data.points_earned) {
+                PointsManager.showPointsUpdate(data.points_earned);
+                PointsManager.updatePointsDisplay('{{ user.id }}', data.total_points);
+            }
+        });
+        return promise;
+    }
+};
+</script>
+{% endblock %}

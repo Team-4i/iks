@@ -1,0 +1,949 @@
+{% load static %}
+<!-- Chat Widget Container -->
+<div id="lawbot-widget" class="fixed bottom-4 right-4 z-50">
+    <!-- Chat Icon Button with improved visibility and clickability -->
+    <button id="chat-toggle" 
+            class="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-4 shadow-lg cursor-pointer z-50 relative"
+            style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z" />
+        </svg>
+    </button>
+
+    <!-- Chat Window -->
+    <div id="chat-window" 
+         class="chat-window hidden"
+         style="position: fixed; bottom: 100px; right: 20px; width: 384px; max-height: 80vh; display: flex; flex-direction: column; background-color: #1F2937; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 10001;">
+        <!-- Chat Header -->
+        <div class="p-4 border-b border-gray-700 flex-shrink-0">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-purple-400">LawBot Assistant</h3>
+                <div class="flex items-center gap-2">
+                    <button id="disclaimer-btn" 
+                            class="text-gray-400 hover:text-purple-400 p-2 rounded-full transition-colors duration-200"
+                            title="Disclaimer">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button id="chat-minimize" 
+                            class="close-button text-gray-400 hover:text-red-500 hover:bg-gray-700 p-2 rounded-full transition-colors duration-200"
+                            title="Close chat">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <button id="speech-toggle" 
+                            class="text-gray-400 hover:text-purple-400 p-2 rounded-full transition-colors duration-200"
+                            title="Toggle Speech Output">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Disclaimer message -->
+            <div id="disclaimer-message" class="mt-2 p-3 bg-gray-800 rounded-lg text-sm text-gray-300 border border-purple-500 hidden">
+                <p>This content is AI-generated and may not be fully accurate. We encourage users to explore and verify information about Sansthaein Aur Samvidhan through their own research. Thank you for understanding!</p>
+            </div>
+        </div>
+        
+        <!-- Chat Messages Container -->
+        <div id="chat-container" 
+             class="flex-grow overflow-y-auto p-4 space-y-4"
+             style="max-height: calc(80vh - 180px); background-color: #1F2937;">
+            <!-- Messages will be added here -->
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="p-4 border-t border-gray-700 flex-shrink-0">
+            <form id="chat-form" class="flex gap-2">
+                {% csrf_token %}
+                <input type="text" 
+                       id="user-input" 
+                       class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                       placeholder="Ask your question...">
+                <!-- Add mic button -->
+                <button type="button" 
+                        id="mic-button"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center"
+                        title="Voice Input">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button type="submit" 
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Message styles */
+    .message {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+        border: 1px solid #4A3728;  /* Adding consistent border */
+    }
+
+    .user-message {
+        background-color: #4B5563;
+        color: white;
+        margin-left: 20%;
+        border: 1px solid #374151;  /* Darker border for user messages */
+    }
+
+    .ai-message {
+        background-color: #374151;
+        color: white;
+        margin-right: 20%;
+        border: 1px solid #4B5563;  /* Lighter border for AI messages */
+    }
+
+    /* Ensure messages maintain style when disclaimer is shown */
+    #chat-container .message {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Disclaimer styles */
+    #disclaimer-message {
+        max-height: 30vh;
+        overflow-y: auto;
+        transition: all 0.3s ease;
+        opacity: 1;
+        position: relative;
+        z-index: 2;
+        margin-top: 0.5rem;
+        border: 1px solid #8B5CF6;  /* Purple border for disclaimer */
+    }
+
+    /* Keep existing styles */
+    .chat-window {
+        display: flex;
+        flex-direction: column;
+        max-height: 80vh;
+        height: auto;
+    }
+
+    #chat-container {
+        position: relative;
+        z-index: 1;
+        scrollbar-width: thin;
+        scrollbar-color: #4B5563 #1F2937;
+    }
+
+    /* Ensure the chat container scrolls properly */
+    #chat-container {
+        scrollbar-width: thin;
+        scrollbar-color: #4B5563 #1F2937;
+    }
+
+    #chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #chat-container::-webkit-scrollbar-track {
+        background: #1F2937;
+    }
+
+    #chat-container::-webkit-scrollbar-thumb {
+        background: #4B5563;
+        border-radius: 4px;
+    }
+
+    /* Ensure disclaimer stays within bounds */
+    #disclaimer-message {
+        max-height: 30vh;
+        overflow-y: auto;
+        transition: all 0.3s ease;
+        opacity: 1;
+        position: relative;
+        z-index: 10002;
+    }
+
+    #disclaimer-message.hidden {
+        display: none;
+        opacity: 0;
+    }
+
+    /* Animation for disclaimer */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #disclaimer-message:not(.hidden) {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Ensure the chat widget stays within viewport on mobile */
+    @media (max-width: 640px) {
+        #chat-window {
+            width: 90vw;
+            right: 5vw;
+            bottom: 80px;
+        }
+    }
+
+    /* Style the chat toggle button */
+    #chat-toggle {
+        transition: transform 0.2s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #chat-toggle:hover {
+        transform: scale(1.1);
+    }
+
+    /* Style the messages */
+    .message {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+    }
+
+    .user-message {
+        background-color: #4B5563;
+        color: white;
+        margin-left: 20%;
+    }
+
+    .ai-message {
+        background-color: #374151;
+        color: white;
+        margin-right: 20%;
+    }
+
+    /* Scrollbar styling */
+    #chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #chat-container::-webkit-scrollbar-track {
+        background: #1F2937;
+    }
+
+    #chat-container::-webkit-scrollbar-thumb {
+        background: #4B5563;
+        border-radius: 4px;
+    }
+
+    .close-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .close-button:hover {
+        border-color: #ef4444;  /* red-500 */
+        transform: scale(1.1);
+    }
+
+    .close-button svg {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .close-button:hover svg {
+        stroke: #ef4444;  /* red-500 */
+    }
+
+    /* Add a subtle animation when closing */
+    .chat-window.hidden {
+        display: none;
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .chat-window {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .sources-section {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px solid #4B5563;
+    }
+    .sources-section h4 {
+        color: #a78bfa;
+        margin-bottom: 8px;
+    }
+    .sources-list {
+        padding-left: 20px;
+    }
+    .source-item {
+        color: #ddd6fe;
+        margin-bottom: 5px;
+        list-style-type: disc;
+    }
+    .source-item a {
+        color: #818cf8;
+        text-decoration: underline;
+    }
+
+    #disclaimer-btn {
+        font-size: 1.2rem;
+    }
+
+    #disclaimer-message {
+        transition: all 0.3s ease;
+        opacity: 1;
+    }
+
+    #disclaimer-message.hidden {
+        display: none;
+        opacity: 0;
+    }
+
+    /* Animation for disclaimer message */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #disclaimer-message:not(.hidden) {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    #mic-button {
+        position: relative;
+        min-width: 44px;
+    }
+
+    #mic-button.listening {
+        background-color: #ef4444;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .mic-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #374151;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        display: none;
+        margin-bottom: 8px;
+    }
+
+    #mic-button:hover .mic-tooltip {
+        display: block;
+    }
+
+    #speech-toggle {
+        transition: all 0.2s ease;
+    }
+
+    #speech-toggle.active {
+        color: #8B5CF6;
+    }
+
+    #speech-toggle.speaking {
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+        /* Chat Widget Container */
+        #lawbot-widget {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            z-index: 9999;
+        }
+
+        /* Chat Toggle Button */
+        #chat-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            padding: 12px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            background-color: #8B5CF6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #chat-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Chat Window */
+        #chat-window {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            z-index: 10001 !important;
+        }
+
+        /* Chat Header */
+        .p-4.border-b.border-gray-700 {
+            padding: 16px;
+            background-color: #1F2937;
+            border-bottom: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        /* Chat Messages Container */
+        #chat-container {
+            flex: 1;
+            padding: 16px;
+            margin-bottom: 70px;
+            overflow-y: auto;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            max-width: 85%;
+            border-radius: 12px;
+        }
+
+        /* Chat Input Form */
+        .p-4.border-t.border-gray-700 {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1F2937;
+            padding: 12px;
+            border-top: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        #chat-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        #user-input {
+            flex: 1;
+            height: 44px;
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 22px;
+        }
+
+        /* Input Buttons */
+        #mic-button,
+        button[type="submit"] {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* When Chat is Hidden */
+        .chat-window.hidden {
+            display: none !important;
+        }
+    }
+
+    /* Small devices */
+    @media (max-width: 375px) {
+        #chat-toggle {
+            bottom: 16px;
+            right: 16px;
+        }
+
+        .message {
+            font-size: 14px;
+            padding: 10px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatWindow = document.getElementById('chat-window');
+    const chatMinimize = document.getElementById('chat-minimize');
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatContainer = document.getElementById('chat-container');
+    const disclaimerBtn = document.getElementById('disclaimer-btn');
+    const disclaimerMessage = document.getElementById('disclaimer-message');
+    const micButton = document.getElementById('mic-button');
+    let recognition;
+
+    // Toggle chat window
+    chatToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (chatWindow.style.display === 'none' || chatWindow.classList.contains('hidden')) {
+            chatWindow.style.display = 'block';
+            chatWindow.classList.remove('hidden');
+            // Force a reflow
+            chatWindow.offsetHeight;
+            chatWindow.style.opacity = '1';
+            chatWindow.style.transform = 'scale(1)';
+        } else {
+            chatWindow.style.opacity = '0';
+            chatWindow.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                chatWindow.style.display = 'none';
+                chatWindow.classList.add('hidden');
+            }, 200);
+        }
+        console.log('Chat window toggled, display:', chatWindow.style.display);
+    });
+
+    // Minimize chat window
+    chatMinimize.addEventListener('click', function(e) {
+        e.preventDefault();
+        chatWindow.style.opacity = '0';
+        chatWindow.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            chatWindow.style.display = 'none';
+            chatWindow.classList.add('hidden');
+        }, 200);
+    });
+
+    // Handle form submission with absolute URL
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const question = userInput.value.trim();
+        if (!question) return;
+
+        try {
+            // Show user message
+            appendMessage('user', question);
+            userInput.value = '';
+
+            // Show loading message
+            const loadingId = 'loading-' + Date.now();
+            appendMessage('ai', 'Thinking...', loadingId);
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Use absolute URL path
+            const response = await fetch('{% url "users:chat" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ question: question })
+            });
+
+            // Remove loading message
+            const loadingMsg = document.getElementById(loadingId);
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status === 'error') {
+                appendMessage('ai', `Error: ${data.error}`);
+            } else {
+                appendMessage('ai', data.answer);
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            appendMessage('ai', 'Sorry, I encountered an error. Please try again.');
+        }
+    });
+
+    function formatMessage(content) {
+        // First, handle the Sources section specially
+        let parts = content.split('## Sources');
+        let mainContent = parts[0];
+        let sources = parts[1] || '';
+
+        // Format main content
+        mainContent = mainContent
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/##(.*?)(\n|$)/g, '<h4>$1</h4>')
+            .replace(/•(.*?)(\n|$)/g, '<li>$1</li>')
+            .replace(/\n\n/g, '<br><br>');
+
+        // Format sources section if it exists
+        if (sources) {
+            sources = sources.trim();
+            
+            // Convert markdown links to HTML links with proper formatting
+            sources = sources.replace(
+                /•\s*\[(.*?)\]\((https?:\/\/[^\s\)]+)\)(\s*-\s*([^•\n]*))?/g,
+                (match, title, url, _, description) => {
+                    return `<li class="source-item">
+                        <a href="${url}" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="source-link"
+                           onclick="event.stopPropagation()">
+                            ${title}
+                        </a>
+                        ${description ? ` - ${description}` : ''}
+                    </li>`;
+                }
+            );
+
+            sources = `
+                <div class="sources-section">
+                    <h4>Sources</h4>
+                    <ul class="sources-list">
+                        ${sources}
+                    </ul>
+                </div>`;
+        }
+
+        return mainContent + sources;
+    }
+
+    // Load previous messages from sessionStorage
+    function loadMessages() {
+        const messages = JSON.parse(sessionStorage.getItem('chatMessages') || '[]');
+        messages.forEach(msg => {
+            appendMessage(msg.type, msg.content, false); // false means don't save to storage
+        });
+    }
+
+    // Save message to sessionStorage
+    function saveMessage(type, content) {
+        const messages = JSON.parse(sessionStorage.getItem('chatMessages') || '[]');
+        messages.push({ type, content });
+        sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+
+    // Modified appendMessage function
+    function appendMessage(type, content, save = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}-message bg-gray-700 p-4 rounded-lg`;
+        
+        if (type === 'user') {
+            messageDiv.innerHTML = `<strong>You:</strong><br>${content}`;
+        } else {
+            const formattedContent = formatMessage(content);
+            messageDiv.innerHTML = `<strong>LawBot:</strong><br>${formattedContent}`;
+        }
+        
+        chatContainer.appendChild(messageDiv);
+        
+        // Modified scrolling behavior
+        if (type === 'ai') {
+            // For AI responses, scroll to show the beginning of the message
+            messageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            // For user messages, scroll to the bottom as before
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Save message if needed
+        if (save) {
+            saveMessage(type, content);
+        }
+    }
+
+    // Load previous messages when page loads
+    loadMessages();
+
+    // Clear chat history when window is closed
+    window.addEventListener('beforeunload', function() {
+        if (document.visibilityState === 'hidden') {
+            sessionStorage.removeItem('chatMessages');
+        }
+    });
+
+    // Add some CSS for formatted messages
+    const style = document.createElement('style');
+    style.textContent = `
+        .ai-message h4 {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #a78bfa;
+        }
+        .ai-message li {
+            margin-left: 20px;
+            margin-bottom: 5px;
+            list-style-type: disc;
+        }
+        .ai-message strong {
+            color: #e9d5ff;
+        }
+        .ai-message em {
+            color: #ddd6fe;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Add welcome message only if no previous messages exist
+    if (!sessionStorage.getItem('chatMessages')) {
+        appendMessage('ai', 'Welcome to LawBot! 👋\n\nHow can I assist you today?');
+    }
+
+    // Add these styles to your existing styles
+    const additionalStyles = `
+        .sources-section {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #4B5563;
+        }
+        .sources-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .source-item {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .source-item:before {
+            content: "•";
+            position: absolute;
+            left: 5px;
+            color: #ddd6fe;
+        }
+        .source-item a {
+            color: #818cf8;
+            text-decoration: underline;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .source-item a:hover {
+            color: #a78bfa;
+        }
+    `;
+
+    // Add the styles to the document
+    const styleElement = document.createElement('style');
+    styleElement.textContent = additionalStyles;
+    document.head.appendChild(styleElement);
+
+    // Toggle disclaimer message
+    disclaimerBtn.addEventListener('click', function() {
+        disclaimerMessage.classList.toggle('hidden');
+    });
+
+    // Show disclaimer on initial load
+    disclaimerMessage.classList.remove('hidden');
+    
+    // Hide disclaimer after 5 seconds
+    setTimeout(() => {
+        disclaimerMessage.classList.add('hidden');
+    }, 5000);
+
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN'; // Set to Indian English
+
+        recognition.onstart = function() {
+            micButton.classList.add('listening');
+            userInput.placeholder = "Listening...";
+            // Add tooltip while listening
+            const tooltip = document.createElement('div');
+            tooltip.className = 'mic-tooltip';
+            tooltip.textContent = 'Listening...';
+            micButton.appendChild(tooltip);
+        };
+
+        recognition.onend = function() {
+            micButton.classList.remove('listening');
+            userInput.placeholder = "Ask your question...";
+            // Remove tooltip
+            const tooltip = micButton.querySelector('.mic-tooltip');
+            if (tooltip) tooltip.remove();
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            // Auto submit after voice input
+            setTimeout(() => {
+                document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+            }, 500);
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            micButton.classList.remove('listening');
+            userInput.placeholder = "Ask your question...";
+            // Remove tooltip
+            const tooltip = micButton.querySelector('.mic-tooltip');
+            if (tooltip) tooltip.remove();
+
+            if (event.error === 'not-allowed') {
+                alert('Please enable microphone access to use voice input.');
+            }
+        };
+
+        micButton.addEventListener('click', function() {
+            if (micButton.classList.contains('listening')) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        micButton.style.display = 'none';
+        console.log('Speech recognition not supported');
+    }
+
+    // Text-to-Speech functionality
+    let speechEnabled = false;
+    const speechToggle = document.getElementById('speech-toggle');
+    const synth = window.speechSynthesis;
+    let currentUtterance = null;
+
+    // Initialize speech settings
+    function initializeSpeech() {
+        speechEnabled = localStorage.getItem('speechEnabled') === 'true';
+        updateSpeechToggleUI();
+    }
+
+    // Update speech toggle button UI
+    function updateSpeechToggleUI() {
+        if (speechEnabled) {
+            speechToggle.classList.add('active');
+        } else {
+            speechToggle.classList.remove('active');
+        }
+    }
+
+    // Toggle speech functionality
+    speechToggle.addEventListener('click', () => {
+        speechEnabled = !speechEnabled;
+        localStorage.setItem('speechEnabled', speechEnabled);
+        updateSpeechToggleUI();
+        
+        // Stop current speech if any
+        if (!speechEnabled && currentUtterance) {
+            synth.cancel();
+        }
+    });
+
+    // Speak text function
+    function speakText(text) {
+        if (!speechEnabled) return;
+        
+        // Stop any current speech
+        if (currentUtterance) {
+            synth.cancel();
+        }
+        
+        // Clean up the text by removing markdown and other formatting
+        const cleanText = text
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/##(.*?)(\n|$)/g, '$1')
+            .replace(/•(.*?)(\n|$)/g, '$1')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .split('## Sources')[0] // Remove sources section
+            .trim();
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        
+        // Set voice preferences
+        utterance.lang = 'en-IN';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        
+        // Get available voices and set a suitable one
+        const voices = synth.getVoices();
+        const preferredVoice = voices.find(voice => 
+            voice.lang.includes('en-IN') || 
+            voice.lang.includes('en-GB') || 
+            voice.lang.includes('en-US')
+        );
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+
+        // Add event handlers
+        utterance.onstart = () => {
+            speechToggle.classList.add('speaking');
+        };
+        
+        utterance.onend = () => {
+            speechToggle.classList.remove('speaking');
+            currentUtterance = null;
+        };
+        
+        utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event);
+            speechToggle.classList.remove('speaking');
+            currentUtterance = null;
+        };
+
+        currentUtterance = utterance;
+        synth.speak(utterance);
+    }
+
+    // Initialize speech settings on load
+    initializeSpeech();
+
+    // Modify the appendMessage function to include speech
+    const originalAppendMessage = appendMessage;
+    appendMessage = function(type, content, save = true) {
+        originalAppendMessage(type, content, save);
+        if (type === 'ai') {
+            speakText(content);
+        }
+    };
+
+    // Add event listener for visibility change to handle speech when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && currentUtterance) {
+            synth.pause();
+        } else if (!document.hidden && currentUtterance) {
+            synth.resume();
+        }
+    });
+
+    // Stop speech when chat window is closed
+    chatMinimize.addEventListener('click', () => {
+        if (currentUtterance) {
+            synth.cancel();
+        }
+    });
+});
+</script> 

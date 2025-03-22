@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/game1.css' %}"> 
+<div class="game-library">
+    <div class="scroll-decoration top"></div>
+    
+    <div class="game-grid">
+        <!-- Samvidhan Setu (Snake and Ladder) -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/snake_ladder.png' %}" alt="Samvidhan Setu Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Quiz Game</span>
+                <h3>Samvidhan Setu</h3>
+                <div class="decorative-line"></div>
+                <p>Embark on an exciting adventure through the foundational principles of India's Constitution with this unique twist on the classic Snake and Ladder game.</p>
+            
+                <div class="game-footer">
+                    <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="play-btn">Play Now</a>
+                </div>            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Samvidhan Squares -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/samvidhan_setu.png' %}" alt="Samvidhan Squares">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Brain Game</span>
+                <h3>Samvidhan Squares</h3>
+                <div class="decorative-line"></div>
+                <p>Challenge yourself with this strategic game that tests your knowledge of constitutional principles while competing to complete squares.</p>
+                <div class="game-footer">
+                    <a href="{% url 'housie_consti:housie_intro' %}" class="play-btn">Play Now</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Flip Card Game -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/memory.png' %}" alt="Flip Card Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Memory Game</span>
+                <h3>Flip Card</h3>
+                <div class="decorative-line"></div>
+                <p>Test your memory and knowledge by matching constitutional concepts, articles, and historical events in this engaging flip card challenge.</p>
+                <div class="game-footer">
+                    <a href="{% url 'flip_card:start_page' %}" class="play-btn">Play Now</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Spinwheel Game -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/spinwheel.png' %}" alt="Spinwheel Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Strategy Game</span>
+                <h3>Spinwheel</h3>
+                <div class="decorative-line"></div>
+                <p>Spin the wheel of knowledge and answer questions about India's constitution, earning points and unlocking new categories as you progress.</p>
+                <div class="game-footer">
+                    <a href="{% url 'spinwheel:spinwheel_intro' %}" class="play-btn">Spin Now</a>
+                    <a href="{% url 'spinwheel:collection' %}" class="play-btn">View Cards</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+    </div>
+    
+    <div class="scroll-decoration bottom"></div>
+</div>
+{% endblock %} 

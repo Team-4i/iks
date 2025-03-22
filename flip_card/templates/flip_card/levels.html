@@ -1,0 +1,386 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constitutional Duties - Level Selection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --parchment-light: #F5E6D3;
+            --parchment-dark: #DBC1A4;
+            --ink-color: #2C1810;
+            --seal-red: #8B0000;
+            --gold-accent: #996515;
+            --border-brown: #4A3728;
+        }
+
+        body {
+            font-family: 'Crimson Text', serif;
+            margin: 0;
+            min-height: 100vh;
+            background: var(--parchment-light);
+            background-image: url('parchment-texture.png');
+            color: var(--ink-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            color: var(--seal-red);
+            text-shadow: 2px 2px var(--parchment-dark);
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 3px;
+            background: var(--gold-accent);
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            .levels-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .levels-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .level-card {
+            background: var(--parchment-light);
+            border: 3px double var(--border-brown);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .level-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .level-number {
+            font-size: 2.5em;
+            color: var(--seal-red);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .level-title {
+            font-size: 1.8em;
+            color: var(--ink-color);
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .level-info {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.2em;
+        }
+
+        .difficulty {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .star {
+            color: var(--gold-accent);
+            font-size: 1.5em;
+        }
+
+        .level-stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--parchment-dark);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: var(--ink-color);
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--seal-red);
+        }
+
+        .level-progress {
+            width: 100%;
+            height: 8px;
+            background: var(--parchment-dark);
+            border-radius: 4px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gold-accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .locked {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+        }
+
+        .level-badge {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            padding: 15px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1000;
+            background: #000;
+        }
+
+        #bgVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+        }
+
+        .start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-end;
+            background: rgba(0, 0, 0, 0);
+        }
+
+        .start-button {
+            margin: 0 0 180px 230px;
+            padding: 20px 60px;
+            font-size: 2rem;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Crimson Text', serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .start-button {
+                margin: 0 0 50px 50px;
+                padding: 15px 40px;
+                font-size: 1.5rem;
+            }
+        }
+
+        #volumeButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #volumeButton:hover {
+            background: #6b0000; /* Darker red on hover */
+            transform: scale(1.1); /* Slightly enlarge on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Document Memory Game</h1>
+        </div>
+        
+        <div class="levels-grid">
+            {% for level, data in levels_data.items %}
+            <div class="level-card {% if not data.unlocked %}locked{% endif %}" 
+                 {% if data.unlocked %}onclick="startLevel({{ level }})"{% endif %}>
+                <div class="level-badge">{{ level }}</div>
+                <div class="level-title">Level {{ level }}</div>
+                <div class="level-info">
+                    <i class="fas fa-file-alt"></i> {{ data.document_count }} documents to match
+                </div>
+                <div class="difficulty">
+                    {% for i in '123'|make_list %}
+                        <span class="star">
+                            <i class="{% if forloop.counter <= level %}fas{% else %}far{% endif %} fa-star"></i>
+                        </span>
+                    {% endfor %}
+                </div>
+                <div class="level-stats">
+                    <div class="stat">
+                        <div class="stat-label">Best Time</div>
+                        <div class="stat-value">
+                            {% if data.best_time %}
+                                {{ data.best_time }}s
+                            {% else %}
+                                --:--
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">High Score</div>
+                        <div class="stat-value">
+                            {% if data.high_score %}
+                                {{ data.high_score }}
+                            {% else %}
+                                ---
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="level-progress">
+                    <div class="progress-bar" style="width: {% if data.completed %}100{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function startLevel(level) {
+            window.location.href = `{% url 'flip_card:flip_card_game' %}?level=${level}`;
+        }
+
+        // Debug logging
+        console.group('Levels Overview:');
+        const levelsData = {{ levels_data|safe }};
+        console.table(levelsData);
+        console.groupEnd();
+
+        // Print detailed info for each level
+        Object.entries(levelsData).forEach(([level, data]) => {
+            console.group(`Level ${level} Details:`);
+            console.table({
+                'Unlocked': data.unlocked,
+                'Completed': data.completed,
+                'High Score': data.high_score,
+                'Best Time': data.best_time,
+                'Document Count': data.document_count
+            });
+            console.groupEnd();
+        });
+    </script>
+
+    <!-- Add this before the closing </body> tag -->
+    <audio id="backgroundMusic" loop>
+        <source src="{% static 'flip_card/audio/bg.mp3' %}" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <button id="volumeButton" onclick="toggleVolume()">
+        <i class="fas fa-volume-up" id="volumeIcon"></i>
+    </button>
+
+    <script>
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        let isMuted = false;
+
+        function toggleVolume() {
+            isMuted = !isMuted;
+            backgroundMusic.volume = isMuted ? 0 : 0.6; // Set volume to 0 or 0.6
+            document.getElementById('volumeIcon').className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+        }
+
+        // Start playing the music when the levels page is loaded
+        window.onload = function() {
+            backgroundMusic.play();
+        };
+    </script>
+</body>
+</html> 

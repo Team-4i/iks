@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    body {
+        font-family: 'Arial', sans-serif; /* Modern font style */
+        background-color: #f0f4f8; /* Light background for contrast */
+    }
+
+    h2 {
+        color: #333; /* Darker text for headings */
+        text-align: center;
+    }
+
+    .table-container {
+        max-width: 800px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+
+    .table-header {
+        background-color: #4CAF50; /* Green header */
+        color: white;
+        padding: 10px;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th, .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .table tr:hover {
+        background-color: #f1f1f1; /* Highlight row on hover */
+    }
+
+    .btn {
+        background-color: #4CAF50; /* Green button */
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn:hover {
+        background-color: #45a049; /* Darker green on hover */
+    }
+
+    .drag-drop {
+        cursor: move; /* Indicate draggable items */
+    }
+</style>
+
+<div class="table-container">
+    <h2>Manage Articles and Cases</h2>
+    <div>
+        <h3>Articles</h3>
+        <a href="{% url 'housie_consti:add_article' %}" class="btn">Add Article</a>
+        <div id="articles" class="drag-drop-container">
+            <div class="table-header">Articles List</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr class="drag-drop" data-id="{{ article.id }}">
+                        <td>{{ article.title }}</td>
+                        <td>
+                            <a href="{% url 'housie_consti:edit_article' article.id %}">Edit</a>
+                            <a href="{% url 'housie_consti:delete_article' article.id %}">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        <h3>Cases</h3>
+        <a href="{% url 'housie_consti:add_case' %}" class="btn">Add Case</a>
+        <div id="cases" class="drag-drop-container">
+            <div class="table-header">Cases List</div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr class="drag-drop" data-id="{{ case.id }}">
+                        <td>{{ case.article.title }}</td>
+                        <td>{{ case.description }}</td>
+                        <td>
+                            <a href="{% url 'housie_consti:edit_case' case.id %}">Edit</a>
+                            <a href="{% url 'housie_consti:delete_case' case.id %}">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script>
+    $(function() {
+        $("#articles, #cases").sortable({
+            items: ".drag-drop",
+            placeholder: "ui-state-highlight",
+            update: function(event, ui) {
+                var sortedIDs = $(this).sortable("toArray");
+                // Here you can send the sorted IDs to the server via AJAX if needed
+                console.log(sortedIDs);
+            }
+        }).disableSelection();
+    });
+</script>
+{% endblock %} 

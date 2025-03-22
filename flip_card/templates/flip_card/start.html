@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constitutional Duties - Start Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --parchment-light: #F5E6D3;
+            --parchment-dark: #DBC1A4;
+            --ink-color: #2C1810;
+            --seal-red: #8B0000;
+            --gold-accent: #996515;
+            --border-brown: #4A3728;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1000;
+            background: #000;
+        }
+
+        #bgVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+        }
+
+        .start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-end;
+            background: rgba(0, 0, 0, 0);
+        }
+
+        .start-button {
+            margin: 0 0 15vh 23vh;
+            padding: 20px 60px;
+            font-size: 2rem;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Crimson Text', serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        #volumeButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px;
+            background: var(--seal-red);
+            color: var(--parchment-light);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #volumeButton:hover {
+            background: #6b0000;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .start-button {
+                margin: 0 0 50px 50px;
+                padding: 15px 40px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video autoplay muted id="bgVideo">
+            <source src="{% static 'flip_card/videos/startgame.mp4' %}" type="video/mp4">
+        </video>
+        <div class="start-overlay">
+            <button class="start-button" onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <audio id="backgroundMusic" loop>
+        <source src="{% static 'flip_card/audio/bg.mp3' %}" type="audio/mp3">
+    </audio>
+
+    <button id="volumeButton" onclick="toggleVolume()">
+        <i class="fas fa-volume-up" id="volumeIcon"></i>
+    </button>
+
+    <script>
+        function startGame() {
+            // Simply redirect to levels page - no more filtering needed
+            window.location.href = "{% url 'flip_card:levels_page' %}";
+        }
+
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        let isMuted = false;
+
+        function toggleVolume() {
+            isMuted = !isMuted;
+            backgroundMusic.volume = isMuted ? 0 : 0.6;
+            document.getElementById('volumeIcon').className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+        }
+
+        window.onload = function() {
+            backgroundMusic.play();
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,827 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.css" rel="stylesheet">
+<style>
+    .ide-container {
+        display: grid;
+        grid-template-columns: 250px 1fr 300px;
+        gap: 20px;
+        padding: 20px;
+        height: calc(100vh - 100px);
+        background: #1e1e1e;
+    }
+
+    .models-panel, .history-panel {
+        background: #252526;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        overflow-y: auto;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .prompt-section {
+        background: #2d2d2d;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .prompt-input {
+        width: 100%;
+        min-height: 100px;
+        padding: 15px;
+        border: 1px solid #3e3e3e;
+        border-radius: 8px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        font-family: 'Monaco', monospace;
+        margin-bottom: 10px;
+        resize: vertical;
+    }
+
+    .improvement-notes {
+        width: 100%;
+        min-height: 60px;
+        padding: 12px;
+        border: 1px solid #3e3e3e;
+        border-radius: 6px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        margin-top: 10px;
+        display: none;
+    }
+
+    .model-item {
+        background: #2d2d2d;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
+
+    .model-name {
+        font-weight: bold;
+        color: #569cd6;
+        margin-bottom: 8px;
+        font-size: 1.1em;
+    }
+
+    .field-list {
+        margin-left: 15px;
+        font-size: 0.9em;
+        color: #9cdcfe;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+    }
+
+    .action-button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .ai-suggest {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .execute-code {
+        background: #2196F3;
+        color: white;
+    }
+
+    .improve-code {
+        background: #FF9800;
+        color: white;
+    }
+
+    .example {
+        background: #7E57C2;
+        color: white;
+    }
+
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        filter: brightness(110%);
+    }
+
+    .CodeMirror {
+        height: calc(100vh - 350px);
+        border-radius: 8px;
+        font-family: 'Monaco', monospace;
+        font-size: 14px;
+    }
+
+    .output-panel {
+        background: #252526;
+        color: #d4d4d4;
+        padding: 15px;
+        border-radius: 8px;
+        min-height: 100px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: 'Monaco', monospace;
+        margin-top: 15px;
+    }
+
+    .section-title {
+        color: #569cd6;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #3e3e3e;
+        padding-bottom: 8px;
+    }
+
+    .history-item {
+        background: #2d2d2d;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .history-item:hover {
+        background: #3d3d3d;
+    }
+
+    .timestamp {
+        font-size: 0.8em;
+        color: #569cd6;
+        margin-top: 5px;
+    }
+
+    /* Tooltips */
+    [data-tooltip] {
+        position: relative;
+    }
+
+    [data-tooltip]:before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 5px 10px;
+        background: #3e3e3e;
+        color: #d4d4d4;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    [data-tooltip]:hover:before {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .shell-panel {
+        background: #1e1e1e;
+        border-radius: 8px;
+        margin-top: 20px;
+        overflow: hidden;
+    }
+
+    .shell-header {
+        background: #252526;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .shell-header h3 {
+        color: #d4d4d4;
+        margin: 0;
+    }
+
+    .shell-content {
+        padding: 20px;
+    }
+
+    .package-manager {
+        margin-bottom: 20px;
+    }
+
+    .package-input {
+        width: 100%;
+        padding: 10px;
+        background: #2d2d2d;
+        border: 1px solid #3e3e3e;
+        border-radius: 4px;
+        color: #d4d4d4;
+        font-family: 'Monaco', monospace;
+        margin-bottom: 10px;
+    }
+
+    .shell-output {
+        background: #000000;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: 'Monaco', monospace;
+        color: #00ff00;
+        min-height: 150px;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+
+    .install {
+        background: #4CAF50;
+    }
+
+    .list {
+        background: #2196F3;
+    }
+
+    .help-section {
+        background: #2d2d2d;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .help-item {
+        margin-bottom: 20px;
+    }
+
+    .help-item h4 {
+        color: #569cd6;
+        margin: 0 0 10px 0;
+    }
+
+    .command-example {
+        background: #1e1e1e;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: 'Monaco', monospace;
+        font-size: 0.9em;
+        color: #d4d4d4;
+        white-space: pre-wrap;
+        margin: 0;
+    }
+
+    .models-section {
+        margin-top: 20px;
+    }
+
+    .help-item pre {
+        border-left: 3px solid #569cd6;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="ide-container">
+    <div class="models-panel">
+        <div class="help-section">
+            <h3>🤖 AI Data Generation Guide</h3>
+            
+            <div class="help-item">
+                <h4>📝 Basic Usage</h4>
+                <pre class="command-example">
+# 1. Initialize the AI Helper
+gemini_helper = GeminiHelper()
+
+# 2. Generate data for any model
+result = gemini_helper.generate_model_data(
+    target_model=YourModel,
+    context="Your requirements here",
+    count=5  # Number of entries
+)
+
+# 3. Check results
+print(result['message'])</pre>
+            </div>
+
+            <div class="help-item">
+                <h4>🎯 Complete Examples</h4>
+                <button class="example-button" onclick="loadExample('cases_example')">Generate Legal Cases</button>
+                <button class="example-button" onclick="loadExample('questions_example')">Generate Quiz Questions</button>
+                <button class="example-button" onclick="loadExample('custom_example')">Custom Model Example</button>
+            </div>
+
+            <div class="help-item">
+                <h4>💡 Writing Context Tips</h4>
+                <ul class="tips-list">
+                    <li>Be specific about requirements</li>
+                    <li>Mention relevant articles</li>
+                    <li>Specify data characteristics</li>
+                    <li>Include any constraints</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="models-section">
+            <h3>📚 Available Models</h3>
+            <div id="modelsInfo"></div>
+        </div>
+    </div>
+
+    <div class="editor-panel">
+        <div class="prompt-section">
+            <textarea 
+                class="prompt-input" 
+                id="aiPrompt" 
+                placeholder="Describe what you want to do with the models...
+Example: 'Generate 10 legal cases from Constitutional Articles about fundamental rights'"></textarea>
+            
+            <textarea 
+                class="improvement-notes" 
+                id="improvementNotes" 
+                placeholder="Add notes about what improvements you want (optimization, error handling, etc.)"></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="action-button ai-suggest" onclick="getAISuggestion()" data-tooltip="Generate code from prompt">
+                Get AI Suggestion
+            </button>
+            <button class="action-button execute-code" onclick="executeCode()" data-tooltip="Run the code">
+                Execute Code
+            </button>
+            <button class="action-button improve-code" onclick="toggleImprovementNotes()" data-tooltip="Improve current code">
+                Improve Code
+            </button>
+        </div>
+
+        <div class="button-group">
+            <button class="action-button example" onclick="loadExample('generate_cases')">
+                Cases Example
+            </button>
+            <button class="action-button example" onclick="loadExample('generate_questions')">
+                Questions Example
+            </button>
+        </div>
+
+        <textarea id="codeEditor"></textarea>
+
+        <div class="output-panel" id="outputPanel">
+            Output will appear here...
+        </div>
+    </div>
+
+    <div class="history-panel">
+        <h2 class="section-title">Code History</h2>
+        <div id="codeHistory"></div>
+    </div>
+
+    <div class="shell-panel" id="shellPanel">
+        <div class="shell-header">
+            <h3>Package Manager</h3>
+            <button class="action-button" onclick="toggleShell()">Toggle Shell</button>
+        </div>
+        <div class="shell-content" id="shellContent">
+            <div class="package-manager">
+                <input type="text" id="packageName" placeholder="Enter package name (e.g., google-generativeai)" class="package-input">
+                <div class="button-group">
+                    <button class="action-button install" onclick="installPackage()">Install Package</button>
+                    <button class="action-button list" onclick="listPackages()">List Installed</button>
+                </div>
+            </div>
+            <div class="shell-output" id="shellOutput">
+                <!-- Shell output will appear here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize models info from the server
+    const modelsInfo = {{ models_info|safe }};
+    const exampleSnippets = {{ example_snippets|safe }};
+
+    // Wait for DOM and CodeMirror to load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CodeMirror
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: 'python',
+            theme: 'monokai',
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            extraKeys: {"Ctrl-Space": "autocomplete"}
+        });
+
+        // Display models info
+        function displayModelsInfo() {
+            const container = document.getElementById('modelsInfo');
+            let html = '';
+            
+            for (const [modelPath, info] of Object.entries(modelsInfo)) {
+                html += `
+                    <div class="model-item">
+                        <div class="model-name">${info.name}</div>
+                        <div class="model-import">${info.import_path}</div>
+                        <div class="field-list">
+                            <strong>Fields:</strong><br>
+                            ${info.fields.map(field => {
+                                let fieldInfo = `${field.name} (${field.type})`;
+                                if (field.required) fieldInfo += '*';
+                                if (field.related_model) fieldInfo += ` → ${field.related_model}`;
+                                return fieldInfo;
+                            }).join('<br>')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Initialize displays
+        displayModelsInfo();
+        displayHistory();
+
+        // Make editor globally available
+        window.editor = editor;
+    });
+
+    // AI Suggestion Function
+    async function getAISuggestion() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const outputPanel = document.getElementById('outputPanel');
+        
+        if (!prompt.trim()) {
+            outputPanel.innerHTML = '<div class="error-details">Please enter a prompt first</div>';
+            return;
+        }
+        
+        try {
+            outputPanel.innerHTML = '<div>Getting AI suggestion...</div>';
+            
+            const response = await fetch('{% url "dbs:ai_suggestion" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    prompt: prompt,
+                    models_info: JSON.stringify(modelsInfo)
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.editor.setValue(data.code);
+                outputPanel.innerHTML = '<div class="success-message">AI suggestion loaded into editor</div>';
+                saveToHistory(prompt);
+            } else {
+                outputPanel.innerHTML = `<div class="error-details">Error: ${data.error}</div>`;
+            }
+        } catch (error) {
+            outputPanel.innerHTML = `<div class="error-details">Error: ${error.message}</div>`;
+        }
+    }
+
+    // Execute Code Function
+    async function executeCode() {
+        const code = window.editor.getValue();
+        const outputPanel = document.getElementById('outputPanel');
+        
+        try {
+            outputPanel.innerHTML = '<div>Executing code...</div>';
+            
+            const response = await fetch('{% url "dbs:execute_code" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code: code
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                outputPanel.innerHTML = `
+                    <div class="success-message">
+                        ${data.message}
+                        ${data.debug ? `<div class="debug-info">${data.debug}</div>` : ''}
+                    </div>
+                `;
+                saveToHistory();
+            } else {
+                outputPanel.innerHTML = `
+                    <div class="error-details">
+                        <div class="error-message">Error: ${data.error}</div>
+                        ${data.traceback ? `
+                            <div class="error-traceback">
+                                <pre>${data.traceback}</pre>
+                            </div>
+                        ` : ''}
+                        <div class="error-actions">
+                            <button onclick="fixError()" class="action-button fix-error">
+                                Fix Error
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            outputPanel.innerHTML = `
+                <div class="error-details">
+                    Network Error: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    // Load Example Function
+    function loadExample(type) {
+        if (exampleSnippets[type]) {
+            window.editor.setValue(exampleSnippets[type]);
+            // If it's a case generation example, set an appropriate prompt
+            if (type === 'generate_cases') {
+                document.getElementById('aiPrompt').value = 
+                    'Generate legal cases from Constitutional Articles about fundamental rights';
+            } else if (type === 'generate_questions') {
+                document.getElementById('aiPrompt').value = 
+                    'Generate quiz questions from Constitutional Articles';
+            }
+        }
+    }
+
+    // Save to History Function
+    function saveToHistory(prompt = '') {
+        const code = window.editor.getValue();
+        if (!code.trim()) return;
+        
+        const historyItem = {
+            code: code,
+            prompt: prompt,
+            timestamp: new Date().toISOString(),
+            type: prompt ? 'AI Generated' : 'Manual'
+        };
+        
+        let history = JSON.parse(localStorage.getItem('codeHistory') || '[]');
+        history.unshift(historyItem);
+        history = history.slice(0, 10); // Keep only last 10 items
+        localStorage.setItem('codeHistory', JSON.stringify(history));
+        
+        displayHistory();
+    }
+
+    // Display History Function
+    function displayHistory() {
+        const history = JSON.parse(localStorage.getItem('codeHistory') || '[]');
+        const container = document.getElementById('codeHistory');
+        
+        container.innerHTML = history.map((item, index) => `
+            <div class="history-item" onclick="loadHistoryItem(${index})">
+                <div class="history-type">${item.type}</div>
+                <div class="history-prompt">${item.prompt || 'Manual Code'}</div>
+                <div class="timestamp">${new Date(item.timestamp).toLocaleString()}</div>
+            </div>
+        `).join('');
+    }
+
+    // Load History Item Function
+    function loadHistoryItem(index) {
+        const history = JSON.parse(localStorage.getItem('codeHistory') || '[]');
+        const item = history[index];
+        if (item) {
+            window.editor.setValue(item.code);
+            if (item.prompt) {
+                document.getElementById('aiPrompt').value = item.prompt;
+            }
+        }
+    }
+
+    // Fix Error Function
+    async function fixError() {
+        const code = window.editor.getValue();
+        const outputPanel = document.getElementById('outputPanel');
+        
+        try {
+            outputPanel.innerHTML = '<div>Analyzing error and suggesting fix...</div>';
+            
+            const response = await fetch('{% url "dbs:analyze_error" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code: code,
+                    error: outputPanel.querySelector('.error-message')?.textContent || '',
+                    traceback: outputPanel.querySelector('.error-traceback')?.textContent || ''
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.editor.setValue(data.fixed_code);
+                outputPanel.innerHTML = '<div class="success-message">Code fixed! Try executing again.</div>';
+            } else {
+                outputPanel.innerHTML = `<div class="error-details">Failed to fix code: ${data.error}</div>`;
+            }
+        } catch (error) {
+            outputPanel.innerHTML = `<div class="error-details">Error: ${error.message}</div>`;
+        }
+    }
+
+    // Add some additional styles for better error display
+    const additionalStyles = `
+        .error-details {
+            background: #2c1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .error-traceback {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-traceback pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #ddd;
+        }
+
+        .error-actions {
+            margin-top: 10px;
+        }
+
+        .fix-error {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .fix-error:hover {
+            background: #ff5252;
+        }
+    `;
+
+    // Add the styles to the document
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = additionalStyles;
+    document.head.appendChild(styleSheet);
+
+    // Initialize history display
+    displayHistory();
+
+    // Add this new function
+    function toggleImprovementNotes() {
+        const notes = document.getElementById('improvementNotes');
+        if (notes.style.display === 'none') {
+            notes.style.display = 'block';
+            notes.focus();
+        } else {
+            const improvementPrompt = notes.value;
+            if (improvementPrompt.trim()) {
+                improveCode(improvementPrompt);
+            }
+            notes.style.display = 'none';
+        }
+    }
+
+    // Modify the improveCode function
+    async function improveCode(improvementNotes = '') {
+        const code = window.editor.getValue();
+        const outputPanel = document.getElementById('outputPanel');
+        
+        outputPanel.innerHTML = 'Improving code...';
+        
+        try {
+            const response = await fetch('{% url "dbs:improve_code" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code: code,
+                    notes: improvementNotes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.editor.setValue(data.improved_code);
+                outputPanel.innerHTML = '<div class="success-message">Code improved!</div>';
+            } else {
+                outputPanel.innerHTML = `<div class="error-details">Failed to improve code: ${data.error}</div>`;
+            }
+        } catch (error) {
+            outputPanel.innerHTML = `<div class="error-details">Error: ${error.message}</div>`;
+        }
+    }
+
+    // ... rest of your existing JavaScript ...
+
+    async function installPackage() {
+        const packageName = document.getElementById('packageName').value.trim();
+        const shellOutput = document.getElementById('shellOutput');
+        
+        if (!packageName) {
+            shellOutput.innerHTML += '\n> Error: Please enter a package name';
+            return;
+        }
+        
+        shellOutput.innerHTML += `\n> Installing ${packageName}...`;
+        
+        try {
+            const response = await fetch('{% url "dbs:install_package" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    package_name: packageName
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                shellOutput.innerHTML += `\n${data.output}`;
+            } else {
+                shellOutput.innerHTML += `\n> Error: ${data.error}`;
+            }
+        } catch (error) {
+            shellOutput.innerHTML += `\n> Error: ${error.message}`;
+        }
+        
+        shellOutput.scrollTop = shellOutput.scrollHeight;
+    }
+
+    async function listPackages() {
+        const shellOutput = document.getElementById('shellOutput');
+        shellOutput.innerHTML += '\n> Listing installed packages...';
+        
+        try {
+            const response = await fetch('{% url "dbs:list_packages" %}');
+            const data = await response.json();
+            
+            if (data.success) {
+                shellOutput.innerHTML += `\n${data.packages}`;
+            } else {
+                shellOutput.innerHTML += `\n> Error: ${data.error}`;
+            }
+        } catch (error) {
+            shellOutput.innerHTML += `\n> Error: ${error.message}`;
+        }
+        
+        shellOutput.scrollTop = shellOutput.scrollHeight;
+    }
+
+    function toggleShell() {
+        const content = document.getElementById('shellContent');
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
+</script>
+{% endblock %} 

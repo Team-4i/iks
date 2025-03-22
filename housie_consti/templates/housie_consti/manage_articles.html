@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Manage Articles</h2>
+<a href="{% url 'housie_consti:add_article' %}" class="btn btn-primary">Add Article</a>
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for article in articles %}
+        <tr>
+            <td>{{ article.title }}</td>
+            <td>
+                <a href="{% url 'housie_consti:edit_article' article.id %}">Edit</a>
+                <a href="{% url 'housie_consti:delete_article' article.id %}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %} 

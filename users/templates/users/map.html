@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #654321 0%, #8B4513 100%);
+        --secondary-gradient: linear-gradient(135deg, #8B4513 0%, #654321 100%);
+        --background-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 0 6px 6px rgba(0, 0, 0, 0.02);
+        --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+    }
+
+    .analytics-container {
+        padding: 2.5rem;
+        background: var(--background-gradient);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        padding: 1rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+    }
+
+    .dashboard-title {
+        font-size: 2.25rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+    }
+
+    #map { 
+        height: 600px;
+        width: 100%;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 2.5rem 0;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--primary-gradient);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--hover-shadow);
+    }
+
+    .stat-card h3 {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .stat-card p {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .chart-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-top: 2.5rem;
+    }
+
+    .map-controls {
+        margin-bottom: 1.5rem;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .map-toggle {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 12px;
+        background: var(--primary-gradient);
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .map-toggle:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--hover-shadow);
+    }
+
+    .map-toggle i {
+        font-size: 1.2rem;
+    }
+
+    .map-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2.5rem;
+    }
+
+    .map-section h2 {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+    }
+
+    .chart-title {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        font-weight: 700;
+        position: relative;
+    }
+
+    .chart-title::after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 0;
+        width: 50px;
+        height: 4px;
+        background: var(--primary-gradient);
+        border-radius: 2px;
+    }
+
+    canvas {
+        max-height: 350px;
+    }
+
+    @media (max-width: 768px) {
+        .analytics-container {
+            padding: 1.5rem;
+        }
+        
+        .dashboard-header {
+            flex-direction: column;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container {
+            grid-template-columns: 1fr;
+        }
+
+        .map-controls {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Analytics Dashboard</h1>
+    </div>
+    
+    <!-- Key Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Users</h3>
+            <p>{{ total_users }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Chats</h3>
+            <p>{{ total_chats }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Conversations</h3>
+            <p>{{ total_conversations }}</p>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="map-section">
+        <h2>User Location Distribution</h2>
+        <div class="map-controls">
+            <button class="map-toggle" onclick="toggleMapView('markers')">
+                <i class="fas fa-map-marker-alt"></i> Show Markers
+            </button>
+            <button class="map-toggle" onclick="toggleMapView('heat')">
+                <i class="fas fa-fire"></i> Show Heat Map
+            </button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-container">
+        <div class="stat-card">
+            <h3 class="chart-title">Gender Distribution</h3>
+            <canvas id="genderChart"></canvas>
+        </div>
+        <div class="stat-card">
+            <h3 class="chart-title">Age Distribution</h3>
+            <canvas id="ageChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Keep existing JavaScript but update chart options for better visuals -->
+<script>
+    // Initialize map
+    const map = L.map('map').setView([20.5937, 78.9629], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Parse map data
+    const mapData = JSON.parse('{{ map_data_json|safe }}');
+    
+    // Create marker layer
+    const markers = L.layerGroup();
+    mapData.forEach(data => {
+        L.marker([data.lat, data.lng])
+            .bindPopup(`${data.location}: ${data.count} users`)
+            .addTo(markers);
+    });
+
+    // Create heat map layer with adjusted settings for low user counts
+    const heatData = mapData.map(data => {
+        return [
+            data.lat, 
+            data.lng, 
+            data.count * 25 // Increased multiplier from 10 to 25
+        ];
+    });
+    const heatLayer = L.heatLayer(heatData, {
+        radius: 35,      // Increased from 25 to 35
+        blur: 25,        // Increased from 15 to 25
+        maxZoom: 10,
+        minOpacity: 0.4, // Added minimum opacity
+        max: Math.max(...mapData.map(d => d.count)) * 25,
+        gradient: {
+            0.2: 'blue',  // Start color gradient earlier
+            0.4: 'cyan',  // Added intermediate color
+            0.6: 'lime',
+            0.8: 'yellow',
+            1.0: 'red'
+        }
+    });
+
+    // Default to marker view
+    let currentLayer = 'markers';
+    markers.addTo(map);
+
+    // Function to toggle between views
+    function toggleMapView(type) {
+        if (type === currentLayer) return;
+        
+        map.removeLayer(currentLayer === 'markers' ? markers : heatLayer);
+        
+        if (type === 'markers') {
+            markers.addTo(map);
+            currentLayer = 'markers';
+        } else {
+            heatLayer.addTo(map);
+            currentLayer = 'heat';
+        }
+    }
+
+    // Gender Distribution Chart
+    const genderData = JSON.parse('{{ gender_data_json|safe }}');
+    const genderLabels = genderData.map(item => {
+        switch(item.gender) {
+            case 'M': return 'Male';
+            case 'F': return 'Female';
+            case 'O': return 'Other';
+            default: return 'Not Specified';
+        }
+    });
+    
+    new Chart(document.getElementById('genderChart'), {
+        type: 'doughnut',
+        data: {
+            labels: genderLabels,
+            datasets: [{
+                data: genderData.map(item => item.count),
+                backgroundColor: [
+                    'rgba(99, 102, 241, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(37, 99, 235, 0.8)'
+                ],
+                borderWidth: 0,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        }
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+
+    // Age Distribution Chart
+    const ageData = JSON.parse('{{ age_data_json|safe }}');
+    new Chart(document.getElementById('ageChart'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ageData),
+            datasets: [{
+                label: 'Users by Age Group',
+                data: Object.values(ageData),
+                backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: true,
+                        drawBorder: false,
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

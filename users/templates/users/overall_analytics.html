@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* Luxury Brown Theme */
+    :root {
+        --primary-brown: #8B4513;
+        --secondary-brown: #A0522D;
+        --light-brown: #DEB887;
+        --cream: #F5DEB3;
+        --soft-cream: #FAEBD7;
+        --dark-brown: #654321;
+        --accent-gold: #DAA520;
+        --background: #FDF5E6;
+        --text-dark: #2C1810;
+        --text-light: #8B7355;
+        --shadow-brown: rgba(139, 69, 19, 0.15);
+        --border-radius-lg: 1.5rem;
+        --border-radius-md: 1rem;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .container {
+        background: var(--background);
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    h1.text-3xl {
+        font-family: 'Playfair Display', serif;
+        color: var(--primary-brown);
+        text-shadow: 2px 2px 4px var(--shadow-brown);
+    }
+
+    /* Update metric cards */
+    .grid-cols-1.md\:grid-cols-3 .bg-white {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 10px 30px var(--shadow-brown);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        transition: var(--transition);
+    }
+
+    .grid-cols-1.md\:grid-cols-3 .bg-white:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px var(--shadow-brown);
+    }
+
+    /* Update chart containers */
+    .bg-white {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 10px 30px var(--shadow-brown);
+        border: 1px solid rgba(139, 69, 19, 0.1);
+        transition: var(--transition);
+    }
+
+    .bg-white:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px var(--shadow-brown);
+    }
+
+    /* Update headings */
+    h3.text-lg {
+        font-family: 'Playfair Display', serif;
+        color: var(--primary-brown);
+        border-bottom: 2px solid var(--soft-cream);
+        padding-bottom: 1rem;
+    }
+
+    /* Update map controls */
+    .map-controls button {
+        background: linear-gradient(135deg, var(--primary-brown), var(--secondary-brown));
+        border: none;
+        color: white;
+        transition: var(--transition);
+    }
+
+    .map-controls button:hover {
+        background: linear-gradient(135deg, var(--secondary-brown), var(--dark-brown));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px var(--shadow-brown);
+    }
+
+    /* Update table styles */
+    #leaderboardTable {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #leaderboardTable th {
+        background: var(--soft-cream);
+        color: var(--primary-brown);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    #leaderboardTable tr:hover {
+        background: var(--soft-cream);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--soft-cream);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--primary-brown);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--dark-brown);
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bg-white {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .container {
+            padding: 1rem;
+        }
+
+        .text-3xl {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Platform Analytics Dashboard</h1>
+
+    <!-- Overview Cards with Animated Numbers -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <h3 class="text-lg font-semibold mb-2">Total Users</h3>
+            <p class="text-3xl font-bold counter-value" data-target="{{ total_users }}">0</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <h3 class="text-lg font-semibold mb-2">Active Users</h3>
+            <p class="text-3xl font-bold counter-value" data-target="{{ active_users }}">0</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <h3 class="text-lg font-semibold mb-2">Engagement Rate</h3>
+            <p class="text-3xl font-bold">{{ engagement_rate }}%</p>
+        </div>
+    </div>
+
+    <!-- Game Statistics with Interactive Charts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Game Participation Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Game Participation</h3>
+            <canvas id="gameParticipationChart"></canvas>
+        </div>
+        
+        <!-- Points Distribution Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Points Distribution</h3>
+            <canvas id="pointsDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- User Location Map -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">User Location Distribution</h3>
+        <div class="map-controls mb-4">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded mr-2" onclick="toggleMapView('markers')">
+                Show Markers
+            </button>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="toggleMapView('heat')">
+                Show Heat Map
+            </button>
+        </div>
+        <div id="map" style="height: 400px;"></div>
+    </div>
+
+    <!-- Spinwheel Card Collection -->
+
+
+    <!-- Learning Progress with Interactive Timeline -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Learning Progress</h3>
+        <canvas id="checkpointProgressChart"></canvas>
+    </div>
+
+    <!-- Top Performers Leaderboard -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Top Performers</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto" id="leaderboardTable">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="px-4 py-2">Rank</th>
+                        <th class="px-4 py-2">Player</th>
+                        <th class="px-4 py-2">Total Points</th>
+                        <th class="px-4 py-2">Games Played</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in top_players %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-2">{{ forloop.counter }}</td>
+                        <td class="px-4 py-2">{{ player.player.username }}</td>
+                        <td class="px-4 py-2">{{ player.total_points }}</td>
+                        <td class="px-4 py-2">{{ player.games_played }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Location-wise Scores -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">Location-wise Performance</h3>
+        <canvas id="locationScoresChart"></canvas>
+    </div>
+
+    <!-- Gender-wise Scores -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Gender Distribution of Scores</h3>
+            <canvas id="genderScoresChart"></canvas>
+        </div>
+        
+        <!-- Age-wise Scores -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Age-wise Score Distribution</h3>
+            <canvas id="ageScoresChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Include Required Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Counter Animation
+    const counters = document.querySelectorAll('.counter-value');
+    const speed = 200;
+
+    counters.forEach(counter => {
+        const target = +counter.getAttribute('data-target');
+        const increment = target / speed;
+
+        const updateCount = () => {
+            const count = +counter.innerText;
+            if (count < target) {
+                counter.innerText = Math.ceil(count + increment);
+                setTimeout(updateCount, 1);
+            } else {
+                counter.innerText = target;
+            }
+        };
+
+        updateCount();
+    });
+
+    // Parse the JSON data safely
+    const gameStats = JSON.parse('{{ game_stats|safe }}');
+    const checkpointStats = JSON.parse('{{ checkpoint_stats|safe }}');
+    let mapData = [];
+    try {
+        mapData = JSON.parse('{{ map_data_json|safe }}');
+    } catch (e) {
+        console.error('Error parsing map data:', e);
+    }
+
+    // Game Participation Chart
+    new Chart(document.getElementById('gameParticipationChart'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(gameStats),
+            datasets: [{
+                label: 'Active Players',
+                data: Object.values(gameStats).map(game => game.active_players),
+                backgroundColor: 'rgba(75, 192, 192, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Points Distribution Chart
+    new Chart(document.getElementById('pointsDistributionChart'), {
+        type: 'pie',
+        data: {
+            labels: Object.keys(gameStats),
+            datasets: [{
+                data: Object.values(gameStats).map(game => game.total_points),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Initialize map
+    const map = L.map('map').setView([20.5937, 78.9629], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Create marker layer
+    const markers = L.layerGroup();
+    mapData.forEach(data => {
+        L.marker([data.lat, data.lng])
+            .bindPopup(`${data.location}: ${data.count} users`)
+            .addTo(markers);
+    });
+
+    // Create heat map layer
+    const heatData = mapData.map(data => [data.lat, data.lng, data.count * 25]);
+    const heatLayer = L.heatLayer(heatData, {
+        radius: 35,
+        blur: 25,
+        maxZoom: 10,
+        minOpacity: 0.4,
+        max: Math.max(...mapData.map(d => d.count)) * 25,
+        gradient: {
+            0.2: 'blue',
+            0.4: 'cyan',
+            0.6: 'lime',
+            0.8: 'yellow',
+            1.0: 'red'
+        }
+    });
+
+    // Default to marker view
+    let currentLayer = 'markers';
+    markers.addTo(map);
+
+    // Make toggleMapView function available globally
+    window.toggleMapView = function(type) {
+        if (type === currentLayer) return;
+        
+        map.removeLayer(currentLayer === 'markers' ? markers : heatLayer);
+        
+        if (type === 'markers') {
+            markers.addTo(map);
+            currentLayer = 'markers';
+        } else {
+            heatLayer.addTo(map);
+            currentLayer = 'heat';
+        }
+    };
+
+    // Card Collection Chart
+    new Chart(document.getElementById('cardCollectionChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(gameStats.spinwheel.card_stats),
+            datasets: [{
+                data: Object.values(gameStats.spinwheel.card_stats),
+                backgroundColor: [
+                    'rgba(128, 128, 128, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 215, 0, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Learning Progress Chart
+    new Chart(document.getElementById('checkpointProgressChart'), {
+        type: 'line',
+        data: {
+            labels: Object.keys(checkpointStats),
+            datasets: [{
+                label: 'Completion Rate (%)',
+                data: Object.values(checkpointStats),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 20
+                }
+            }
+        }
+    });
+
+    // Location Scores Chart
+    new Chart(document.getElementById('locationScoresChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ location_scores|safe|stringformat:'s' }}.map(loc => loc.location),
+            datasets: [{
+                label: 'Total Score',
+                data: {{ location_scores|safe|stringformat:'s' }}.map(loc => loc.total_score),
+                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Players',
+                data: {{ location_scores|safe|stringformat:'s' }}.map(loc => loc.player_count),
+                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Score Distribution by Location'
+                }
+            }
+        }
+    });
+
+    // Gender Scores Chart
+    new Chart(document.getElementById('genderScoresChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ gender_scores|safe|stringformat:'s' }}.map(g => g.gender || 'Not Specified'),
+            datasets: [{
+                data: {{ gender_scores|safe|stringformat:'s' }}.map(g => g.avg_score),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Average Score by Gender'
+                }
+            }
+        }
+    });
+
+    // Age Scores Chart
+    new Chart(document.getElementById('ageScoresChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ age_scores|safe|stringformat:'s' }}.map(age => age.range),
+            datasets: [{
+                label: 'Average Score',
+                data: {{ age_scores|safe|stringformat:'s' }}.map(age => age.avg_score),
+                backgroundColor: 'rgba(153, 102, 255, 0.8)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Average Score by Age Group'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

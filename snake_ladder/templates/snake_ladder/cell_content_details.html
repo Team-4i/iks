@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load text_filters %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css?family=Lovers+Quarrel" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+<audio id="pageFlipSound" src="{% static 'sounds/page-flip.mp3' %}" preload="auto"></audio>
+
+<style>
+    .content-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .book {
+        transition: opacity 0.4s 0.2s;
+        perspective: 250vw;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .pages {
+        width: min(60vw, 1000px);
+        height: min(44vw, 700px);
+        position: relative;
+        transform-style: preserve-3d;
+        backface-visibility: hidden;
+        border-radius: 4px;
+        margin: 0 auto;
+    }
+
+    .page {
+        cursor: pointer;
+        position: absolute;
+        width: 50%;
+        height: 100%;
+        background: #f4e4bc;
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 10%),
+            url("{% static 'images/paper-texture.png' %}");
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.1);
+        border: 1px solid rgba(0,0,0,0.1);
+        transform-origin: 0 0;
+        transition: transform 0.7s;
+        backface-visibility: hidden;
+        transform-style: preserve-3d;
+    }
+
+    .page:nth-child(odd) {
+        pointer-events: all;
+        transform: rotateY(0deg);
+        right: 0;
+        border-radius: 0 4px 4px 0;
+        background-image: linear-gradient(to right, rgba(0,0,0,.15) 0%, rgba(0,0,0,0) 10%);
+    }
+
+    .page:nth-child(even) {
+        pointer-events: none;
+        transform: rotateY(180deg);
+        transform-origin: 100% 0;
+        left: 0;
+        border-radius: 4px 0 0 4px;
+        background-image: linear-gradient(to left, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 10%);
+    }
+
+    .page.flipped:nth-child(odd) {
+        pointer-events: none;
+        transform: rotateY(-180deg);
+    }
+
+    .page.flipped:nth-child(even) {
+        pointer-events: all;
+        transform: rotateY(0deg);
+    }
+
+    .content {
+        padding: 2rem;
+        font-family: 'Crimson Text', serif;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .content-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.8rem;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .content-topic {
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 1rem;
+    }
+
+    .content-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .bookmark-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #8B4513;
+        font-size: 1.5rem;
+    }
+
+    .bookmark-indicator {
+        position: absolute;
+        top: 0;
+        right: 2rem;
+        width: 20px;
+        height: 40px;
+        background: #8B4513;
+        border-radius: 0 0 3px 3px;
+    }
+
+    .filters {
+        background: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .filter-group {
+        flex: 1;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+    .content-summary {
+        background: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .needs-review {
+        border-left: 4px solid #f87171;
+        padding-left: 1rem;
+        background-color: rgba(254, 226, 226, 0.2);
+        position: relative;
+    }
+
+    .review-badge {
+        display: inline-block;
+        background-color: #f87171;
+        color: white;
+        font-size: 0.8rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        margin-left: 0.5rem;
+        vertical-align: middle;
+    }
+
+    .related-topics {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .topic-tag {
+        display: inline-block;
+        background-color: rgba(248, 113, 113, 0.1);
+        color: #dc2626;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .content-item {
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .needs-review:hover {
+        box-shadow: 0 0 15px rgba(248, 113, 113, 0.2);
+    }
+
+    .review-summary {
+        background-color: #fef2f2;
+        border-color: #fecaca;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+</style>
+
+<script>
+    // Preload the page flip sound
+    document.addEventListener('DOMContentLoaded', function() {
+        const audio = new Audio("{% static 'sounds/page-flip-sound.mp3' %}");
+        audio.preload = 'auto';
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="header">
+        <h1 class="text-4xl font-bold mb-4" style="font-family: 'Cinzel Decorative', cursive;">Educational Content Library</h1>
+        <p class="text-lg text-gray-600" style="font-family: 'Crimson Text', serif;">Explore the constitutional knowledge</p>
+    </div>
+
+    <div class="filters mb-8 p-4 bg-white rounded-lg shadow">
+        <h2 class="text-xl mb-4">Filter Content</h2>
+        <div class="flex gap-4">
+            <div class="filter-group">
+                <label class="block mb-2">Part:</label>
+                <select id="partFilter" class="form-select" onchange="applyFilters()">
+                    <option value="">All Parts</option>
+                    {% for part_id, part_name in PART_CHOICES.items %}
+                        <option value="{{ part_id }}" {% if selected_part == part_id|stringformat:"s" %}selected{% endif %}>
+                            {{ part_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="block mb-2">Type:</label>
+                <select id="typeFilter" class="form-select" onchange="applyFilters()">
+                    <option value="">All Types</option>
+                    {% for type_code, type_name in TYPE_CHOICES.items %}
+                        <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>
+                            {{ type_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="block mb-2">Content:</label>
+                <button 
+                    id="highlightedFilter" 
+                    onclick="toggleHighlighted()"
+                    class="px-4 py-2 rounded-md {% if show_highlighted %}bg-red-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %} hover:opacity-90 transition-colors"
+                >
+                    {% if show_highlighted %}
+                        Show All Content
+                    {% else %}
+                        Show Only Highlighted
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="checkpoint-status mb-8 p-4 bg-white rounded-lg shadow">
+        <h2 class="text-xl mb-4">Your Progress</h2>
+        <div class="grid grid-cols-2 gap-4">
+            {% for part, types in checkpoint_progress.items %}
+                {% for type, status in types.items %}
+                    <div class="checkpoint-card p-3 rounded-lg {% if status.unlocked %}bg-green-100{% else %}bg-gray-100{% endif %}">
+                        <h3 class="font-bold">Part {{ part }} - {{ TYPE_CHOICES|get_item:type }}</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="mr-2">
+                                {% if status.unlocked %}
+                                    🔓 Unlocked
+                                {% else %}
+                                    🔒 Locked ({{ status.required_points }} points needed)
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="mt-4">
+            <p>Your Total Points: {{ total_points }}</p>
+        </div>
+    </div>
+
+    <div class="content-summary mb-8">
+        <h3 class="text-lg mb-2">Content Overview:</h3>
+        {% if content_items %}
+            <p>Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }} items</p>
+            {% if selected_part or selected_type or show_highlighted %}
+                <p class="mt-2">
+                    Filtered by: 
+                    {% if selected_part %}Part {{ selected_part }}{% endif %}
+                    {% if selected_type %}{{ TYPE_CHOICES|get_item:selected_type }}{% endif %}
+                    {% if show_highlighted %}<span class="text-red-500">Showing only highlighted content</span>{% endif %}
+                </p>
+            {% endif %}
+        {% else %}
+            <p>No content found matching the current filters.</p>
+        {% endif %}
+    </div>
+
+    {% if incorrect_topics %}
+    <div class="review-summary mb-8 p-4 bg-red-50 rounded-lg border border-red-200">
+        <h3 class="text-lg font-semibold text-red-700 mb-2">Topics to Review:</h3>
+        <ul class="list-disc list-inside text-red-600">
+            {% for topic in incorrect_topics %}
+                <li>{{ topic }}</li>
+            {% endfor %}
+        </ul>
+        <p class="mt-2 text-sm text-red-500">
+            Content related to these topics is highlighted for your review.
+            Look for the red markers and topic tags to identify relevant content.
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="book">
+        <div id="pages" class="pages">
+            {% if content_items %}
+                {% for page_content in content_items %}
+                    <div class="page" data-page-num="{{ forloop.counter }}">
+                        <div class="content">
+                            {% for content in page_content %}
+                                <div class="content-item mb-8 {% if content.needs_review %}needs-review{% endif %}">
+                                    <h2 class="content-title">
+                                        Part {{ content.content.part }} - {{ content.content.get_type_display }}
+                                        {% if content.needs_review %}
+                                            <span class="review-badge">Needs Review</span>
+                                            {% if content.related_topics %}
+                                                <div class="related-topics">
+                                                    {% for topic in content.related_topics %}
+                                                        <span class="topic-tag">{{ topic }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h2>
+                                    {% if content.content.topic %}
+                                        <h3 class="content-topic">
+                                            {{ content.content.topic }}
+                                        </h3>
+                                    {% endif %}
+                                    <div class="content-text">
+                                        {{ content.content.content|linebreaks }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button class="bookmark-btn" onclick="updateBookmark({{ forloop.counter }})">
+                            📑
+                        </button>
+                        <div class="page-number">{{ forloop.counter }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="page">
+                    <div class="content">
+                        <div class="text-center py-8">
+                            <p class="text-gray-500">No content available for the selected filters.</p>
+                            <button onclick="window.location.href='{% url 'snake_ladder:cell_content_details' %}'" 
+                                    class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                                Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="pagination-controls mt-4 text-center">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_part %}&part={{ selected_part }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}" 
+               class="btn btn-primary">Previous</a>
+        {% endif %}
+        
+        <span class="mx-4">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_part %}&part={{ selected_part }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}" 
+               class="btn btn-primary">Next</a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Add this function to handle the highlight button click
+function toggleHighlighted() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentlyShowingHighlighted = urlParams.get('show_highlighted') === 'true';
+    
+    // Toggle the show_highlighted parameter
+    urlParams.set('show_highlighted', (!currentlyShowingHighlighted).toString());
+    
+    // Reset to page 1 when toggling
+    urlParams.set('page', '1');
+    
+    // Preserve other filters
+    const part = document.getElementById('partFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    
+    if (part) urlParams.set('part', part);
+    if (type) urlParams.set('type', type);
+    
+    // Navigate to the new URL
+    window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pages = document.getElementsByClassName('page');
+    const pageFlipSound = document.getElementById('pageFlipSound');
+    let isFlipping = false;
+    
+    // Set initial z-index and add page numbers
+    Array.from(pages).forEach((page, index) => {
+        page.style.zIndex = pages.length - index;
+        page.dataset.pageNum = index + 1;
+        
+        // Add click handler for each page
+        page.addEventListener('click', function() {
+            const pageNum = parseInt(this.dataset.pageNum);
+            if (pageNum % 2 === 0) {
+                this.classList.remove('flipped');
+                if (this.previousElementSibling) {
+                    this.previousElementSibling.classList.remove('flipped');
+                }
+            } else {
+                this.classList.add('flipped');
+                if (this.nextElementSibling) {
+                    this.nextElementSibling.classList.add('flipped');
+                }
+            }
+            
+            // Play flip sound
+            if (pageFlipSound) {
+                pageFlipSound.currentTime = 0;
+                pageFlipSound.play().catch(() => {});
+            }
+        });
+    });
+    
+    // Function to find the first highlighted content page
+    function findFirstHighlightedPage() {
+        for(let i = 0; i < pages.length; i++) {
+            if(pages[i].querySelector('.needs-review')) {
+                return i + 1; // Return 1-based page number
+            }
+        }
+        return null;
+    }
+    
+    // Function to flip to a specific page
+    function flipToPage(pageNum) {
+        if (!pageNum) return;
+        
+        // Calculate how many page turns we need
+        const pageTurns = Math.floor((pageNum - 1) / 2);
+        let currentTurn = 0;
+        
+        function turnPage() {
+            if (currentTurn >= pageTurns) return;
+            
+            const pageToFlip = currentTurn * 2 + 1;
+            const currentPage = document.querySelector(`[data-page-num="${pageToFlip}"]`);
+            const nextPage = document.querySelector(`[data-page-num="${pageToFlip + 1}"]`);
+            
+            if (currentPage) {
+                currentPage.classList.add('flipped');
+            }
+            if (nextPage) {
+                nextPage.classList.add('flipped');
+            }
+            
+            // Play flip sound
+            if (pageFlipSound) {
+                pageFlipSound.currentTime = 0;
+                pageFlipSound.play().catch(() => {});
+            }
+            
+            currentTurn++;
+            if (currentTurn < pageTurns) {
+                setTimeout(turnPage, 300); // Add delay between page turns
+            }
+        }
+        
+        turnPage();
+    }
+    
+    // Check if we need to flip to highlighted content
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('show_highlighted') === 'true') {
+        const firstHighlightedPage = findFirstHighlightedPage();
+        console.log('First highlighted page:', firstHighlightedPage); // Debug log
+        if (firstHighlightedPage) {
+            // Add a small delay to ensure the book is fully rendered
+            setTimeout(() => {
+                flipToPage(firstHighlightedPage);
+            }, 1000); // Increased delay to ensure everything is loaded
+        }
+    }
+});
+
+function applyFilters() {
+    const part = document.getElementById('partFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    
+    let url = new URL(window.location.href);
+    url.searchParams.set('page', '1'); // Reset to first page when filtering
+    
+    if (part) url.searchParams.set('part', part);
+    else url.searchParams.delete('part');
+    
+    if (type) url.searchParams.set('type', type);
+    else url.searchParams.delete('type');
+    
+    // Preserve highlighted filter if it's active
+    if (url.searchParams.get('show_highlighted') === 'true') {
+        url.searchParams.set('show_highlighted', 'true');
+    }
+    
+    window.location.href = url.toString();
+}
+
+// Add this function to update bookmark
+function updateBookmark(pageNum) {
+    fetch('{% url "snake_ladder:update_bookmark" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ page_number: pageNum })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Bookmark updated successfully');
+        } else {
+            console.error('Failed to update bookmark');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %} 

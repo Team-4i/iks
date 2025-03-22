@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Profile{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Complete Your Profile
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Welcome, {{ user.get_full_name|default:user.username }}!
+            </p>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="p-4 mb-4 text-sm rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form class="mt-8 space-y-6" method="POST">
+            {% csrf_token %}
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div class="mb-4">
+                    <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+                    <select name="gender" id="gender" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500">
+                        <option value="">Select Gender</option>
+                        <option value="M" {% if profile and profile.gender == 'M' %}selected{% endif %}>Male</option>
+                        <option value="F" {% if profile and profile.gender == 'F' %}selected{% endif %}>Female</option>
+                        <option value="O" {% if profile and profile.gender == 'O' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
+                    <input type="text" name="location" id="location" required 
+                           value="{{ profile.location|default:'' }}"
+                           class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500">
+                </div>
+
+                <div class="mb-4">
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age</label>
+                    <input type="number" name="age" id="age" min="13" max="120" required 
+                           value="{{ profile.age|default:'' }}"
+                           class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#8B4513] hover:bg-[#6B3410] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brown-500">
+                    Complete Profile
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-4 text-center">
+            <a href="{% url 'users:home' %}" class="text-[#8B4513] hover:text-[#6B3410] font-medium">
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

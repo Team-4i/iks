@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Popup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Crimson Text', serif;
+        }
+
+        /* Popup container */
+        #ai-popup {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(139, 69, 19, 0.15);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+            min-width: 300px;
+            min-height: 400px;
+            border: 2px solid #8B4513;
+        }
+
+        /* Popup header */
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #8B4513;
+            color: #f4e4bc;
+            cursor: move;
+            border-bottom: 2px solid #4A2511;
+        }
+
+        .popup-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .popup-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .popup-button {
+            background: none;
+            border: none;
+            color: #f4e4bc;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .popup-button:hover {
+            background: rgba(244, 228, 188, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Iframe container */
+        .popup-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background-image: url('/static/images/parchment-bg.jpg');
+            background-size: cover;
+        }
+
+        #ai-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Minimize state */
+        #ai-popup.minimized {
+            height: 48px !important;
+            width: 200px !important;
+            resize: none;
+        }
+
+        #ai-popup.minimized .popup-content {
+            display: none;
+        }
+
+        .ai-trigger-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #8B4513;
+            color: #f4e4bc;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.2);
+            transition: all 0.3s ease;
+            z-index: 9998;
+            border: 2px solid #4A2511;
+        }
+
+        .ai-trigger-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.25);
+            background: #6B3410;
+        }
+
+        @media (max-width: 768px) {
+            #ai-popup {
+                width: 90%;
+                height: 80vh;
+                bottom: 10px;
+                right: 5%;
+            }
+
+            .ai-trigger-button {
+                bottom: 10px;
+                right: 10px;
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="ai-popup">
+        <div class="popup-header">
+            <span class="popup-title">AI Assistant</span>
+            <div class="popup-controls">
+                <button class="popup-button" id="minimize-btn" title="Minimize">−</button>
+                <button class="popup-button" id="maximize-btn" title="Maximize">□</button>
+                <button class="popup-button" id="close-btn" title="Close">×</button>
+            </div>
+        </div>
+        <div class="popup-content">
+            <iframe id="ai-frame" src="{% url 'aicharacter:index' %}" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Popup functionality
+        const popup = document.getElementById('ai-popup');
+        const header = popup.querySelector('.popup-header');
+        const minimizeBtn = document.getElementById('minimize-btn');
+        const maximizeBtn = document.getElementById('maximize-btn');
+        const closeBtn = document.getElementById('close-btn');
+
+        // Dragging functionality
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            if (e.target === header || e.target.parentElement === header) {
+                isDragging = true;
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                // Boundary checking
+                const rect = popup.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // Keep popup within viewport bounds
+                if (rect.left < 0) currentX = -xOffset;
+                if (rect.right > viewportWidth) currentX = viewportWidth - rect.width - xOffset;
+                if (rect.top < 0) currentY = -yOffset;
+                if (rect.bottom > viewportHeight) currentY = viewportHeight - rect.height - yOffset;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, popup);
+            }
+        }
+
+        function dragEnd() {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+
+        // Window state management
+        let isMinimized = false;
+        let isMaximized = false;
+        let previousState = {
+            width: '400px',
+            height: '600px',
+            transform: '',
+            top: '',
+            left: ''
+        };
+
+        minimizeBtn.addEventListener('click', () => {
+            if (!isMinimized) {
+                previousState = {
+                    width: popup.style.width || '400px',
+                    height: popup.style.height || '600px',
+                    transform: popup.style.transform,
+                    top: popup.style.top,
+                    left: popup.style.left
+                };
+                popup.classList.add('minimized');
+                minimizeBtn.textContent = '□';
+            } else {
+                popup.classList.remove('minimized');
+                Object.assign(popup.style, previousState);
+                minimizeBtn.textContent = '−';
+            }
+            isMinimized = !isMinimized;
+            if (isMaximized) isMaximized = false;
+        });
+
+        maximizeBtn.addEventListener('click', () => {
+            if (!isMaximized) {
+                previousState = {
+                    width: popup.style.width || '400px',
+                    height: popup.style.height || '600px',
+                    transform: popup.style.transform,
+                    top: popup.style.top,
+                    left: popup.style.left
+                };
+                popup.style.width = '100%';
+                popup.style.height = '100%';
+                popup.style.top = '0';
+                popup.style.left = '0';
+                popup.style.transform = 'none';
+                maximizeBtn.textContent = '❐';
+            } else {
+                Object.assign(popup.style, previousState);
+                maximizeBtn.textContent = '□';
+            }
+            isMaximized = !isMaximized;
+            if (isMinimized) isMinimized = false;
+        });
+
+        closeBtn.addEventListener('click', () => {
+            popup.style.display = 'none';
+        });
+
+        // Touch events for mobile
+        header.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            initialX = touch.clientX - xOffset;
+            initialY = touch.clientY - yOffset;
+            if (e.target === header || e.target.parentElement === header) {
+                isDragging = true;
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                currentX = touch.clientX - initialX;
+                currentY = touch.clientY - initialY;
+                xOffset = currentX;
+                yOffset = currentY;
+                setTranslate(currentX, currentY, popup);
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        });
+
+        function showAIAssistant() {
+            // Create popup container if it doesn't exist
+            if (!document.getElementById('ai-assistant-container')) {
+                const container = document.createElement('div');
+                container.id = 'ai-assistant-container';
+                document.body.appendChild(container);
+                
+                // Load the popup content
+                fetch('/ai/popup/')
+                    .then(response => response.text())
+                    .then(html => {
+                        container.innerHTML = html;
+                    })
+                    .catch(error => console.error('Error loading AI Assistant:', error));
+            }
+        }
+
+        // Add a button or trigger to show the AI assistant
+        const aiButton = document.createElement('button');
+        aiButton.innerHTML = '🤖 AI Assistant';
+        aiButton.className = 'ai-trigger-button';
+        aiButton.onclick = showAIAssistant;
+        document.body.appendChild(aiButton);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,2302 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+    /* Enhanced Constitutional Theme Colors */
+    :root {
+        --primary-gold: #D4AF37;
+        --deep-navy: #1B2C4A;
+        --cream: #F5E6D3;
+        --rich-brown: #8B4513;
+        --accent-red: #A52A2A;
+        --paper-white: #FFFAF0;
+    }
+
+    .profile-container {
+        background: #f0f9ff;
+        min-height: 100vh;
+        padding: 2rem;
+    }
+
+    .profile-header {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        background: #4CAF50;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        margin: 0 auto 1rem;
+    }
+
+    /* Learning Map */
+    .learning-map {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-image: url("{% static 'images/constitution-bg.png' %}");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-blend-mode: overlay;
+        border-radius: 30px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+        min-height: 800px;
+    }
+
+    /* Add an overlay to ensure content remains readable */
+    .learning-map::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 15px;
+        z-index: 1;
+    }
+
+    /* Ensure content stays above the overlay */
+    .map-container {
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
+    }
+
+    .part-section {
+        margin-bottom: 4rem;
+        position: relative;
+    }
+
+    .part-title {
+        background: #2c3e50;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        display: inline-block;
+        margin-bottom: 2rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .checkpoints-line {
+        
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 0 2rem;
+    }
+
+    /* Connection Line */
+    .connection-line {
+        opacity: 0;
+        position: absolute;
+        height: 4px;
+        background: #e0e0e0;
+        left: 0;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .checkpoint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+        flex: 1;
+    }
+
+    .checkpoint-node {
+        width: 110px;
+        height: 110px;
+        border-radius: 100px;
+        padding: 1rem;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 1rem;
+        transition: all 0.3s ease;
+        color: white;
+    }
+
+    .checkpoint-title {
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .checkpoint-count {
+        font-size: 1rem;
+        opacity: 0.8;
+    }
+
+    /* Connection lines */
+    .connection-line {
+        position: absolute;
+        background: #e0e0e0;
+        z-index: 1;
+    
+    }
+
+    .horizontal-line {
+        height: 3px;
+        width: 100%;
+        top: 50%;
+    }
+
+    .vertical-line {
+        width: 3px;
+        height: 100px; /* Adjust based on your layout */
+        left: 50%;
+        bottom: -100px; /* Connects Part 5 EXEC to Part 6 JUD */
+    }
+
+    /* Locked state */
+    .checkpoint-node.locked {
+        opacity: 0.7;
+        background: #888 !important;
+        cursor: not-allowed;
+    }
+
+    .checkpoint-node:not(.locked) {
+        cursor: pointer;
+    }
+
+    .completion-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #4CAF50;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+
+    /* Node Colors - Update these */
+    .judiciary:not(.locked) { 
+        background-color: #ff6b6b; 
+        border: 2px solid #ff8787;
+    }
+    .legislative:not(.locked) { 
+        background-color: #4dabf7; 
+        border: 2px solid #74c0fc;
+    }
+    .executive:not(.locked) { 
+        background-color: #51cf66; 
+        border: 2px solid #69db7c;
+    }
+
+    /* Arrow between nodes */
+    .arrow {
+        font-size: 24px;
+        margin: 0 1rem;
+        color: #666;
+    }
+
+    /* Games Section */
+    .games-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .game-card {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 10px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .play-button {
+        display: inline-block;
+        padding: 0.8rem 2rem;
+        background: #4CAF50;
+        color: white;
+        border-radius: 25px;
+        text-decoration: none;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .play-button:hover {
+        background: #43a047;
+        transform: translateY(-2px);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    .modal-content {
+        position: relative;
+        background: white;
+        margin: 2rem auto;
+        padding: 2rem;
+        width: 90%;
+        max-width: 1200px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-modal {
+        position: absolute;
+        right: 1.5rem;
+        top: 1.5rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+        color: #333;
+    }
+
+    .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .article-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        transition: transform 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+    .article-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .article-number {
+        color: #4CAF50;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .article-title {
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+
+    .article-explanation {
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .checkpoint-node.locked {
+        opacity: 0.7;
+        cursor: not-allowed;
+        position: relative;
+    }
+    
+    .lock-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 20px;
+    }
+
+    .checkpoint-node {
+        position: relative;
+    }
+    
+    .points-required {
+        position: absolute;
+        bottom: -25px;
+        font-size: 12px;
+        color: #666;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .checkpoint-node.locked {
+        opacity: 0.7;
+        background: #888;  /* Grayed out when locked */
+    }
+    
+    .checkpoint-node:not(.locked) {
+        border: 2px solid #4CAF50;  /* Green border when unlocked */
+    }
+
+    /* Lock Icon Styling */
+    .lock-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 1.2rem;
+        color: #666;
+        z-index: 2;
+    }
+
+    /* Curved Connection Line */
+    .curved-connection {
+        position: absolute;
+        width: 100px;  /* Adjust based on your layout */
+        height: 100px; /* Adjust based on your layout */
+        bottom: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: none;
+        border-right: 3px solid #e0e0e0;
+        border-bottom: 3px solid #e0e0e0;
+        border-bottom-right-radius: 50px;
+    }
+
+    .curved-connection::after {
+        content: '';
+        position: absolute;
+        width: 100px;  /* Match the curved-connection width */
+        height: 3px;
+        background: #e0e0e0;
+        bottom: -3px;
+        left: 100%;
+    }
+
+    /* Adjust part sections spacing */
+    .part-section {
+        margin-bottom: 6rem;  /* Increased space for the curve */
+        position: relative;
+    }
+
+    /* Container for better alignment */
+    .learning-map {
+        position: relative;
+        padding: 2rem;
+    }
+
+    .leaderboard-btn {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.75rem 1.5rem;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .leaderboard-btn:hover {
+        background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .modal-content {
+        max-width: 1400px; /* Increased to accommodate game options */
+    }
+
+    .game-options {
+        border-bottom: 2px solid #eee;
+        padding-bottom: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .game-buttons-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .game-option {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .game-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .game-btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        text-align: center;
+    }
+
+    .game-btn.create {
+        background-color: #8B4513;
+        color: #f4e4bc;
+    }
+
+    .game-btn.join {
+        background-color: #4A2511;
+        color: #f4e4bc;
+    }
+
+    .game-btn.collection {
+        background-color: #6B3410;
+        color: #f4e4bc;
+    }
+
+    .game-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .checkpoint-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .view-btn, .play-btn {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        color: white;
+        transition: all 0.2s ease;
+    }
+    
+    .view-btn {
+        background-color: #4a5568;
+    }
+    
+    .play-btn {
+        background-color: #48bb78;
+    }
+    
+    .view-btn:hover, .play-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(110%);
+    }
+
+    /* Add these new styles for profile and statistics */
+    .profile-stats-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        position: relative;
+    }
+
+    /* Decorative Background Elements */
+    .profile-stats-container::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    .profile-stats-container::after {
+        content: '';
+        position: absolute;
+        bottom: -30px;
+        left: -30px;
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    /* Enhanced Profile Header */
+    .profile-header {
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        padding: 3rem;
+        border-radius: 30px;
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #4CAF50, #2196F3, #9C27B0);
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        margin-bottom: 2rem;
+        box-shadow: 
+            0 12px 24px rgba(76, 175, 80, 0.2),
+            0 4px 8px rgba(76, 175, 80, 0.1);
+        position: relative;
+        border: 4px solid white;
+    }
+
+    .profile-avatar::after {
+        content: '';
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 30px;
+        height: 30px;
+        background: #FFD700;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        content: '👑';
+    }
+
+    /* Enhanced Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 24px;
+        box-shadow: 
+            0 10px 25px rgba(0, 0, 0, 0.05),
+            0 5px 10px rgba(0, 0, 0, 0.02);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 
+            0 20px 35px rgba(0, 0, 0, 0.07),
+            0 10px 15px rgba(0, 0, 0, 0.03);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.5rem;
+        font-size: 1.8rem;
+        position: relative;
+    }
+
+    .games-icon { 
+        background: linear-gradient(135deg, #FF6B6B, #ee5253);
+        box-shadow: 0 8px 16px rgba(255, 107, 107, 0.2);
+    }
+    
+    .wins-icon { 
+        background: linear-gradient(135deg, #4DABF7, #339af0);
+        box-shadow: 0 8px 16px rgba(77, 171, 247, 0.2);
+    }
+    
+    .rate-icon { 
+        background: linear-gradient(135deg, #51CF66, #40c057);
+        box-shadow: 0 8px 16px rgba(81, 207, 102, 0.2);
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 800;
+        margin: 0.5rem 0;
+        
+        
+        
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        position: relative;
+    }
+
+    .stat-value::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 40px;
+        height: 4px;
+        background: linear-gradient(90deg, #3498db, transparent);
+        border-radius: 2px;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+
+    /* Enhanced Game-specific Stats */
+    .game-specific-stats {
+        margin-top: 3rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .game-stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 24px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .game-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, #4CAF50, #2196F3);
+        border-radius: 3px 0 0 3px;
+    }
+
+    .game-stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 
+            0 20px 35px rgba(0, 0, 0, 0.07),
+            0 10px 15px rgba(0, 0, 0, 0.03);
+    }
+
+    .game-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding-left: 1rem;
+    }
+
+    .game-title span:first-child {
+        font-size: 1.8rem;
+    }
+
+    .game-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        padding: 1rem;
+        border-radius: 16px;
+    }
+
+    .game-stat-item {
+        text-align: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    .game-stat-item:hover {
+        transform: translateY(-3px);
+    }
+
+    .game-stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .game-stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .profile-stats-container {
+            padding: 1rem;
+        }
+
+        .profile-header {
+            padding: 2rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+        }
+
+        .game-stats-grid {
+            gap: 1rem;
+        }
+    }
+
+    /* Achievement Badge */
+    .achievement-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .achievement-badge i {
+        font-size: 1.2rem;
+    }
+
+    /* Updated styles for the unified card design */
+    .profile-stats-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    .profile-header {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        border-radius: 30px;
+        padding: 3rem;
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.05),
+            0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-content {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+    }
+
+    .profile-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 3rem;
+        font-weight: bold;
+        border: 4px solid white;
+        box-shadow: 0 8px 16px rgba(76, 175, 80, 0.2);
+    }
+
+    .profile-info {
+        flex: 1;
+    }
+
+    .profile-name {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-title {
+        color: #6c757d;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .profile-points {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+        padding: 0.75rem 1.5rem;
+        border-radius: 15px;
+        width: fit-content;
+    }
+
+    .points-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #4CAF50;
+    }
+
+    .points-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .profile-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0rem;
+    }
+
+    .main-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .stat-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .games-icon { background: linear-gradient(135deg, #FF6B6B, #ee5253); }
+    .wins-icon { background: linear-gradient(135deg, #4DABF7, #339af0); }
+    .rate-icon { background: linear-gradient(135deg, #51CF66, #40c057); }
+
+    .stat-details {
+        flex: 1;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .game-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .game-stat-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    .game-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .game-icon {
+        font-size: 2rem;
+    }
+
+    .game-header h3 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .game-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        background: rgba(0, 0, 0, 0.02);
+        padding: 1rem;
+        border-radius: 15px;
+    }
+
+    .metric {
+        text-align: center;
+    }
+
+    .metric-value {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    @media (max-width: 1024px) {
+        .profile-content {
+            gap: 2rem;
+        }
+
+        .main-stats {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .profile-left {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .profile-points {
+            margin: 0 auto;
+        }
+    }
+
+    .dashboard-wrapper {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 1.5rem auto;
+        padding: 2rem;
+        background: var(--paper-white);
+        border-radius: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Decorative Elements */
+    .dashboard-wrapper::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+            radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 100% 100%, rgba(27, 44, 74, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .dashboard-wrapper::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, 
+            var(--primary-gold),
+            var(--accent-red),
+            var(--deep-navy)
+        );
+    }
+
+    /* Profile Section */
+    .profile-card {
+        background: #fff;
+        border-radius: 30px;
+        overflow: hidden;
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.06),
+            0 10px 20px rgba(212, 175, 55, 0.1);
+        position: relative;
+    }
+
+    .profile-banner {
+        height: 120px;
+        background: linear-gradient(135deg, var(--primary-gold), #E5C76B);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-banner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+        opacity: 0.3;
+    }
+
+    .profile-main {
+        padding: 0 1.5rem 1.5rem;
+        text-align: center;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        margin: -50px auto 0.5rem;
+        background: var(--deep-navy);
+        border: 8px solid #fff;
+        box-shadow: 
+            0 12px 24px rgba(0, 0, 0, 0.1),
+            0 6px 12px rgba(212, 175, 55, 0.1);
+        font-family: 'Playfair Display', serif;
+        color: #fff;
+        font-size: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .profile-avatar:hover {
+        transform: scale(1.08) rotate(3deg);
+    }
+
+    .profile-name {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--deep-navy);
+        margin-bottom: 0.25rem;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .profile-role {
+        color: var(--rich-brown);
+        font-size: 1rem;
+        font-style: italic;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+
+    /* Stats Section */
+    .profile-stats {
+        display: flex;
+        justify-content: space-between;
+        background: linear-gradient(to right bottom, #fff, var(--cream));
+        margin: 0 1rem;
+        padding: 1rem;
+        border-radius: 20px;
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.02),
+            0 4px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .stat-item {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem;
+        position: relative;
+    }
+
+    .stat-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 2px;
+        height: 70%;
+        background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.3), transparent);
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--deep-navy);
+        font-family: 'Playfair Display', serif;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--rich-brown);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+    }
+
+    /* Stats Cards */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 
+            0 10px 20px rgba(0, 0, 0, 0.04),
+            0 2px 6px rgba(0, 0, 0, 0.04),
+            0 0 1px rgba(0, 0, 0, 0.04);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.08),
+            0 4px 12px rgba(0, 0, 0, 0.06),
+            0 0 1px rgba(0, 0, 0, 0.04);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-gold), #E5C76B);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 16px rgba(212, 175, 55, 0.2);
+    }
+
+    .stat-icon i {
+        font-size: 1.5rem;
+        color: #fff;
+    }
+
+    /* Game Stats */
+    .game-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .game-stat-card {
+        background: #fff;
+        border-radius: 24px;
+        padding: 1.5rem;
+        box-shadow: 
+            0 10px 20px rgba(0, 0, 0, 0.04),
+            0 2px 6px rgba(0, 0, 0, 0.04);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .game-stat-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+        background: linear-gradient(to right bottom, #fff, var(--cream));
+        padding: 1rem;
+        border-radius: 16px;
+    }
+
+    .metric-circle {
+        background: #fff;
+        padding: 1rem;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+        transition: transform 0.3s ease;
+    }
+
+    .metric-circle:hover {
+        transform: translateY(-3px);
+    }
+
+    .game-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--primary-gold), #E5C76B);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+
+    .game-icon i {
+        font-size: 1.2rem;
+        color: #fff;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-wrapper {
+            grid-template-columns: 1fr;
+            max-width: 900px;
+        }
+        
+        .stats-row {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .game-stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-wrapper {
+            padding: 1rem;
+            margin: 1rem;
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            margin: -50px auto 1rem;
+            font-size: 2.5rem;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .learning-map {
+            margin: 1rem;
+        }
+    }
+
+    .profile-avatar {
+        position: relative;  /* Keep this for badge positioning */
+    }
+
+    .status-badge {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        border-radius: 50%;
+        padding: 2px;
+    }
+
+    .status-badge.verified i {
+        color: #4CAF50;  /* Keep the green color */
+        font-size: 24px;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));  /* Keep shadow for visibility */
+    }
+
+    /* Keep the animation */
+    .status-badge.verified i {
+        animation: badgePulse 2s infinite;
+    }
+
+    @keyframes badgePulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .notification-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #fff;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1000;
+        animation: slideIn 0.5s ease-out;
+        border-left: 4px solid #8B4513;
+        max-width: 400px;
+    }
+
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .notification-content i {
+        color: #8B4513;
+        font-size: 1.2rem;
+    }
+
+    .notification-button {
+        background: #8B4513;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.3s;
+    }
+
+    .notification-button:hover {
+        background: #6B3410;
+    }
+
+    .close-button {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 4px;
+        margin-left: auto;
+    }
+
+    .close-button:hover {
+        color: #333;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .learning-map {
+            display: none;  /* Hide learning map on mobile */
+        }
+
+        .dashboard-wrapper {
+            grid-template-columns: 1fr;  /* Stack columns on mobile */
+            padding: 1rem;
+            margin: 1rem;
+            gap: 1.5rem;
+        }
+
+        .profile-card {
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-row {
+            grid-template-columns: 1fr;  /* Stack stat cards */
+            gap: 1rem;
+        }
+
+        .game-stats-grid {
+            grid-template-columns: 1fr;  /* Stack game stat cards */
+        }
+
+        .profile-left {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .profile-info {
+            width: 100%;
+            text-align: center;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+        }
+
+        .profile-points {
+            margin: 1rem auto;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+        }
+
+        .game-stat-card {
+            padding: 1.5rem;
+        }
+
+        .game-stat-metrics {
+            grid-template-columns: repeat(2, 1fr);  /* 2 columns for metrics on mobile */
+            gap: 0.75rem;
+        }
+
+        .metric-circle {
+            padding: 0.75rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;  /* Smaller font size for mobile */
+        }
+
+        .profile-stats {
+            padding: 1rem;
+        }
+
+        .stat-item {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .stat-icon {
+            margin: 0 auto;
+        }
+
+        /* Adjust modal for mobile */
+        .modal-content {
+            width: 95%;
+            margin: 1rem auto;
+            padding: 1rem;
+        }
+
+        .game-buttons-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        /* Add a message for users about learning map */
+        .mobile-learning-map-message {
+            display: block;
+            text-align: center;
+            padding: 1rem;
+            margin: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            color: #666;
+        }
+    }
+
+    /* Add this to your existing HTML where the learning map is */
+    @media (max-width: 768px) {
+        .mobile-learning-map-message {
+            display: block;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .mobile-learning-map-message {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        /* Overall container adjustments */
+        .profile-container {
+            padding: 0;
+        }
+
+        .dashboard-wrapper {
+            grid-template-columns: 1fr;
+            margin: 0;
+            padding: 1rem;
+            border-radius: 0;
+            gap: 1rem;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* Profile Card Improvements */
+        .profile-card {
+            margin: 0 0 1rem 0;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .profile-banner {
+            height: 80px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            margin: -40px auto 1rem;
+            font-size: 2rem;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-role {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Stats Section Improvements */
+        .profile-stats {
+            padding: 0.75rem;
+            margin: 0;
+            border-radius: 15px;
+            gap: 0.5rem;
+        }
+
+        .stat-item {
+            padding: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+        }
+
+        /* Stats Row Cards */
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin: 0.75rem 0;
+        }
+
+        .stat-card {
+            padding: 1rem;
+            border-radius: 15px;
+            min-height: auto;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-info h3 {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Game Stats Grid */
+        .game-stats-grid {
+            gap: 0.75rem;
+        }
+
+        .game-stat-card {
+            padding: 1rem;
+            border-radius: 15px;
+        }
+
+        .game-stat-header {
+            margin-bottom: 0.75rem;
+        }
+
+        .game-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+        }
+
+        .game-stat-header h3 {
+            font-size: 1rem;
+        }
+
+        .game-stat-metrics {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+        }
+
+        .metric-circle {
+            padding: 0.5rem;
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 1rem;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+        }
+
+        /* Modal Improvements */
+        .modal-content {
+            width: 100%;
+            margin: 0;
+            border-radius: 20px 20px 0 0;
+            position: fixed;
+            bottom: 0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .game-options {
+            padding: 1rem;
+        }
+
+        .game-buttons-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .game-option {
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .game-btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Learning Map Message */
+        .mobile-learning-map-message {
+            margin: 1rem;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mobile-learning-map-message i {
+            font-size: 1.25rem;
+            color: #8B4513;
+        }
+
+        .mobile-learning-map-message p {
+            font-size: 0.9rem;
+            margin: 0;
+            color: #4A2511;
+        }
+
+        /* Hide desktop elements */
+        .learning-map {
+            display: none;
+        }
+
+        /* Notification Toast Adjustments */
+        .notification-toast {
+            width: calc(100% - 2rem);
+            left: 1rem;
+            right: 1rem;
+            border-radius: 12px;
+        }
+
+        /* Achievement Badge Adjustments */
+        .achievement-badge {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* Progress Bar Adjustments */
+        .stat-progress {
+            height: 4px;
+            margin-top: 0.5rem;
+        }
+
+        /* Game Badge Adjustments */
+        .game-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+        }
+    }
+
+    /* Additional breakpoint for very small devices */
+    @media (max-width: 360px) {
+        .stats-row {
+            grid-template-columns: 1fr;  /* Stack all stats for very small screens */
+        }
+
+        .game-stat-metrics {
+            grid-template-columns: repeat(2, 1fr);  /* 2 columns for very small screens */
+        }
+
+        .profile-name {
+            font-size: 1.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not user.userprofile.is_profile_completed %}
+<div id="profile-notification" class="notification-toast">
+    <div class="notification-content">
+        <i class="fas fa-user-edit"></i>
+        <span>Complete your profile to unlock all features!</span>
+    </div>
+    <button onclick="window.location.href='{% url 'users:complete_profile' %}'" class="notification-button">
+        Complete Now
+    </button>
+    <button onclick="closeNotification()" class="close-button">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+{% endif %}
+
+<div class="profile-container">
+    <div class="dashboard-wrapper">
+        <!-- Left Column - Profile Info -->
+        <div class="dashboard-col profile-col">
+            <div class="profile-card">
+                <div class="profile-banner"></div>
+                <div class="profile-main">
+                    <div class="profile-avatar">
+                        {{ user.username|make_list|first|upper }}
+                        {% if user.userprofile.is_profile_completed %}
+                        <div class="status-badge verified">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h2 class="profile-name">{{ user.username }}</h2>
+                    <p class="profile-role">Constitutional Law Expert</p>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">{{ player_points.total_points }}</span>
+                            <span class="stat-label">Points</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ player_points.games_played }}</span>
+                            <span class="stat-label">Games</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ player_points.total_wins }}</span>
+                            <span class="stat-label">Wins</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Stats & Progress -->
+        <div class="dashboard-col stats-col">
+            <!-- Performance Overview -->
+            <div class="stats-row">
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Score</h3>
+                        <div class="stat-value">{{ player_points.total_points }}</div>
+                        <div class="stat-progress">
+                            <div class="progress-bar" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Win Rate</h3>
+                        <div class="stat-value">{{ game_stats.total.win_rate }}</div>
+                        <div class="stat-progress">
+                            <div class="progress-bar" style="width: {{ game_stats.total.win_rate }}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Achievement Rate</h3>
+                        <div class="stat-value">85%</div>
+                        <div class="stat-progress">
+                            <div class="progress-bar" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Performance Cards -->
+            <div class="game-stats-grid">
+                <div class="game-stat-card">
+                    <div class="game-stat-header">
+                        <div class="game-icon">
+                            <i class="fas fa-dice"></i>
+                        </div>
+                        <h3>Snake & Ladder</h3>
+                        <span class="game-badge">Most Played</span>
+                    </div>
+                    <div class="game-stat-metrics">
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.snake_ladder.games }}</span>
+                                <span class="metric-label">Games</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.snake_ladder.wins }}</span>
+                                <span class="metric-label">Wins</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.snake_ladder.win_rate }}</span>
+                                <span class="metric-label">Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-stat-card">
+                    <div class="game-stat-header">
+                        <div class="game-icon">
+                            <i class="fas fa-th"></i>
+                        </div>
+                        <h3>Constitutional Bingo</h3>
+                        <span class="game-badge">High Score</span>
+                    </div>
+                    <div class="game-stat-metrics">
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.housie.games }}</span>
+                                <span class="metric-label">Games</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.housie.wins }}</span>
+                                <span class="metric-label">Wins</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-circle">
+                                <span class="metric-value">{{ game_stats.housie.win_rate }}</span>
+                                <span class="metric-label">Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mobile-learning-map-message">
+        <i class="fas fa-desktop"></i>
+        <p>Please view the learning journey map on a larger screen for the best experience.</p>
+    </div>
+
+    <!-- Keep existing learning map section unchanged -->
+    <div class="learning-map">
+        <h2 class="text-2xl font-bold mb-6">Learning Journey Map</h2>
+        
+        <div class="map-container">
+            {% for part, types in checkpoints.items %}
+            <div class="part-section">
+                <div class="part-title-container">
+                    <h3 class="part-title">Part {{ part }}</h3>
+                    
+                </div>
+                
+                <div class="checkpoints-line">
+                    <div class="connection-line"></div>
+                    
+                    <div class="checkpoint">
+                        <div class="checkpoint-node judiciary {% if not types.JUD.progress.unlocked %}locked{% endif %}"
+                             data-unlocked="{{ types.JUD.progress.unlocked|lower }}">
+                            
+                            <span class="checkpoint-title">Judiciary</span>
+                            <span class="checkpoint-count">{{ types.JUD.count }}</span>
+                            {% if not types.JUD.progress.unlocked %}
+                                <div class="lock-icon">🔒</div>
+                                <div class="points-required">
+                                    Need {{ types.JUD.progress.required_points }} points
+                                </div>
+                            {% else %}
+                                <div class="checkpoint-actions">
+                                    
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="arrow">→</div>
+
+                    <div class="checkpoint">
+                        <a href="{% url 'plat:checkpoint_detail' part=part type='LEG' %}" 
+                           class="checkpoint-node legislative {% if not types.LEG.progress.unlocked %}locked{% endif %}"
+                           data-unlocked="{{ types.LEG.progress.unlocked|lower }}">
+                            
+                            <span class="checkpoint-title">Legislative</span>
+                            <span class="checkpoint-count">{{ types.LEG.count }}</span>
+                            {% if types.LEG.progress.completed %}
+                                <div class="completion-status">✓ Completed</div>
+                            {% elif not types.LEG.progress.unlocked %}
+                                <div class="lock-icon">🔒</div>
+                                <div class="points-required">
+                                    Need {{ types.LEG.progress.required_points }} points
+                                </div>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <div class="arrow">→</div>
+
+                    <div class="checkpoint">
+                        <a href="{% url 'plat:checkpoint_detail' part=part type='EXEC' %}" 
+                           class="checkpoint-node executive {% if not types.EXEC.progress.unlocked %}locked{% endif %}">
+                            
+                            <span class="checkpoint-title">Executive</span>
+                            <span class="checkpoint-count">{{ types.EXEC.count }}</span>
+                            {% if not types.EXEC.progress.unlocked %}
+                                <div class="lock-icon">🔒</div>
+                                <div class="points-required">
+                                    Need {{ types.EXEC.progress.required_points }} points
+                                </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Articles -->
+<div id="articlesModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2 id="modalTitle" class="text-2xl font-bold mb-4"></h2>
+        
+        <!-- Add Game Options Section -->
+        <div class="game-options mb-8">
+            <h3 class="text-xl font-bold mb-4">Practice Games</h3>
+            <div class="game-buttons-grid">
+                <!-- Snake & Ladder -->
+                <div class="game-option">
+                    <h4 class="text-lg font-bold mb-2">Snake & Ladder</h4>
+                    <div class="game-buttons">
+                        <a href="{% url 'snake_ladder:create_room' %}?checkpoint_part={{ part }}&checkpoint_type={{ type }}" 
+                           class="game-btn create">Create Room</a>
+                        <button class="game-btn join" type="button">Join Room</button>
+                    </div>
+                </div>
+
+                <!-- Flip Card -->
+                <div class="game-option">
+                    <h4 class="text-lg font-bold mb-2">Flip Card</h4>
+                    <div class="game-buttons">
+                        <a href="{% url 'flip_card:start_page' %}?part={{ part }}&type={{ type }}" 
+                           class="game-btn create">Start Game</a>
+                        <a href="{% url 'flip_card:filtered_levels_page' part=0 type='TYPE' %}" 
+                           class="game-btn join" id="flipCardLevels">View Levels</a>
+                    </div>
+                </div>
+
+                <!-- Constitutional Bingo -->
+                <div class="game-option">
+                    <h4 class="text-lg font-bold mb-2">Constitutional Bingo</h4>
+                    <div class="game-buttons">
+                        <a href="{% url 'housie_consti:housie_intro' %}" 
+                           class="game-btn create" id="bingoStartLink">Create Room</a>
+                        <button class="game-btn join-housie" type="button">Join Room</button>
+                    </div>
+                </div>
+
+                <!-- Spinwheel -->
+                <div class="game-option">
+                    <h4 class="text-lg font-bold mb-2">Constitutional Spinwheel</h4>
+                    <div class="game-buttons">
+                        <a href="{% url 'spinwheel:spinwheel_intro' %}" class="game-btn">Play Spinwheel</a>
+                        <a href="{% url 'spinwheel:collection' %}" 
+                           class="game-btn collection">View Collection</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="#" id="learnMoreBtn" class="game-btn create" style="background: #4CAF50;" onclick="closeModalAndRedirect(event)">
+                Click to Learn More
+            </a>
+        </div>
+        <!-- Existing Articles Grid -->
+        <div class="articles-section">
+            <h3 class="text-xl font-bold mb-4">Constitutional Articles</h3>
+            <div id="articlesGrid" class="articles-grid">
+                {% for article in articles %}
+                <div class="article-card">
+                    <div class="article-title">{{ article.title }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModalAndRedirect(event) {
+    event.preventDefault();
+    const modal = document.getElementById('articlesModal');
+    const link = event.target.href;
+    modal.style.display = 'none';  // Close the modal
+    window.location.href = link;   // Redirect to the articles page
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal functionality
+    const modal = document.getElementById('articlesModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const articlesGrid = document.getElementById('articlesGrid');
+    const closeModal = document.querySelector('.close-modal');
+
+    // Join room functions
+    function joinRoom() {
+        const roomId = prompt("Enter Room ID:");
+        if (roomId) {
+            window.location.href = `/game/join/${roomId}/`;
+        }
+    }
+
+    function joinHousieRoom() {
+        const roomId = prompt("Enter Room ID:");
+        if (roomId) {
+            window.location.href = `/housie-consti/join/${roomId}/`;
+        }
+    }
+
+    // Add click handlers for join buttons (both in modal and outside)
+    const joinSnakeButtons = document.querySelectorAll('.game-btn.join');
+    joinSnakeButtons.forEach(button => {
+        button.addEventListener('click', joinRoom);
+    });
+
+    const joinHousieButtons = document.querySelectorAll('.game-btn.join-housie');
+    joinHousieButtons.forEach(button => {
+        button.addEventListener('click', joinHousieRoom);
+    });
+
+    // Rest of your existing modal code...
+    document.querySelectorAll('.checkpoint-node').forEach(node => {
+        node.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            if (this.classList.contains('locked')) {
+                alert('This checkpoint is locked! Earn more points to unlock.');
+                return;
+            }
+            
+            const part = this.closest('.part-section').querySelector('.part-title').textContent.split(' ')[1];
+            let type = '';
+            if (this.classList.contains('judiciary')) type = 'JUD';
+            else if (this.classList.contains('legislative')) type = 'LEG';
+            else if (this.classList.contains('executive')) type = 'EXEC';
+            
+            try {
+                const response = await fetch(`/plat/checkpoint/${part}/${type}/`);
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('This checkpoint is locked! Earn more points to unlock.');
+                        return;
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                
+                // Update modal content
+                modalTitle.textContent = `Part ${data.part} - ${data.type_display}`;
+                
+                // Update game creation links with checkpoint info
+                const createGameLink = document.querySelector('.game-btn.create');
+                if (createGameLink) {
+                    createGameLink.href = `/game/create/?checkpoint_part=${data.checkpoint_part}&checkpoint_type=${data.checkpoint_type}`;
+                }
+
+                // Update Flip Card links
+                const flipCardStartLink = document.querySelector('.game-option:nth-child(2) .game-btn.create');
+                const flipCardLevelsLink = document.querySelector('#flipCardLevels');
+                if (flipCardStartLink) {
+                    flipCardStartLink.href = `{% url 'flip_card:start_page' %}?part=${data.checkpoint_part}&type=${data.checkpoint_type}`;
+                }
+                if (flipCardLevelsLink) {
+                    flipCardLevelsLink.href = flipCardLevelsLink.href
+                        .replace('0', data.checkpoint_part)
+                        .replace('TYPE', data.checkpoint_type);
+                }
+                
+                // Update Constitutional Bingo link
+                const bingoStartLink = document.querySelector('#bingoStartLink');
+                if (bingoStartLink) {
+                    bingoStartLink.href = `{% url 'housie_consti:housie_intro_filtered' part=0 type='TYPE' %}`
+                        .replace('0', data.checkpoint_part)
+                        .replace('TYPE', data.checkpoint_type);
+                }
+                
+                // Update modal content
+                modalTitle.textContent = `Part ${data.part} - ${data.type_display}`;
+                articlesGrid.innerHTML = data.articles.map(article => `
+                    <div class="article-card">
+                        <div class="article-title">${article.title}</div>
+                    </div>
+                `).join('');
+                
+                // Update Learn More button href and add onclick handler
+                const learnMoreBtn = document.getElementById('learnMoreBtn');
+                learnMoreBtn.href = `/plat/articles/${data.part}/${data.type}/`;
+                learnMoreBtn.onclick = (e) => closeModalAndRedirect(e);
+                
+                // Show modal
+                modal.style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+
+    // Close modal when clicking the close button or outside the modal
+    closeModal.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    }
+});
+
+function closeNotification() {
+    const notification = document.getElementById('profile-notification');
+    notification.style.animation = 'slideOut 0.5s ease-out forwards';
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 500);
+}
+
+// Auto-hide notification after 10 seconds
+setTimeout(() => {
+    const notification = document.getElementById('profile-notification');
+    if (notification) {
+        notification.style.animation = 'slideOut 0.5s ease-out forwards';
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 500);
+    }
+}, 10000);
+</script>
+{% endblock %} 
