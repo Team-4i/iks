@@ -249,8 +249,8 @@ def case_study(request):
     return render(request, 'case_study.html')
 
 def landing_page(request):
-    return redirect('snake_ladder:snake_ladder_intro')
-    # return render(request, 'index.html')
+    # return redirect('snake_ladder:snake_ladder_intro')
+    return render(request, 'index.html')
 
 def login_redirect_view(request):
     if request.user.is_authenticated and not request.session.get('visited_profile', False):

@@ -634,18 +634,18 @@
                 <div class="menu-bar"></div>
             </div>
             <div class="nav-links">
-                <!-- <a href="{% url 'landing_page' %}" class="nav-link {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}">Home</a> -->
+                 <a href="{% url 'landing_page' %}" class="nav-link {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}">Home</a> 
                 <div class="dropdown">
-                    <!-- <a href="#" style="cursor: pointer;" class="nav-link">Learn</a>
+                    <a href="#" style="cursor: pointer;" class="nav-link">Learn</a>
                     <div class="dropdown-content">
                         <a href="{% url 'users:learn' %}">Timeline</a>
                         <a href="{% url 'users:case_study' %}">Case Studies</a>
-                    </div> -->
+                    </div> 
                 </div>
                 <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="nav-link {% if request.resolver_match.url_name == 'game_library' %}active{% endif %}">Games</a>
-                <!-- <a href="{% url 'plat:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Profile</a>
+                <a href="{% url 'plat:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Profile</a>
                 <a href="{% url 'plat:leaderboard' %}" class="nav-link {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}">Leaderboard</a>
-                <a href="{% url 'users:profile_details' %}" class="nav-link {% if request.resolver_match.url_name == 'profile_details' %}active{% endif %}">Profile Details</a> -->
+                <a href="{% url 'users:profile_details' %}" class="nav-link {% if request.resolver_match.url_name == 'profile_details' %}active{% endif %}">Profile Details</a> 
                 
                 <!-- Add the translate dropdown -->
                 <div class="dropdown">
@@ -708,7 +708,7 @@
     </script>
 
     <!-- Exact HTML structure from popup.html -->
-    <!-- <div id="ai-popup">
+    <div id="ai-popup">
         <div class="popup-header">
             <span class="popup-title">AI Assistant</span>
             <div class="popup-controls">
@@ -720,7 +720,7 @@
         <div class="popup-content">
             <iframe id="ai-frame" src="{% url 'aicharacter:index' %}" allowfullscreen></iframe>
         </div>
-    </div> -->
+    </div>
 
     <!-- Exact JavaScript from popup.html -->
     <script>
@@ -739,11 +739,11 @@
             }
         }
 
-        // const aiButton = document.createElement('button');
-        // aiButton.innerHTML = '🤖 AI Assistant';
-        // aiButton.className = 'ai-trigger-button';
-        // aiButton.onclick = showAIAssistant;
-        // document.body.appendChild(aiButton);
+        const aiButton = document.createElement('button');
+        aiButton.innerHTML = '🤖 AI Assistant';
+        aiButton.className = 'ai-trigger-button';
+        aiButton.onclick = showAIAssistant;
+        document.body.appendChild(aiButton);
 
         // Initially hide the popup
         document.getElementById('ai-popup').style.display = 'none';
