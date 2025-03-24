@@ -642,7 +642,7 @@
                         <a href="{% url 'users:case_study' %}">Case Studies</a>
                     </div> 
                 </div>
-                <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="nav-link {% if request.resolver_match.url_name == 'game_library' %}active{% endif %}">Games</a>
+                <a href="{% url 'users:game_library' %}" class="nav-link {% if request.resolver_match.url_name == 'game_library' %}active{% endif %}">Games</a>
                 <a href="{% url 'plat:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Profile</a>
                 <a href="{% url 'plat:leaderboard' %}" class="nav-link {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}">Leaderboard</a>
                 <a href="{% url 'users:profile_details' %}" class="nav-link {% if request.resolver_match.url_name == 'profile_details' %}active{% endif %}">Profile Details</a> 
