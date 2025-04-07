@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from .models import Cell, GameRoom, PlayerPosition, CellHistory, User, PlayerOverallPoints, CellContent, CellBookmark
+from .models import Cell, GameRoom, PlayerPosition, CellHistory, User, PlayerOverallPoints, CellContent, CellBookmark, GameFact
 from plat.models import PlayerPlatPoints
 import qrcode
 import qrcode.image.svg
@@ -63,36 +63,8 @@ def game_board(request, room_id):
     
     # If game is just starting
     if not room.current_content_part:  # Check if content type not set yet
-        try:
-            # Get player's current progress from platform points
-            player_points = PlayerPlatPoints.objects.get(player=request.user)
-            
-            # Check if coming from a specific checkpoint
-            checkpoint_part = request.GET.get('checkpoint_part')
-            checkpoint_type = request.GET.get('checkpoint_type')
-            
-            print(f"[DEBUG] Checkpoint parameters received - Part: {checkpoint_part}, Type: {checkpoint_type}")
-            
-            if checkpoint_part and checkpoint_type and player_points.can_unlock_checkpoint(
-                int(checkpoint_part), checkpoint_type
-            ):
-                print(f"[DEBUG] Loading content from selected checkpoint: Part {checkpoint_part} {checkpoint_type}")
-                # Set content type based on selected checkpoint
-                room.set_game_content_type(
-                    part=int(checkpoint_part),
-                    type=checkpoint_type
-                )
-            else:
-                print(f"[DEBUG] Loading content from current progress: Part {player_points.current_part} {player_points.current_type}")
-                # Set content type based on player's current progress
-                room.set_game_content_type(
-                    part=player_points.current_part,
-                    type=player_points.current_type
-                )
-                
-        except PlayerPlatPoints.DoesNotExist:
-            print(f"[DEBUG] No platform progress found for {request.user.username}, defaulting to Part 5 JUD")
-            room.set_game_content_type(part=5, type='JUD')
+        # Set default content type (no longer dependent on platform)
+        room.set_game_content_type(part=5, type='JUD')
     
     dice_roll = None  # Initialize dice_roll at the start
     
@@ -314,53 +286,21 @@ def game_board(request, room_id):
 @login_required
 def create_room(request):
     """Creates a new game room"""
-    try:
-        # Check if coming from a specific checkpoint
-        checkpoint_part = request.GET.get('checkpoint_part')
-        checkpoint_type = request.GET.get('checkpoint_type')
-        
-        # Get player's platform points
-        player_points = PlayerPlatPoints.objects.get(player=request.user)
-        
-        # If checkpoint specified and unlocked, use that
-        if checkpoint_part and checkpoint_type and player_points.can_unlock_checkpoint(
-            int(checkpoint_part), checkpoint_type
-        ):
-            content_part = int(checkpoint_part)
-            content_type = checkpoint_type
-        else:
-            # Otherwise use current progress
-            content_part = player_points.current_part
-            content_type = player_points.current_type
-        
-        print(f"[DEBUG] Creating room with content: Part {content_part} {content_type}")
-        
-        # Create new room
-        room = GameRoom.objects.create(
-            creator=request.user,
-            current_content_part=content_part,
-            current_content_type=content_type
-        )
-        room.players.add(request.user)
-        
-        # Set initial game content
-        room.set_game_content_type(
-            part=content_part,
-            type=content_type
-        )
-        
-        return redirect('snake_ladder:room_detail', room_id=room.room_id)
-        
-    except PlayerPlatPoints.DoesNotExist:
-        # If no progress found, default to Part 5 JUD
-        room = GameRoom.objects.create(
-            creator=request.user,
-            current_content_part=5,
-            current_content_type='JUD'
-        )
-        room.players.add(request.user)
-        room.set_game_content_type(part=5, type='JUD')
-        return redirect('snake_ladder:room_detail', room_id=room.room_id)
+    # Create new room with default content type
+    room = GameRoom.objects.create(
+        creator=request.user,
+        current_content_part=5,
+        current_content_type='JUD'
+    )
+    room.players.add(request.user)
+    
+    # Set initial game content
+    room.set_game_content_type(
+        part=5,
+        type='JUD'
+    )
+    
+    return redirect('snake_ladder:room_detail', room_id=room.room_id)
 
 @login_required
 def room_detail(request, room_id):
@@ -603,8 +543,8 @@ def generate_mcq(request, room_id):
         print(f"[DEBUG] Topic: {topic_for_question}")
 
         # Generate MCQ using the selected cell's content
-        genai.configure(api_key='AIzaSyCjBRaFzB9Gn7L16ZwIIjp7MgOU9RgnJ8Y')
-        model = genai.GenerativeModel('gemini-1.5-pro')  # Updated model name
+        genai.configure(api_key='AIzaSyA8DaPlDtUTyzwjo8M6aOwFcfGDLU7itJg')
+        model = genai.GenerativeModel('gemini-1.5-pro')
         
         prompt = f"""Based on this fact about Indian Constitution:
         {content_for_question}
