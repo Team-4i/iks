@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cell, GameRoom, PlayerPosition, CellHistory, CellContent, PlayerOverallPoints
+from .models import Cell, GameRoom, PlayerPosition, CellHistory, CellContent, PlayerOverallPoints, GameFact
 
 @admin.register(CellContent)
 class CellContentAdmin(admin.ModelAdmin):
@@ -123,4 +123,10 @@ class PlayerOverallPointsAdmin(admin.ModelAdmin):
                     self.message_user(request, f"Error syncing with platform: {str(e)}", level='ERROR')
         
         super().save_model(request, obj, form, change)
+
+@admin.register(GameFact)
+class GameFactAdmin(admin.ModelAdmin):
+    list_display = ('fact_text',)
+    search_fields = ('fact_text',)
+    list_per_page = 50
 
