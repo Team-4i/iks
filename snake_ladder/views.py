@@ -537,7 +537,7 @@ def generate_mcq(request, room_id):
 
         # Use content from current_content
         content_for_question = source_cell.current_content.content if source_cell.current_content else "Default content"
-        topic_for_question = source_cell.current_content.topic if source_cell.current_content else "Constitutional Law"
+        topic_for_question = source_cell.current_content.topic if source_cell.current_content else "IKS"
 
         print(f"[DEBUG] Generating MCQ for content: {content_for_question[:100]}...")
         print(f"[DEBUG] Topic: {topic_for_question}")
