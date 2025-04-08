@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samvidhan - Indian Constitution Portal</title>
+    <title>ज्ञान-दर्शन | Gyan-Darshan - Indian Knowledge Portal</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script type="text/javascript">
@@ -85,8 +85,8 @@
         }
 
         .goog-te-menu-value {
-            color: #4A2511 !important;
-            font-family: 'Poppins', sans-serif !important;
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
         }
 
         /* Hide Google Translate attribution */
@@ -157,6 +157,1317 @@
         height: 35px;
     }
 }
+
+/* Typography adjustments for better visual balance */
+h1 {
+    font-size: 2.4rem;
+    line-height: 1.3;
+    margin-bottom: 1rem;
+    font-weight: 00;
+}
+
+h2 {
+    font-size: 2rem;
+    line-height: 1.3;
+    margin-bottom: 1rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+    line-height: 1.4;
+    margin-bottom: 0.8rem;
+}
+
+h4 {
+    font-size: 1.2rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+}
+
+.stats-text {
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+.milestone-content h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.milestone-content p {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.game-content h3 {
+    font-size: 1.3rem;
+}
+
+.game-content p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.game-type {
+    font-size: 0.8rem;
+}
+
+.section-header h3 {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.section-header p {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.footer-about p {
+    font-size: 0.9rem;
+}
+
+.footer-newsletter p {
+    font-size: 0.9rem;
+}
+
+.footer-bottom p {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.6rem;
+    }
+    
+    h3 {
+        font-size: 1.3rem;
+    }
+    
+    .section-header h3 {
+        font-size: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* Sanskrit text styling adjusted */
+.sanskrit-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.sanskrit-meaning {
+    font-size: 0.8rem;
+    color: var(--dark-text);
+    font-style: italic;
+}
+
+/* Scholar card text adjustments */
+.scholar-content h4 {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+    color: var(--dark-text);
+}
+
+.time-period {
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.scholar-content p {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.key-contributions span {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+}
+
+/* Button text adjustment */
+.primary-btn, .secondary-btn, .play-btn, .continue-btn, .join-btn {
+    font-size: 0.9rem;
+    padding: 8px 15px;
+}
+
+.explore-all-btn {
+    font-size: 0.9rem;
+}
+
+/* Traditional Mandala Visual Styling - REPLACED WITH COSMIC DESIGN */
+
+/* Cosmic Planetary System - Traditional Indian Jyotish Style */
+.cosmic-visual {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    perspective: 1000px;
+}
+
+.center-mandala {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    z-index: 10;
+    animation: pulseGlow 5s ease-in-out infinite;
+}
+
+.mandala-design {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.7));
+    animation: slowRotate 60s linear infinite;
+}
+
+.cosmic-glow {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 215, 0, 0.9) 0%,
+        rgba(255, 165, 0, 0.5) 40%,
+        rgba(139, 69, 19, 0.2) 70%,
+        transparent 100%
+    );
+    z-index: 5;
+    animation: pulseGlow 8s ease-in-out infinite;
+}
+
+.cosmic-orbit {
+    position: absolute;
+    border: 1px dashed rgba(205, 133, 63, 0.3);
+    border-radius: 50%;
+    transform-style: preserve-3d;
+    animation: orbitRotate 80s linear infinite;
+}
+
+.orbit-1 {
+    width: 240px;
+    height: 240px;
+    animation-duration: 30s;
+}
+
+.orbit-2 {
+    width: 300px;
+    height: 300px;
+    animation-duration: 40s;
+}
+
+.orbit-3 {
+    width: 360px;
+    height: 360px;
+    animation-duration: 50s;
+}
+
+.orbit-4 {
+    width: 420px;
+    height: 420px;
+    animation-duration: 60s;
+}
+
+.orbit-5 {
+    width: 480px;
+    height: 480px;
+    animation-duration: 70s;
+}
+
+.planet {
+    position: absolute;
+    border-radius: 50%;
+    transform-style: preserve-3d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
+    animation: planetRotateSelf 20s linear infinite;
+}
+
+.planet-name {
+    position: absolute;
+    width: max-content;
+    color: #8B4513;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+    transform: translateY(24px);
+    background: rgba(255, 248, 220, 0.8);
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.planet:hover .planet-name {
+    opacity: 1;
+}
+
+.surya {
+    width: 30px;
+    height: 30px;
+    background: radial-gradient(circle, #FFD700, #FF8C00);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-15px);
+    z-index: 6;
+}
+
+.chandra {
+    width: 25px;
+    height: 25px;
+    background: radial-gradient(circle, #F5F5F5, #E6E6FA);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-12.5px);
+    z-index: 6;
+}
+
+.mangal {
+    width: 22px;
+    height: 22px;
+    background: radial-gradient(circle, #FF4500, #8B0000);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-11px);
+    z-index: 6;
+}
+
+.budh {
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle, #9ACD32, #006400);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-9px);
+    z-index: 6;
+}
+
+.guru {
+    width: 35px;
+    height: 35px;
+    background: radial-gradient(circle, #F0E68C, #DAA520);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-17.5px);
+    z-index: 6;
+}
+
+.cosmic-stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    animation: slowTwinkle 10s ease-in-out infinite;
+}
+
+.cosmic-stars::before,
+.cosmic-stars::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background-color: #FFD700;
+    border-radius: 50%;
+    box-shadow: 
+        30px 20px 0 -1px rgba(255, 215, 0, 0.8),
+        85px -40px 0 -1px rgba(255, 215, 0, 0.7),
+        -60px 70px 0 -1px rgba(255, 215, 0, 0.6),
+        120px 120px 0 -1px rgba(255, 215, 0, 0.5),
+        -120px -80px 0 -1px rgba(255, 215, 0, 0.4),
+        -60px -120px 0 -1px rgba(255, 215, 0, 0.5),
+        150px -30px 0 -1px rgba(255, 215, 0, 0.6),
+        -150px 30px 0 -1px rgba(255, 215, 0, 0.7),
+        180px 90px 0 -1px rgba(255, 215, 0, 0.8),
+        -180px -90px 0 -1px rgba(255, 215, 0, 0.9),
+        210px -10px 0 -1px rgba(255, 215, 0, 0.6),
+        -210px 10px 0 -1px rgba(255, 215, 0, 0.7),
+        170px -170px 0 -1px rgba(255, 215, 0, 0.8),
+        -170px 170px 0 -1px rgba(255, 215, 0, 0.9);
+}
+
+@keyframes slowRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes orbitRotate {
+    from { transform: rotateZ(0deg); }
+    to { transform: rotateZ(360deg); }
+}
+
+@keyframes planetRotateSelf {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+}
+
+@keyframes pulseGlow {
+    0% { opacity: 0.7; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0.7; transform: scale(0.95); }
+}
+
+@keyframes slowTwinkle {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Responsive adjustments for cosmic design */
+@media (max-width: 768px) {
+    .cosmic-visual {
+        width: 360px;
+        height: 360px;
+        transform: scale(0.8);
+    }
+    
+    .center-mandala {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .cosmic-glow {
+        width: 130px;
+        height: 130px;
+    }
+    
+    .orbit-1 { width: 180px; height: 180px; }
+    .orbit-2 { width: 220px; height: 220px; }
+    .orbit-3 { width: 260px; height: 260px; }
+    .orbit-4 { width: 300px; height: 300px; }
+    .orbit-5 { width: 340px; height: 340px; }
+    
+    .planet-name {
+        font-size: 0.7rem;
+        transform: translateY(20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .cosmic-visual {
+        width: 300px;
+        height: 300px;
+        transform: scale(0.7);
+    }
+    
+    .center-mandala {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .cosmic-glow {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .orbit-1 { width: 150px; height: 150px; }
+    .orbit-2 { width: 190px; height: 190px; }
+    .orbit-3 { width: 230px; height: 230px; }
+    .orbit-4 { width: 270px; height: 270px; }
+    .orbit-5 { width: 310px; height: 310px; }
+    
+    .surya { width: 25px; height: 25px; transform: translateY(-50%) translateX(-12.5px); }
+    .chandra { width: 20px; height: 20px; transform: translateY(-50%) translateX(-10px); }
+    .mangal { width: 18px; height: 18px; transform: translateY(-50%) translateX(-9px); }
+    .budh { width: 15px; height: 15px; transform: translateY(-50%) translateX(-7.5px); }
+    .guru { width: 28px; height: 28px; transform: translateY(-50%) translateX(-14px); }
+    
+    .planet-name {
+        font-size: 0.65rem;
+        transform: translateY(18px);
+    }
+}
+
+/* SVG Mandala Styling */
+.mandala-svg {
+    width: 100%;
+    height: auto;
+    z-index: 10;
+    filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.7));
+    animation: slowRotate 60s linear infinite;
+}
+
+/* In case SVG doesn't work properly */
+.fallback-mandala {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    z-index: 5;
+}
+
+/* Show fallback if SVG fails */
+.mandala-svg:not(:root) ~ .fallback-mandala {
+    opacity: 1;
+    display: block !important;
+}
+
+/* Traditional Indian decorative elements */
+.section-divider {
+    height: 30px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="12" viewBox="0 0 40 12"><path fill="%23BA8C37" d="M0 6 L20 0 L40 6 L20 12 Z"/></svg>');
+    background-repeat: repeat-x;
+    margin: 10px 0;
+    opacity: 0.7;
+}
+
+.indian-border {
+    position: relative;
+    border: 1px solid rgba(186, 140, 55, 0.3);
+    border-radius: 8px;
+    padding: 25px;
+    background-color: rgba(255, 248, 220, 0.2);
+}
+
+.indian-border::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 30px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path fill="%23BA8C37" d="M20 0 L25 10 L40 10 L30 20 L35 35 L20 25 L5 35 L10 20 L0 10 L15 10 Z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.ornate-heading {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.ornate-heading::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="5" viewBox="0 0 100 5"><path fill="%23BA8C37" d="M0 2.5 L20 0 L25 5 L50 0 L75 5 L80 0 L100 2.5 L80 5 L50 2.5 L20 5 Z"/></svg>');
+    background-repeat: repeat-x;
+    background-size: 100px 5px;
+}
+
+.knowledge-card {
+    padding: 15px;
+    border-radius: 8px;
+    text-align: left;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    background: linear-gradient(135deg, rgba(255,248,220,0.4) 0%, rgba(255,248,220,0.1) 100%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(186, 140, 55, 0.2);
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.knowledge-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(186, 140, 55, 0.3);
+}
+
+.knowledge-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 15px 0 0;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #BA8C37, #D4A76A);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 24px;
+    position: relative;
+}
+
+.knowledge-icon::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="none" stroke="%23FFFFFF" stroke-width="1.5" stroke-opacity="0.7" d="M50,5 C50,5 20,20 5,50 C5,50 20,80 50,95 C50,95 80,80 95,50 C95,50 80,20 50,5 Z M50,20 C50,20 30,30 20,50 C20,50 30,70 50,80 C50,80 70,70 80,50 C80,50 70,30 50,20 Z M50,35 C50,35 40,40 35,50 C35,50 40,60 50,65 C50,65 60,60 65,50 C65,50 60,40 50,35 Z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+    animation: rotateFlower 20s linear infinite;
+    pointer-events: none;
+}
+
+.knowledge-icon i {
+    z-index: 2;
+}
+
+@keyframes rotateFlower {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-content h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #4A2511;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+}
+
+.card-content p {
+    color: #6B4226;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
+
+.cards-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.learning-card {
+    flex: 1;
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.learning-card:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .knowledge-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .card-content h4 {
+        font-size: 1.1rem;
+    }
+    
+    .card-content p {
+        font-size: 0.85rem;
+    }
+}
+
+.stat-item {
+    position: relative;
+    z-index: 1;
+}
+
+.stat-item::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" fill="%23BA8C37" opacity="0.2"/></svg>');
+    background-size: 20px 20px;
+    opacity: 0.1;
+    z-index: -1;
+    top: 0;
+    left: 0;
+}
+
+/* Navigation scroll behavior */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    transition: transform 0.4s ease;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+nav.nav-hidden {
+    transform: translateY(-100%);
+}
+
+.hero {
+    padding-top: 80px; /* Add space for fixed nav */
+}
+
+@media (max-width: 768px) {
+    .hero {
+        padding-top: 60px;
+    }
+}
+
+/* Simple smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+section {
+    min-height: auto;
+    overflow: visible;
+}
+
+/* Remove any excessive margins */
+.section-header {
+    margin-top: 20px;
+}
+
+/* Slightly reduced padding between sections */
+section {
+    padding: 40px 0;
+}
+
+@media (max-width: 768px) {
+    section {
+        padding: 30px 0;
+    }
+}
+
+/* Immersive Games Section Styling */
+.games-section {
+    position: relative;
+    background: linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 50%, #FFFAF0 100%);
+    padding: 80px 0;
+    overflow: hidden;
+    color: #4A2511;
+}
+
+.games-decorations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.decoration-item {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    opacity: 0.6;
+    animation: float 6s ease-in-out infinite;
+}
+
+.decoration-dice {
+    top: 15%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.decoration-card {
+    top: 60%;
+    left: 5%;
+    animation-delay: 1s;
+}
+
+.decoration-piece {
+    top: 20%;
+    right: 8%;
+    animation-delay: 2s;
+}
+
+.decoration-token {
+    top: 70%;
+    right: 12%;
+    animation-delay: 3s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-20px) rotate(5deg);
+    }
+}
+
+.games-header {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin-bottom: 50px;
+    margin-top: 100px;
+}
+
+.games-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    margin-bottom: 15px;
+    color: #4A2511;
+    position: relative;
+    display: inline-block;
+}
+
+.games-header h2:after {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 3px;
+    background: #BA8C37;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.games-header p {
+    max-width: 600px;
+    margin: 0 auto;
+    color: #6B4226;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.games-showcase {
+    position: relative;
+    z-index: 2;
+}
+
+.showcase-container {
+    width: 100%;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-showcase-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(186, 140, 55, 0.3);
+    transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.5s ease;
+    transform: translateX(100%);
+    opacity: 0;
+    overflow: hidden;
+    border: 1px solid rgba(186, 140, 55, 0.2);
+}
+
+.game-showcase-card:nth-child(1) {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.game-image-container {
+    flex: 0 0 40%;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.game-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.play-preview {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(186, 140, 55, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.play-preview i {
+    font-size: 30px;
+    color: #fff;
+}
+
+.game-image-container:hover .game-image-overlay {
+    opacity: 1;
+}
+
+.game-image-container:hover img {
+    transform: scale(1.05);
+}
+
+.game-image-container:hover .play-preview {
+    transform: scale(1);
+}
+
+.game-details {
+    flex: 0 0 60%;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-details::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="none" stroke="%23BA8C37" stroke-width="0.5" stroke-opacity="0.1" d="M50,5 C50,5 20,20 5,50 C5,50 20,80 50,95 C50,95 80,80 95,50 C95,50 80,20 50,5 Z M50,20 C50,20 30,30 20,50 C20,50 30,70 50,80 C50,80 70,70 80,50 C80,50 70,30 50,20 Z M50,35 C50,35 40,40 35,50 C35,50 40,60 50,65 C50,65 60,60 65,50 C65,50 60,40 50,35 Z"/></svg>');
+    background-size: 300px 300px;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.game-type-tag {
+    display: inline-block;
+    padding: 5px 12px;
+    background: rgba(186, 140, 55, 0.2);
+    border: 1px solid #BA8C37;
+    border-radius: 30px;
+    color: #8B4513;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.game-details h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: #4A2511;
+    position: relative;
+    z-index: 1;
+}
+
+.game-description {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.game-description p {
+    color: #6B4226;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.game-features {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(186, 140, 55, 0.1);
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+.feature-item i {
+    color: #BA8C37;
+    font-size: 16px;
+}
+
+.feature-item span {
+    color: #6B4226;
+    font-size: 14px;
+}
+
+.difficulty-meter {
+    margin-bottom: 25px;
+    position: relative;
+    z-index: 1;
+}
+
+.difficulty-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.difficulty-label span {
+    color: #6B4226;
+    font-size: 14px;
+}
+
+.difficulty-label span:last-child {
+    color: #BA8C37;
+    font-weight: 600;
+}
+
+.difficulty-bar {
+    height: 6px;
+    background: rgba(186, 140, 55, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.difficulty-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.difficulty-fill.easy {
+    width: 33%;
+    background: linear-gradient(90deg, #5AB55E, #8ED492);
+}
+
+.difficulty-fill.medium {
+    width: 66%;
+    background: linear-gradient(90deg, #BA8C37, #D4A76A);
+}
+
+.difficulty-fill.hard {
+    width: 100%;
+    background: linear-gradient(90deg, #C23B22, #E35D6A);
+}
+
+.game-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.game-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.game-btn.primary {
+    background: linear-gradient(135deg, #D4A76A, #BA8C37);
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(212, 167, 106, 0.4);
+}
+
+.game-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.game-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(212, 167, 106, 0.6);
+}
+
+.game-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.showcase-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 15px;
+    margin-bottom: 30px;
+    gap: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.showcase-arrow {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(186, 140, 55, 0.3);
+}
+
+.showcase-arrow:hover {
+    background: rgba(186, 140, 55, 0.2);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.showcase-arrow i {
+    color: #8B4513;
+    font-size: 18px;
+}
+
+.showcase-dots {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.showcase-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(186, 140, 55, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #BA8C37;
+    position: relative;
+    z-index: 5;
+}
+
+.showcase-dot.active {
+    background: #BA8C37;
+    transform: scale(1.2);
+    box-shadow: 0 0 5px rgba(186, 140, 55, 0.5);
+}
+
+@media (max-width: 992px) {
+    .game-showcase-card {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .game-image-container {
+        flex: 0 0 200px;
+    }
+    
+    .game-details {
+        flex: 1;
+    }
+    
+    .showcase-container {
+        height: 700px;
+    }
+}
+
+@media (max-width: 768px) {
+    .games-section {
+        padding: 60px 0;
+    }
+    
+    .games-header h2 {
+        font-size: 32px;
+    }
+    
+    .showcase-container {
+        height: 750px;
+}
+
+.game-features {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Additional CSS fixes for games section */
+.games-section {
+    margin: 60px 0 0 0;
+    padding: 60px 0;
+    box-sizing: border-box;
+}
+
+.games-section .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.showcase-container {
+    width: 100%;
+    height: 480px;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    border-radius: 15px;
+    box-shadow: 0 5px 30px rgba(186, 140, 55, 0.15);
+}
+
+.game-showcase-card {
+    height: 100%;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(186, 140, 55, 0.2);
+}
+
+.game-image-container {
+    flex: 0 0 45%;
+    overflow: hidden;
+    border-radius: 15px 0 0 15px;
+}
+
+.game-details {
+    flex: 0 0 55%;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.game-description {
+    margin-bottom: 15px;
+    max-height: 70px;
+    overflow: hidden;
+}
+
+.game-features {
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.feature-item {
+    margin-bottom: 5px;
+}
+
+.difficulty-meter {
+    margin-bottom: 20px;
+}
+
+.game-actions {
+    margin-top: 10px;
+}
+
+/* Ensure icons display properly */
+.fas {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+}
+
+.fa-play:before { content: "\f04b"; }
+.fa-users:before { content: "\f0c0"; }
+.fa-user:before { content: "\f007"; }
+.fa-clock:before { content: "\f017"; }
+.fa-graduation-cap:before { content: "\f19d"; }
+.fa-brain:before { content: "\f5dc"; }
+.fa-memory:before { content: "\f538"; }
+.fa-layer-group:before { content: "\f5fd"; }
+.fa-dharmachakra:before { content: "\f655"; }
+.fa-info-circle:before { content: "\f05a"; }
+.fa-chevron-left:before { content: "\f053"; }
+.fa-chevron-right:before { content: "\f054"; }
+
+@media (max-width: 992px) {
+    .showcase-container {
+        height: 650px;
+    }
+    
+    .game-showcase-card {
+        flex-direction: column;
+    }
+    
+    .game-image-container {
+        flex: 0 0 220px;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .game-details {
+        flex: 1;
+        padding: 25px;
+    }
+}
+
+@media (max-width: 768px) {
+    .games-section {
+        padding: 40px 0;
+    }
+    
+    .showcase-container {
+        height: 700px;
+    }
+    
+    .game-image-container {
+        flex: 0 0 180px;
+    }
+    
+    .game-features {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .game-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .game-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
     </style>
 </head>
 <body>
@@ -203,24 +1514,120 @@
         </div>
 
         <div class="hero-content">
-            <h1>
-                Where Learning
-                <span class="highlight"> Meets Fun</span>
-                Adventure
+            <h1 style="font-size: 4.4rem;">
+                Discover India's Ancient
+                <span class="highlight">Knowledge Systems</span>
+                Legacy
             </h1>
-            <p>Transform your educational journey through gamification - making learning engaging, interactive, and enjoyable.</p>
+            <p>Explore the rich heritage of Indian wisdom through an interactive journey spanning philosophy, science, arts, and more.</p>
             <div class="cta-buttons">
-                <button class="primary-btn">Start Playing</button>
-                <button class="secondary-btn">Watch Demo</button>
+                <button class="primary-btn">Start Learning</button>
+                <button class="secondary-btn">Watch Introduction</button>
             </div>
         </div>
 
         <div class="hero-visual">
-            <div class="chakra-container">
-                <img src="{% static 'images/game.png' %}" alt="Ashoka Chakra" class="rotating" style="width: 100%; height: auto; z-index: 999;">
-                <div class="chakra-ring ring-1"></div>
-                <div class="chakra-ring ring-2"></div>
-                <div class="chakra-ring ring-3"></div>
+            <div class="cosmic-visual">
+                <div class="center-mandala">
+                    <!-- Replacing image with reliable embedded SVG -->
+                    <svg class="mandala-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <radialGradient id="mandalaGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                <stop offset="0%" stop-color="#FFD700" stop-opacity="0.9"/>
+                                <stop offset="60%" stop-color="#FFA500" stop-opacity="0.7"/>
+                                <stop offset="100%" stop-color="#CD853F" stop-opacity="0.5"/>
+                            </radialGradient>
+                        </defs>
+                        <!-- Base circle -->
+                        <circle cx="250" cy="250" r="200" fill="url(#mandalaGrad)"/>
+                        
+                        <!-- Mandala patterns -->
+                        <g fill="none" stroke="#8B4513" stroke-width="1.5" stroke-opacity="0.7">
+                            <!-- Outer rings -->
+                            <circle cx="250" cy="250" r="190"/>
+                            <circle cx="250" cy="250" r="180"/>
+                            <circle cx="250" cy="250" r="170"/>
+                            
+                            <!-- Geometric patterns -->
+                            <g>
+                                <!-- 8-fold symmetry pattern -->
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(0 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(45 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(90 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(135 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(180 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(225 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(270 250 250)" stroke-opacity="0.5"/>
+                                <path d="M 250 250 L 250 80 A 170 170 0 0 1 420 250 Z" transform="rotate(315 250 250)" stroke-opacity="0.5"/>
+                                
+                                <!-- 16-fold flower pattern -->
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(0 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(22.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(45 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(67.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(90 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(112.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(135 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(157.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(180 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(202.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(225 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(247.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(270 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(292.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(315 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                <path d="M 250 250 L 290 100 L 250 120 L 210 100 Z" transform="rotate(337.5 250 250)" fill="#FFA500" fill-opacity="0.2" stroke="#8B4513"/>
+                                
+                                <!-- Center patterns -->
+                                <circle cx="250" cy="250" r="50" stroke="#8B4513" stroke-width="2"/>
+                                <circle cx="250" cy="250" r="30" stroke="#8B4513" stroke-width="1"/>
+                                
+                                <!-- Simple decorative dots -->
+                                <circle cx="250" cy="130" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="370" cy="250" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="250" cy="370" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="130" cy="250" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="330" cy="170" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="330" cy="330" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="170" cy="330" r="3" fill="#8B4513" stroke="none"/>
+                                <circle cx="170" cy="170" r="3" fill="#8B4513" stroke="none"/>
+                            </g>
+                        </g>
+                    </svg>
+                    
+                    <!-- Additional fallback image if everything fails -->
+                    <img
+                        class="mandala-design fallback-mandala" 
+                        onerror="this.onerror=null; this.src='https://cdn.pixabay.com/photo/2017/11/14/00/57/mandala-2947097_1280.png';"
+                        style="width: 100%; height: auto; z-index: 10; display: none;">
+                </div>
+                <div class="cosmic-glow"></div>
+                <div class="cosmic-orbit orbit-1">
+                    <div class="planet surya">
+                        <span class="planet-name">सूर्य</span>
+                    </div>
+                </div>
+                <div class="cosmic-orbit orbit-2">
+                    <div class="planet chandra">
+                        <span class="planet-name">चन्द्र</span>
+                    </div>
+                </div>
+                <div class="cosmic-orbit orbit-3">
+                    <div class="planet mangal">
+                        <span class="planet-name">मंगल</span>
+                    </div>
+                </div>
+                <div class="cosmic-orbit orbit-4">
+                    <div class="planet budh">
+                        <span class="planet-name">बुध</span>
+                    </div>
+                </div>
+                <div class="cosmic-orbit orbit-5">
+                    <div class="planet guru">
+                        <span class="planet-name">गुरु</span>
+                    </div>
+                </div>
+                <div class="cosmic-stars"></div>
             </div>
         </div>
 
@@ -243,58 +1650,63 @@
 
     <section class="info-section" id="features">
         <div class="container">
-            <!-- Left Side: Why Learn Constitution -->
             <div class="info-grid">
                 <div class="about-content">
-                    <h2>Why Choose GamifiEd?</h2>
-                    <div class="about-text">
-                        <p>Experience a revolutionary approach to learning that combines education with entertainment, making knowledge retention fun and effective.</p>
+                    <h2 class="ornate-heading">Why Explore IKS?</h2>
+                    <div class="section-divider"></div>
+                    <div class="about-text indian-border">
+                        <p>Discover the timeless wisdom of Bharat's intellectual heritage - where ancient Vedic knowledge, Upanishadic philosophy, and traditional sciences converge to illuminate the path of self-discovery and universal understanding.</p>
                         
                         <div class="stats-container">
                             <div class="stats-row">
                                 <div class="stat-item">
-                                    <span class="stat-number">2+</span>
-                                    <span class="stat-label">Game Modes</span>
+                                    <span class="stat-number">5000+</span>
+                                    <span class="stat-label">Years of Wisdom</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">100%</span>
-                                    <span class="stat-label">Customizable</span>
+                                    <span class="stat-number">6+</span>
+                                    <span class="stat-label">Knowledge Traditions</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-number">24/7</span>
-                                    <span class="stat-label">Access</span>
+                                    <span class="stat-label">Learning Access</span>
                                 </div>
                             </div>
-                            <div class="stats-text">Comprehensive gamified learning platform</div>
+                            <div class="stats-text">From Vedas to Arthashastra - Experience the continuous flow of knowledge across millennia</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Side: Learning Features -->
                 <div class="learning-content">
                     <div class="cards-container">
-                        <div class="learning-card">
-                            <div class="card-icon">
-                                <i class="fas fa-gamepad"></i>
+                        <div class="learning-card knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-om"></i>
                             </div>
-                            <h4>Subject-Agnostic</h4>
-                            <p>Works for any subject</p>
+                            <div class="card-content">
+                                <h4>Philosophy & Spirituality</h4>
+                                <p>Explore the six classical schools of Indian philosophy (Darshanas) that offer profound insights into consciousness, reality, and the nature of existence. Discover the timeless wisdom of Vedanta, Yoga, and Nyaya systems.</p>
+                            </div>
                         </div>
 
-                        <div class="learning-card">
-                            <div class="card-icon">
-                                <i class="fas fa-trophy"></i>
+                        <div class="learning-card knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-atom"></i>
                             </div>
-                            <h4>Competitive</h4>
-                            <p>Leaderboards & rewards</p>
+                            <div class="card-content">
+                                <h4>Science & Technology</h4>
+                                <p>Uncover India's remarkable contributions to mathematics, astronomy, metallurgy, and medicine. From the invention of zero to Ayurveda's holistic health principles and advanced surgical techniques of Sushruta.</p>
+                            </div>
                         </div>
 
-                        <div class="learning-card">
-                            <div class="card-icon">
-                                <i class="fas fa-users"></i>
+                        <div class="learning-card knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-palette"></i>
                             </div>
-                            <h4>Multiplayer</h4>
-                            <p>Learn with peers</p>
+                            <div class="card-content">
+                                <h4>Arts & Literature</h4>
+                                <p>Immerse yourself in classical performing arts, visual aesthetics, and literary masterpieces. Explore Natyashastra's principles of dramaturgy, the rich narrative traditions of Ramayana and Mahabharata, and diverse art forms.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -303,74 +1715,281 @@
     </section>
 
     <section class="games-section" id="games">
+        <!-- Decorative floating elements -->
+        <div class="games-decorations">
+            <div class="decoration-item decoration-dice">
+                <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" fill="#BA8C37">
+                    <rect x="5" y="5" width="40" height="40" rx="5" fill="white" stroke="#BA8C37" stroke-width="2"/>
+                    <circle cx="15" cy="15" r="4" />
+                    <circle cx="35" cy="15" r="4" />
+                    <circle cx="15" cy="35" r="4" />
+                    <circle cx="35" cy="35" r="4" />
+                    <circle cx="25" cy="25" r="4" />
+                </svg>
+            </div>
+            <div class="decoration-item decoration-card">
+                <svg viewBox="0 0 40 55" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="36" height="51" rx="4" fill="white" stroke="#BA8C37" stroke-width="2"/>
+                    <text x="8" y="20" font-family="serif" font-size="18" fill="#BA8C37">ॐ</text>
+                </svg>
+            </div>
+            <div class="decoration-item decoration-piece">
+                <svg viewBox="0 0 30 60" xmlns="http://www.w3.org/2000/svg" fill="#BA8C37">
+                    <path d="M15,5 C18,5 20,7 20,10 C20,12 18,14 16,15 C19,16 21,19 21,22 C21,25 19,27 17,29 L18,40 L12,40 L13,29 C11,27 9,25 9,22 C9,19 11,16 14,15 C12,14 10,12 10,10 C10,7 12,5 15,5 Z M10,45 L20,45 L22,50 L8,50 Z M8,52 L22,52 L22,55 L8,55 Z" />
+                </svg>
+            </div>
+            <div class="decoration-item decoration-token">
+                <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" fill="#D4A76A" stroke="#BA8C37" stroke-width="2"/>
+                    <text x="10" y="27" font-family="serif" font-size="20" fill="#8B4513">अ</text>
+                </svg>
+            </div>
+        </div>
+
         <div class="container">
-            <div class="section-header">
-                <h3>Learn through Games</h3>
-                <p>Test your understanding through interactive challenges</p>
+            <div class="games-header">
+                <h2>Learn through Games</h2>
+                <p>Immerse yourself in India's constitutional wisdom through interactive challenges that make learning engaging and memorable</p>
             </div>
             
-            <div class="game-carousel">
-                <div class="carousel-container">
-                    <div class="game-card">
-                        <div class="game-image">
-                            <img src="{% static 'images/snake_ladder.png' %}" alt="Brain Ladder">
-                        </div>
-                        <div class="game-content">
-                            <span class="game-type">Educational Game</span>
-                            <h3>Brain Ladder</h3>
-                            <p>Challenge yourself with this interactive quiz-based game inspired by Snakes and Ladders. Navigate through knowledge cells and face exciting challenges!</p>
-                        </div>
-                        <div class="game-footer">
-                            <div class="difficulty">
-                                <span>Level:</span>
-                                <div class="difficulty-dots">
-                                    <span class="dot active"></span>
-                                    <span class="dot"></span>
-                                    <span class="dot"></span>
+            <div class="games-showcase">
+                <!-- Left Arrow -->
+                <div class="showcase-arrow" id="prev-game" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 20; box-shadow: -2px 0 10px rgba(0,0,0,0.1);">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+                
+                <!-- Right Arrow -->
+                <div class="showcase-arrow" id="next-game" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 20; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                
+                <div class="showcase-container" id="showcase-container">
+                    <!-- Samvidhan Setu Game Card -->
+                    <div class="game-showcase-card" id="game-1">
+                        <div class="game-image-container">
+                            <img src="{% static 'images/snake_ladder.png' %}" alt="Samvidhan Setu">
+                            <div class="game-image-overlay">
+                                <div class="play-preview">
+                                    <i class="fas fa-play"></i>
                                 </div>
                             </div>
-                            <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="play-btn">Start Journey</a>
+                        </div>
+                        <div class="game-details">
+                            <span class="game-type-tag">QUIZ GAME</span>
+                            <h3>Samvidhan Setu</h3>
+                            <div class="game-description">
+                                <p>Embark on an exciting adventure through the foundational principles of India's Constitution with this unique twist on the classic board game.</p>
+                            </div>
+                            
+                            <div class="game-features">
+                                <div class="feature-item">
+                                    <i class="fas fa-users"></i>
+                                    <span>Multiplayer</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>15-20 min</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>Constitutional Basics</span>
+                                </div>
+                            </div>
+                            
+                            <div class="difficulty-meter">
+                                <div class="difficulty-label">
+                                    <span>Difficulty Level</span>
+                                    <span>Easy</span>
+                                </div>
+                                <div class="difficulty-bar">
+                                    <div class="difficulty-fill easy"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="game-actions">
+                                <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="game-btn primary">
+                                    <i class="fas fa-play"></i> Play Now
+                                </a>
+                                <a href="#" class="game-btn secondary">
+                                    <i class="fas fa-info-circle"></i> Learn More
+                                </a>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="game-card">
-                        <div class="game-image">
-                            <img src="{% static 'images/spinwheel.png' %}" alt="Quest Wheel">
-                        </div>
-                        <div class="game-content">
-                            <span class="game-type">Educational Game</span>
-                            <h3>Quest Wheel</h3>
-                            <p>Spin the wheel to collect subject cards of varying rarities. Trade, collect, and master your knowledge through this engaging collection game!</p>
-                        </div>
-                        <div class="game-footer">
-                            <div class="difficulty">
-                                <span>Level:</span>
-                                <div class="difficulty-dots">
-                                    <span class="dot active"></span>
-                                    <span class="dot active"></span>
-                                    <span class="dot active"></span>
+                    
+                    <!-- Samvidhan Squares Game Card -->
+                    <div class="game-showcase-card" id="game-2">
+                        <div class="game-image-container">
+                            <img src="{% static 'images/samvidhan_squares.png' %}" alt="Samvidhan Squares">
+                            <div class="game-image-overlay">
+                                <div class="play-preview">
+                                    <i class="fas fa-play"></i>
                                 </div>
                             </div>
-                            <a href="{% url 'spinwheel:spinwheel_intro' %}" class="play-btn">Spin Now</a>
-                            <a href="{% url 'spinwheel:collection' %}" class="play-btn collection">View Collection</a>
+                        </div>
+                        <div class="game-details">
+                            <span class="game-type-tag">BRAIN GAME</span>
+                            <h3>Samvidhan Squares</h3>
+                            <div class="game-description">
+                                <p>Challenge yourself with this strategic game that tests your knowledge of constitutional principles while developing critical thinking skills.</p>
+                            </div>
+                            
+                            <div class="game-features">
+                                <div class="feature-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Single Player</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>10-15 min</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-brain"></i>
+                                    <span>Strategic Thinking</span>
+                                </div>
+                            </div>
+                            
+                            <div class="difficulty-meter">
+                                <div class="difficulty-label">
+                                    <span>Difficulty Level</span>
+                                    <span>Medium</span>
+                                </div>
+                                <div class="difficulty-bar">
+                                    <div class="difficulty-fill medium"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="game-actions">
+                                <a href="#" class="game-btn primary">
+                                    <i class="fas fa-play"></i> Play Now
+                                </a>
+                                <a href="#" class="game-btn secondary">
+                                    <i class="fas fa-info-circle"></i> Learn More
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Flip Card Game -->
+                    <div class="game-showcase-card" id="game-3">
+                        <div class="game-image-container">
+                            <img src="{% static 'images/flip_card.png' %}" alt="Flip Card">
+                            <div class="game-image-overlay">
+                                <div class="play-preview">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="game-details">
+                            <span class="game-type-tag">MEMORY GAME</span>
+                            <h3>Flip Card</h3>
+                            <div class="game-description">
+                                <p>Test your memory and knowledge by matching constitutional concepts, articles, and historical events in this engaging memory game.</p>
+                            </div>
+                            
+                            <div class="game-features">
+                                <div class="feature-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Single Player</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>5-10 min</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-memory"></i>
+                                    <span>Memory Training</span>
+                                </div>
+                            </div>
+                            
+                            <div class="difficulty-meter">
+                                <div class="difficulty-label">
+                                    <span>Difficulty Level</span>
+                                    <span>Easy</span>
+                                </div>
+                                <div class="difficulty-bar">
+                                    <div class="difficulty-fill easy"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="game-actions">
+                                <a href="#" class="game-btn primary">
+                                    <i class="fas fa-play"></i> Play Now
+                                </a>
+                                <a href="#" class="game-btn secondary">
+                                    <i class="fas fa-info-circle"></i> Learn More
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Spinwheel Game -->
+                    <div class="game-showcase-card" id="game-4">
+                        <div class="game-image-container">
+                            <img src="{% static 'images/spinwheel.png' %}" alt="Spinwheel">
+                            <div class="game-image-overlay">
+                                <div class="play-preview">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="game-details">
+                            <span class="game-type-tag">STRATEGY GAME</span>
+                            <h3>Spinwheel</h3>
+                            <div class="game-description">
+                                <p>Spin the wheel of knowledge and answer questions about India's constitution, earning points and unlocking new categories.</p>
+                            </div>
+                            
+                            <div class="game-features">
+                                <div class="feature-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Single Player</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>5-10 min</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>Card Collection</span>
+                                </div>
+                            </div>
+                            
+                            <div class="difficulty-meter">
+                                <div class="difficulty-label">
+                                    <span>Difficulty Level</span>
+                                    <span>Hard</span>
+                                </div>
+                                <div class="difficulty-bar">
+                                    <div class="difficulty-fill hard"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="game-actions">
+                                <a href="{% url 'spinwheel:spinwheel_intro' %}" class="game-btn primary">
+                                    <i class="fas fa-dharmachakra"></i> Spin Now
+                                </a>
+                                <a href="{% url 'spinwheel:collection' %}" class="game-btn secondary">
+                                    <i class="fas fa-layer-group"></i> View Cards
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="carousel-controls">
-                    <button class="control-btn prev">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <div class="carousel-dots"></div>
-                    <button class="control-btn next">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                
+                <div class="showcase-navigation">
+                    <div class="showcase-dots">
+                        <div class="showcase-dot active" data-game="1"></div>
+                        <div class="showcase-dot" data-game="2"></div>
+                        <div class="showcase-dot" data-game="3"></div>
+                        <div class="showcase-dot" data-game="4"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="journey-section">
+    <section class="journey-section" style="margin: 80px 0; padding: 40px 0; position: relative; z-index: 2;">
         <div class="container">
             
 
@@ -380,11 +1999,11 @@
                     <div class="timeline-track">
                         <div class="milestone active">
                             <div class="milestone-icon">
-                                <i class="fas fa-book-open"></i>
+                                <i class="fas fa-om"></i>
                             </div>
                             <div class="milestone-content">
-                                <h3>Constitutional Basics</h3>
-                                <p>Foundation and core principles</p>
+                                <h3>Philosophical Foundations</h3>
+                                <p>Six Schools of Indian Philosophy</p>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 100%"></div>
                                 </div>
@@ -396,11 +2015,11 @@
 
                         <div class="milestone active current">
                             <div class="milestone-icon">
-                                <i class="fas fa-balance-scale"></i>
+                                <i class="fas fa-atom"></i>
                             </div>
                             <div class="milestone-content">
-                                <h3>Rights & Duties</h3>
-                                <p>Fundamental rights and citizen duties</p>
+                                <h3>Scientific Heritage</h3>
+                                <p>Mathematics, Astronomy, and Medicine</p>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 60%"></div>
                                 </div>
@@ -412,11 +2031,11 @@
 
                         <div class="milestone">
                             <div class="milestone-icon">
-                                <i class="fas fa-landmark"></i>
+                                <i class="fas fa-palette"></i>
                             </div>
                             <div class="milestone-content">
-                                <h3>Governance Structure</h3>
-                                <p>State and central administration</p>
+                                <h3>Arts & Literature</h3>
+                                <p>Classical traditions and expressions</p>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 0%"></div>
                                 </div>
@@ -428,11 +2047,11 @@
 
                         <div class="milestone">
                             <div class="milestone-icon">
-                                <i class="fas fa-gavel"></i>
+                                <i class="fas fa-balance-scale"></i>
                             </div>
                             <div class="milestone-content">
-                                <h3>Constitutional Dynamics</h3>
-                                <p>Amendments and evolution</p>
+                                <h3>Social Systems</h3>
+                                <p>Governance and Economics</p>
                                 <div class="progress-bar">
                                     <div class="progress" style="width: 0%"></div>
                                 </div>
@@ -497,7 +2116,7 @@
                     <div class="start-journey">
                         <div class="journey-prompt">
                             <h3>Ready to Begin?</h3>
-                            <p>Start your constitutional journey today</p>
+                            <p>Start your knowledge system journey today</p>
                         </div>
                         <button class="primary-cta">
                             Get Started
@@ -516,7 +2135,7 @@
                     <div class="logo">
                         <img src="{% static 'images/logo1.png' %}" alt="Samvidhan Logo" class="logo-image">
                     </div>
-                    <p>Making constitutional education accessible and engaging for everyone.</p>
+                    <p>Making knowledge systems accessible and engaging for everyone.</p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-twitter"></i></a>
                         <a href="#"><i class="fab fa-facebook"></i></a>
@@ -563,5 +2182,153 @@
     </footer>
 
     <script src="{% static 'js/script.js' %}" defer></script>
+    <script>
+        // Hide navigation bar on scroll down, show on scroll up
+        document.addEventListener('DOMContentLoaded', function() {
+            const nav = document.querySelector('nav');
+            let lastScrollTop = 0;
+            let scrollThreshold = 50; // Minimum scroll amount before hiding/showing
+            
+            window.addEventListener('scroll', function() {
+                let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Check if user scrolled more than threshold
+                if(Math.abs(lastScrollTop - currentScroll) <= scrollThreshold) {
+                    return;
+                }
+                
+                // Scrolling down
+                if (currentScroll > lastScrollTop && currentScroll > 80) {
+                    nav.classList.add('nav-hidden');
+                } 
+                // Scrolling up
+                else if (currentScroll < lastScrollTop) {
+                    nav.classList.remove('nav-hidden');
+                }
+                
+                lastScrollTop = currentScroll;
+            }, {passive: true});
+        });
+    </script>
+    <script>
+        // ... existing scripts ...
+        
+        // Game Showcase Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the game showcase
+            const container = document.getElementById('showcase-container');
+            const gameCards = document.querySelectorAll('.game-showcase-card');
+            const dots = document.querySelectorAll('.showcase-dot');
+            const prevBtn = document.getElementById('prev-game');
+            const nextBtn = document.getElementById('next-game');
+            
+            let currentIndex = 0;
+            
+            // Set initial state
+            updateShowcase();
+            
+            // Event listeners for navigation
+            prevBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex - 1 + gameCards.length) % gameCards.length;
+                updateShowcase();
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                currentIndex = (currentIndex + 1) % gameCards.length;
+                updateShowcase();
+            });
+            
+            // Event listeners for dots
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', function() {
+                    currentIndex = index;
+                    updateShowcase();
+                });
+            });
+            
+            // Function to update showcase based on current index
+            function updateShowcase() {
+                // Update game cards
+                gameCards.forEach((card, index) => {
+                    // Reset all cards
+                    card.style.transform = 'translateX(100%)';
+                    card.style.opacity = '0';
+                    card.style.zIndex = '0';
+                    
+                    // Position current card
+                    if (index === currentIndex) {
+                        card.style.transform = 'translateX(0)';
+                        card.style.opacity = '1';
+                        card.style.zIndex = '2';
+                    }
+                    
+                    // Position previous card
+                    if ((index === currentIndex - 1) || (currentIndex === 0 && index === gameCards.length - 1)) {
+                        card.style.transform = 'translateX(-100%)';
+                        card.style.opacity = '0.5';
+                        card.style.zIndex = '1';
+                    }
+                    
+                    // Position next card
+                    if ((index === currentIndex + 1) || (currentIndex === gameCards.length - 1 && index === 0)) {
+                        card.style.transform = 'translateX(100%)';
+                        card.style.opacity = '0.5';
+                        card.style.zIndex = '1';
+                    }
+                });
+                
+                // Update dots
+                dots.forEach((dot, index) => {
+                    if (index === currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Add keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft') {
+                    currentIndex = (currentIndex - 1 + gameCards.length) % gameCards.length;
+                    updateShowcase();
+                } else if (e.key === 'ArrowRight') {
+                    currentIndex = (currentIndex + 1) % gameCards.length;
+                    updateShowcase();
+                }
+            });
+            
+            // Add swipe support for mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            container.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+            }, false);
+            
+            container.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, false);
+            
+            function handleSwipe() {
+                const threshold = 50;
+                if (touchEndX < touchStartX - threshold) {
+                    // Swipe left, show next
+                    currentIndex = (currentIndex + 1) % gameCards.length;
+                    updateShowcase();
+                } else if (touchEndX > touchStartX + threshold) {
+                    // Swipe right, show previous
+                    currentIndex = (currentIndex - 1 + gameCards.length) % gameCards.length;
+                    updateShowcase();
+                }
+            }
+            
+            // Auto rotate every 8 seconds
+            setInterval(function() {
+                currentIndex = (currentIndex + 1) % gameCards.length;
+                updateShowcase();
+            }, 8000);
+        });
+    </script>
 </body>
-</html>
