@@ -43,7 +43,7 @@
             overflow: hidden;
         }
 
-        /* Animated background pattern */
+        /* Enhanced animated background pattern */
         .case-studies-section::before {
             content: '';
             position: absolute;
@@ -52,6 +52,7 @@
             right: 0;
             bottom: 0;
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5a572' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%238B4513' fill-opacity='0.03' d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z'%3E%3C/path%3E%3C/svg%3E"),
                 linear-gradient(
                     45deg,
                     rgba(197, 165, 114, 0.05) 25%,
@@ -59,28 +60,53 @@
                     transparent 75%,
                     rgba(197, 165, 114, 0.05) 75%
                 );
-            background-size: 60px 60px, 40px 40px;
+            background-size: 60px 60px, 100px 100px, 40px 40px;
             animation: backgroundFloat 30s linear infinite;
-            opacity: 0.4;
+            opacity: 0.5;
         }
 
         @keyframes backgroundFloat {
-            0% { background-position: 0 0; }
-            100% { background-position: 100px 100px; }
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 100px 100px, 50px 50px, -50px -50px; }
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
+            position: relative;
+            padding: 30px 0;
+        }
+
+        .section-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .section-header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 250px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
 
         .section-header h1 {
             font-family: 'Cinzel', serif;
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: var(--ink);
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
             position: relative;
+            display: inline-block;
         }
 
         .section-header h1::after {
@@ -90,10 +116,20 @@
             bottom: -10px;
             width: 150px;
             height: 3px;
-            background: var(--ink);
+            background: linear-gradient(90deg, transparent, var(--ink), transparent);
             transform: translateX(-50%);
             box-shadow: 0 0 10px rgba(44, 24, 16, 0.3);
             animation: titleGlow 3s infinite;
+        }
+
+        .section-header p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-style: italic;
+            color: var(--ink);
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         @keyframes titleGlow {
@@ -103,97 +139,293 @@
 
         .case-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            padding: 40px 0;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 40px;
+            padding: 40px 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .case-card {
             background: var(--parchment);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(44, 24, 16, 0.15);
-            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(44, 24, 16, 0.15);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             border: 2px solid var(--gold);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .case-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .case-card:hover::before {
+            opacity: 1;
         }
 
         .case-card:hover {
-            transform: translateY(-5px) rotate(1deg);
-            box-shadow: 0 8px 25px rgba(44, 24, 16, 0.2);
+            transform: translateY(-10px) rotateX(2deg);
+            box-shadow: 0 20px 40px rgba(44, 24, 16, 0.2);
         }
 
         .case-image {
             width: 100%;
-            height: 200px;
+            height: 220px;
             overflow: hidden;
             position: relative;
             border-bottom: 2px solid var(--gold);
+        }
+
+        .case-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(44, 24, 16, 0.1), rgba(44, 24, 16, 0.3));
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .case-card:hover .case-image::after {
+            opacity: 0.4;
         }
 
         .case-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
+            transition: transform 0.8s ease;
+            transform-origin: center;
         }
 
         .case-card:hover .case-image img {
-            transform: scale(1.1);
+            transform: scale(1) rotate(0deg);
         }
 
         .case-content {
-            padding: 20px;
+            padding: 25px;
             background: linear-gradient(
                 to bottom,
                 var(--parchment),
                 var(--bg-secondary)
             );
+            position: relative;
+            z-index: 2;
+        }
+
+        .case-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%238B4513' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.1;
+            z-index: -1;
         }
 
         .case-title {
             font-family: 'Cinzel', serif;
-            font-size: 1.25rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: var(--ink);
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .case-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), transparent);
         }
 
         .case-article {
-            color: var(--timeline);
+            display: inline-block;
+            color: #fff;
             font-weight: 500;
-            margin-bottom: 10px;
-            display: block;
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
+            margin-bottom: 15px;
+            font-family: 'Cinzel', serif;
+            background: var(--timeline);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 8px rgba(26, 35, 126, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover .case-article {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(26, 35, 126, 0.3);
         }
 
         .case-description {
             color: var(--ink);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 25px;
             font-family: 'Cormorant Garamond', serif;
+            min-height: 80px;
         }
 
         .read-more {
             display: inline-block;
-            padding: 8px 20px;
+            padding: 10px 25px;
             background-color: var(--gold);
             color: var(--ink);
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 50px;
             font-family: 'Cinzel', serif;
             font-weight: 700;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 1px solid var(--ink);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .read-more::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background-color: var(--ink);
+            transition: width 0.4s ease;
+            z-index: -1;
         }
 
         .read-more:hover {
-            background-color: var(--ink);
             color: var(--parchment);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(44, 24, 16, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(44, 24, 16, 0.2);
+        }
+
+        .read-more:hover::before {
+            width: 100%;
+        }
+
+        /* Document corner fold effect */
+        .case-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 30px 30px 0;
+            border-color: transparent var(--gold) transparent transparent;
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover::after {
+            border-width: 0 50px 50px 0;
+        }
+
+        /* Decorative seal */
+        .case-seal {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 60px;
+            height: 60px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--ink);
+            opacity: 0.2;
+            transition: all 0.3s ease;
+            transform: rotate(-15deg);
+        }
+
+        .case-card:hover .case-seal {
+            opacity: 0.8;
+            transform: rotate(0deg);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.7;
+            animation: fadeInOut 2s infinite;
+            z-index: 10;
+        }
+
+        .scroll-text {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .scroll-icon {
+            width: 30px;
+            height: 50px;
+            border: 2px solid var(--ink);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .scroll-icon::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--ink);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            animation: scrollDown 2s infinite;
+        }
+
+        @keyframes scrollDown {
+            0% { top: 8px; opacity: 1; }
+            100% { top: 30px; opacity: 0; }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 0.3; }
+        }
+
+        @media (max-width: 1200px) {
+            .case-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                padding: 30px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -203,11 +435,20 @@
             }
 
             .section-header h1 {
-                font-size: 2rem;
+                font-size: 2.2rem;
+            }
+
+            .section-header p {
+                font-size: 1.2rem;
+                padding: 0 20px;
             }
 
             .case-card {
                 margin: 0 10px;
+            }
+            
+            .case-description {
+                min-height: auto;
             }
         }
     </style>
@@ -219,7 +460,7 @@
         <div class="container">
             <div class="section-header">
                 <h1>Landmark Constitutional Cases</h1>
-                <p>Explore the cases that shaped Indian constitutional law</p>
+                <p>Explore the historic judgments that shaped India's constitutional jurisprudence</p>
             </div>
             
             <div class="case-grid">
@@ -233,6 +474,9 @@
                         <span class="case-article">Article 15(4)</span>
                         <p class="case-description">This landmark case discusses the definition of the term 'State' under Article 12 of the Constitution of India.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -246,6 +490,9 @@
                         <span class="case-article">Article 19(1)(a)</span>
                         <p class="case-description">A pivotal case that struck down Section 66A of the IT Act, recognizing the importance of free speech in the digital era.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-gavel"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -259,6 +506,9 @@
                         <span class="case-article">Article 198</span>
                         <p class="case-description">This case is known for establishing the Basic Structure Doctrine, which limited the power of Parliament to amend the Constitution.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-landmark"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -272,6 +522,9 @@
                         <span class="case-article">Article 21</span>
                         <p class="case-description">This case emphasized the importance of personal liberty and the right to free speech under Article 19(1)(a).</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -285,6 +538,9 @@
                         <span class="case-article">Article 51A(b)</span>
                         <p class="case-description">The Flag Code of India lays down the rules for the display and respect for the Indian national flag.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-flag"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -298,6 +554,9 @@
                         <span class="case-article">Article 51A(c)</span>
                         <p class="case-description">This case led to the interpretation of the scope of Article 368 and the power of Parliament to amend the Constitution.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-gavel"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -311,8 +570,16 @@
                         <span class="case-article">Article 46</span>
                         <p class="case-description">This case involved the issue of reservations in higher educational institutions and their impact on the rights of citizens.</p>
                         <a href="#" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-landmark"></i>
+                        </div>
                     </div>
                 </div>
+            </div>
+            
+            <div class="scroll-indicator">
+                <span class="scroll-text">Scroll to explore</span>
+                <div class="scroll-icon"></div>
             </div>
         </div>
     </section>
@@ -336,5 +603,31 @@
             }
             lastScrollY = window.scrollY;
         });
+        
+        // Add animation effects on scroll
+        const caseCards = document.querySelectorAll('.case-card');
+        
+        function checkScroll() {
+            caseCards.forEach(card => {
+                const cardTop = card.getBoundingClientRect().top;
+                if (cardTop < window.innerHeight - 100) {
+                    card.style.opacity = "1";
+                    card.style.transform = "translateY(0)";
+                }
+            });
+        }
+        
+        // Set initial states
+        caseCards.forEach(card => {
+            card.style.opacity = "0";
+            card.style.transform = "translateY(20px)";
+            card.style.transition = "opacity 0.6s ease-out, transform 0.6s ease-out";
+        });
+        
+        // Check on scroll
+        window.addEventListener('scroll', checkScroll);
+        
+        // Initial check
+        checkScroll();
     </script>
 {% endblock %}

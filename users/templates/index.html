@@ -826,7 +826,9 @@ nav.nav-hidden {
 }
 
 .hero {
-    padding-top: 80px; /* Add space for fixed nav */
+    padding-top: 80px;
+    margin-bottom: -80px;
+    
 }
 
 @media (max-width: 768px) {
@@ -866,13 +868,7 @@ section {
 }
 
 /* Immersive Games Section Styling */
-.games-section {
-    position: relative;
-    background: linear-gradient(135deg, #FFF8DC 0%, #F5DEB3 50%, #FFFAF0 100%);
-    padding: 80px 0;
-    overflow: hidden;
-    color: #4A2511;
-}
+
 
 .games-decorations {
     position: absolute;
@@ -912,7 +908,7 @@ section {
 
 .decoration-token {
     top: 70%;
-    right: 12%;
+    right: 5%;
     animation-delay: 3s;
 }
 
@@ -1271,7 +1267,7 @@ section {
 .showcase-dots {
     display: flex;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 100px;
 }
 
 .showcase-dot {
@@ -1332,8 +1328,8 @@ section {
 
 /* Additional CSS fixes for games section */
 .games-section {
-    margin: 60px 0 0 0;
-    padding: 60px 0;
+    margin: 0px 0 0 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
@@ -1446,7 +1442,7 @@ section {
     }
     
     .showcase-container {
-        height: 700px;
+        height: 100%%;
     }
     
     .game-image-container {
@@ -1648,9 +1644,9 @@ section {
         </div>
     </section>
 
-    <section class="info-section" id="features">
+    <section class="info-section" id="features" style="margin-bottom: 100px; height: 200%;">  
         <div class="container">
-            <div class="info-grid">
+            <div class="info-grid" style="margin-top: 100px; padding-bottom: 100px;">
                 <div class="about-content">
                     <h2 class="ornate-heading">Why Explore IKS?</h2>
                     <div class="section-divider"></div>
@@ -1684,7 +1680,7 @@ section {
                                 <i class="fas fa-om"></i>
                             </div>
                             <div class="card-content">
-                                <h4>Philosophy & Spirituality</h4>
+                            <h4>Philosophy & Spirituality</h4>
                                 <p>Explore the six classical schools of Indian philosophy (Darshanas) that offer profound insights into consciousness, reality, and the nature of existence. Discover the timeless wisdom of Vedanta, Yoga, and Nyaya systems.</p>
                             </div>
                         </div>
@@ -1694,7 +1690,7 @@ section {
                                 <i class="fas fa-atom"></i>
                             </div>
                             <div class="card-content">
-                                <h4>Science & Technology</h4>
+                            <h4>Science & Technology</h4>
                                 <p>Uncover India's remarkable contributions to mathematics, astronomy, metallurgy, and medicine. From the invention of zero to Ayurveda's holistic health principles and advanced surgical techniques of Sushruta.</p>
                             </div>
                         </div>
@@ -1704,7 +1700,7 @@ section {
                                 <i class="fas fa-palette"></i>
                             </div>
                             <div class="card-content">
-                                <h4>Arts & Literature</h4>
+                            <h4>Arts & Literature</h4>
                                 <p>Immerse yourself in classical performing arts, visual aesthetics, and literary masterpieces. Explore Natyashastra's principles of dramaturgy, the rich narrative traditions of Ramayana and Mahabharata, and diverse art forms.</p>
                             </div>
                         </div>
@@ -1756,12 +1752,12 @@ section {
                 <!-- Left Arrow -->
                 <div class="showcase-arrow" id="prev-game" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 20; box-shadow: -2px 0 10px rgba(0,0,0,0.1);">
                     <i class="fas fa-chevron-left"></i>
-                </div>
+                        </div>
                 
                 <!-- Right Arrow -->
                 <div class="showcase-arrow" id="next-game" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 20; box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
                     <i class="fas fa-chevron-right"></i>
-                </div>
+                        </div>
                 
                 <div class="showcase-container" id="showcase-container">
                     <!-- Samvidhan Setu Game Card -->
@@ -1779,17 +1775,17 @@ section {
                             <h3>Samvidhan Setu</h3>
                             <div class="game-description">
                                 <p>Embark on an exciting adventure through the foundational principles of India's Constitution with this unique twist on the classic board game.</p>
-                            </div>
-                            
+                    </div>
+
                             <div class="game-features">
                                 <div class="feature-item">
                                     <i class="fas fa-users"></i>
                                     <span>Multiplayer</span>
-                                </div>
+                        </div>
                                 <div class="feature-item">
                                     <i class="fas fa-clock"></i>
                                     <span>15-20 min</span>
-                                </div>
+                        </div>
                                 <div class="feature-item">
                                     <i class="fas fa-graduation-cap"></i>
                                     <span>Constitutional Basics</span>
@@ -1800,12 +1796,12 @@ section {
                                 <div class="difficulty-label">
                                     <span>Difficulty Level</span>
                                     <span>Easy</span>
-                                </div>
+                        </div>
                                 <div class="difficulty-bar">
                                     <div class="difficulty-fill easy"></div>
-                                </div>
-                            </div>
-                            
+                    </div>
+                </div>
+
                             <div class="game-actions">
                                 <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="game-btn primary">
                                     <i class="fas fa-play"></i> Play Now
@@ -1989,7 +1985,7 @@ section {
         </div>
     </section>
 
-    <section class="journey-section" style="margin: 80px 0; padding: 40px 0; position: relative; z-index: 2;">
+    <section class="journey-section" style="margin: 40px 0; padding: 40px 0; position: relative; z-index: 2;">
         <div class="container">
             
 
