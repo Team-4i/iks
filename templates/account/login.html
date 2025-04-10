@@ -6,6 +6,98 @@
 {% endblock head_title %}
 {% block content %}
 <style>
+    /* Navigation bar styles */
+    .nav-bar {
+        padding: 1rem;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        backdrop-filter: blur(1px);
+        border-bottom: 2px solid rgba(139, 69, 19, 0.1);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        background-color: #fff;
+    }
+
+    .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+   
+    .logo-image {
+        height: 60px;
+        width: auto;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+
+    .logo:hover .logo-image {
+        transform: scale(1.05);
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 2.5rem;
+        align-items: center;
+    }
+
+    .nav-link {
+        color: #4A2511;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 500;
+        position: relative;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+    }
+
+    .nav-link:after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        background: #8B4513;
+        left: 0;
+        bottom: -2px;
+        transition: width 0.3s ease;
+    }
+
+    .nav-link:hover {
+        color: #8B4513;
+        transform: translateY(-2px);
+    }
+
+    .nav-link:hover:after {
+        width: 100%;
+    }
+
+    .nav-link.active {
+        color: #8B4513;
+        font-weight: 600;
+    }
+
+    .nav-link.active:after {
+        width: 100%;
+        background: #8B4513;
+    }
+
+    /* Adjust login container to account for navbar */
+    .login-wrapper {
+        padding-top: 100px;
+    }
+
     .login-wrapper {
         min-height: calc(100vh - 80px); /* Adjust based on your nav height */
         display: flex;
@@ -79,11 +171,46 @@
         gap: 15px;
     }
 
+    /* Fix for form field alignment */
+    .login-container form p {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Forgot password alignment */
+    .login-container form p:last-of-type {
+        display: flex;
+        text-align: center;
+        font-size: 13px;
+        margin-top: -5px;
+    }
+
+    /* "Remember Me" checkbox alignment */
+    .login-container form p:has(input[type="checkbox"]) {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .login-container form p:has(input[type="checkbox"]) label {
+        order: 2;
+    }
+
+    .login-container form p:has(input[type="checkbox"]) input {
+        order: 1;
+        width: auto;
+    }
+
     .login-container input {
         padding: 8px 12px;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 14px;
+        width: 100%;
     }
 
     .login-container input:focus {
@@ -163,19 +290,24 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
         text-decoration: none;
         transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .socialaccount_providers .google:before {
+        content: '';
+        display: inline-block;
+        background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
     }
 
     .socialaccount_providers .google:hover {
         background-color: #f8f8f8;
         box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-
-    .socialaccount_providers .google img {
-        width: 18px;
-        height: 18px;
     }
 
     /* Remove the generic provider styles if they conflict */
@@ -206,7 +338,34 @@
             margin-top: -40px;
         }
     }
+
+    /* Style for the button container */
+    .login-container form button {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    /* Fix for checkbox input specific styling */
+    .login-container input[type="checkbox"] {
+        width: auto;
+        height: 16px;
+        width: 16px;
+    }
 </style>
+
+<!-- Navigation Bar -->
+<div class="nav-bar">
+    <div class="nav-container">
+        <a href="/" class="logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Logo" class="logo-image">
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="{% url 'account_login' %}" class="nav-link active">Login</a>
+            <a href="{% url 'account_signup' %}" class="nav-link">Register</a>
+        </div>
+    </div>
+</div>
 
 <div class="login-wrapper">
     <div class="login-container">
@@ -238,7 +397,7 @@
 
         {% if SOCIALACCOUNT_ENABLED %}
             <div class="social-login">
-                <hr>
+                
                 {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
             </div>
         {% endif %}

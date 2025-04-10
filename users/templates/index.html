@@ -32,34 +32,241 @@
             display: none;
             position: absolute;
             background-color: #fff;
-            min-width: 160px;
+            min-width: 200px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
+            z-index: 1000;
             border-radius: 8px;
             overflow: hidden;
+            right: auto;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            top: 100%;
+            border: 1px solid rgba(186, 140, 55, 0.3);
+            padding: 8px 0;
+            margin-top: 5px;
+            transition: all 0.3s ease;
+            transform-origin: top center;
+            opacity: 0;
+            visibility: hidden;
         }
         
         .dropdown:hover .dropdown-content {
             display: block;
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            visibility: visible;
         }
         
         .dropdown-content a {
-            color: #333;
-            padding: 12px 16px;
+            color: #4A2511;
+            padding: 10px 16px;
             text-decoration: none;
             display: block;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border-left: 3px solid transparent;
         }
         
         .dropdown-content a:hover {
-            background-color: #f1f1f1;
+            background-color: rgba(186, 140, 55, 0.1);
+            border-left: 3px solid #BA8C37;
+            padding-left: 20px;
+        }
+
+        /* Google Translate Dropdown Styling */
+        #google_translate_element {
+            min-width: 200px;
+            padding: 10px;
+        }
+        
+        #google_translate_element select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(186, 140, 55, 0.5);
+            border-radius: 6px;
+            background-color: #fff;
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234A2511' viewBox='0 0 16 16'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 12px) center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+        
+        #google_translate_element .goog-te-gadget {
+            font-family: 'Poppins', sans-serif !important;
+            color: #4A2511 !important;
+            font-size: 14px !important;
+        }
+        
+        #google_translate_element .goog-te-gadget-simple {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            display: inline-block !important;
+            cursor: pointer !important;
+            zoom: 1 !important;
+        }
+        
+        #google_translate_element .goog-te-menu-value {
+            color: #4A2511 !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 14px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        #google_translate_element .goog-te-menu-value span {
+            color: #4A2511 !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 14px !important;
+        }
+        
+        #google_translate_element .goog-te-menu-value span:hover {
+            text-decoration: none !important;
+        }
+        
+        /* Style Google Translate popup */
+        .goog-te-menu-frame {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+        }
+        
+        .goog-te-menu2 {
+            background-color: #fff !important;
+            border: 1px solid rgba(186, 140, 55, 0.3) !important;
+            padding: 5px !important;
+            border-radius: 8px !important;
+        }
+        
+        .goog-te-menu2-item div, .goog-te-menu2-item:link {
+            color: #4A2511 !important;
+            font-family: 'Poppins', sans-serif !important;
+            padding: 8px 10px !important;
+            background-color: #fff !important;
+        }
+        
+        .goog-te-menu2-item:hover, 
+        .goog-te-menu2-item-selected {
+            background-color: rgba(186, 140, 55, 0.1) !important;
+        }
+        
+        .goog-te-menu2-item-selected div {
+            color: #BA8C37 !important;
+            font-weight: bold !important;
+        }
+        
+        /* Fix for the top bar that Google Translate adds */
+        body > .skiptranslate {
+            display: none !important;
+        }
+        
+        body {
+            top: 0 !important;
+        }
+        
+        /* Custom language selector */
+        .language-selector {
+            width: 100%;
+            max-width: 200px;
+        }
+        
+        .language-selector .language-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid rgba(186, 140, 55, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .language-selector .language-option:last-child {
+            border-bottom: none;
+        }
+        
+        .language-selector .language-option:hover {
+            background-color: rgba(186, 140, 55, 0.1);
+        }
+        
+        .language-option-text {
+            margin-left: 10px;
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+        }
+        
+        /* Language dropdown specifics */
+        .dropdown-content#google_translate_element {
+            width: 240px;
+            padding: 15px;
+            right: auto;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+        }
+        
+        .dropdown:hover .dropdown-content#google_translate_element {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Position adjustment for translate dropdown specifically */
+        .dropdown-translate .dropdown-content {
+            left: 0;
+            right: auto;
+            transform: translateY(10px);
+            transform-origin: top left;
+        }
+        
+        .dropdown-translate:hover .dropdown-content {
+            transform: translateY(0);
+        }
+        
+        /* Select dropdown styling */
+        .goog-te-combo {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid rgba(186, 140, 55, 0.5);
+            border-radius: 6px;
+            background-color: white;
+            color: #4A2511;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234A2511' viewBox='0 0 16 16'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 12px) center;
+            padding-right: 30px;
         }
 
         @media (max-width: 768px) {
             .dropdown-content {
-                position: static;
+                position: relative;
+                display: none;
+                width: 100%;
                 box-shadow: none;
-                background-color: transparent;
+                border-radius: 0;
+                margin-top: 0;
+                padding: 0;
+                border: none;
+                border-left: 3px solid rgba(186, 140, 55, 0.5);
+                transform: none;
+                visibility: visible;
+                opacity: 1;
+                background-color: rgba(255, 255, 255, 0.05);
+                right: auto;
+            }
+            
+            .dropdown-content#google_translate_element {
+                width: 100%;
+                padding: 10px;
+                right: auto;
             }
             
             .dropdown-content a {
@@ -761,14 +968,17 @@ p {
 .cards-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: auto;
+    min-height: 400px;
     justify-content: space-between;
+    width: 100%;
 }
 
 .learning-card {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     margin-bottom: 15px;
+    width: 100%;
 }
 
 .learning-card:last-child {
@@ -1464,6 +1674,29 @@ section {
         justify-content: center;
     }
 }
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+@media (max-width: 992px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    .info-section {
+        height: auto !important;
+        min-height: 100vh !important;
+    }
+    
+    .about-content, .learning-content {
+        width: 100%;
+    }
+}
     </style>
 </head>
 <body>
@@ -1479,7 +1712,6 @@ section {
             </div>
             <div class="nav-links">
                 <a href="#home">Home</a>
-                <a href="#about">About</a>
                 <div class="dropdown">
                     <a href="#" style="cursor: pointer;">Learn</a>
                     <div class="dropdown-content">
@@ -1493,11 +1725,47 @@ section {
                 {% else %}
                     <a href="/accounts/login/" class="contact-btn">Login Now</a>
                 {% endif %}
-                <div class="dropdown">
+                <div class="dropdown dropdown-translate">
                     <a href="#" class="nav-link">
                         <i class="fas fa-language"></i> Translate
                     </a>
-                    <div class="dropdown-content" id="google_translate_element"></div>
+                    <div class="dropdown-content">
+                        <div class="language-selector">
+                            <div class="language-option" onclick="changeLanguage('en')">
+                                <span class="language-option-text">English</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('hi')">
+                                <span class="language-option-text">Hindi</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('bn')">
+                                <span class="language-option-text">Bengali</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('gu')">
+                                <span class="language-option-text">Gujarati</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('kn')">
+                                <span class="language-option-text">Kannada</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ml')">
+                                <span class="language-option-text">Malayalam</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('mr')">
+                                <span class="language-option-text">Marathi</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('pa')">
+                                <span class="language-option-text">Punjabi</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ta')">
+                                <span class="language-option-text">Tamil</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('te')">
+                                <span class="language-option-text">Telugu</span>
+                            </div>
+                            <div class="language-option" onclick="changeLanguage('ur')">
+                                <span class="language-option-text">Urdu</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1644,7 +1912,7 @@ section {
         </div>
     </section>
 
-    <section class="info-section" id="features" style="margin-bottom: 100px; height: 200%;">  
+    <section class="info-section" id="features" style="margin-bottom: 100px; min-height: 100vh; height: auto;">  
         <div class="container">
             <div class="info-grid" style="margin-top: 100px; padding-bottom: 100px;">
                 <div class="about-content">
@@ -1668,13 +1936,12 @@ section {
                                     <span class="stat-label">Learning Access</span>
                                 </div>
                             </div>
-                            <div class="stats-text">From Vedas to Arthashastra - Experience the continuous flow of knowledge across millennia</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="learning-content">
-                    <div class="cards-container">
+                    <div class="cards-container" style="height: auto; min-height: 400px; display: flex; flex-direction: column; justify-content: space-between;">
                         <div class="learning-card knowledge-card">
                             <div class="knowledge-icon">
                                 <i class="fas fa-om"></i>
@@ -2326,5 +2593,51 @@ section {
                 updateShowcase();
             }, 8000);
         });
+    </script>
+    <script>
+        // Translation function
+        function changeLanguage(langCode) {
+            // Create Google Translate cookie
+            var now = new Date();
+            var time = now.getTime();
+            var expireTime = time + 1000*3600*24*365; // 1 year
+            now.setTime(expireTime);
+            document.cookie = 'googtrans=/auto/' + langCode + ';expires=' + now.toGMTString() + ';domain=.' + window.location.hostname + ';path=/';
+            document.cookie = 'googtrans=/auto/' + langCode + ';expires=' + now.toGMTString() + ';domain=' + window.location.hostname + ';path=/';
+            
+            // Reload page to apply changes
+            location.reload();
+        }
+        
+        // Check if Google Translate Script is loaded
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                autoDisplay: false,
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+            
+            // Hide Google's automatic UI
+            var elementToHide = document.querySelector('.skiptranslate');
+            if(elementToHide) {
+                elementToHide.style.display = 'none';
+            }
+        }
+        
+        // Function to load Google Translate script
+        function loadGoogleTranslate() {
+            var script = document.createElement('script');
+            script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            document.body.appendChild(script);
+            
+            // Create hidden Google Translate element
+            var translateElement = document.createElement('div');
+            translateElement.id = 'google_translate_element';
+            translateElement.style.display = 'none';
+            document.body.appendChild(translateElement);
+        }
+        
+        // Load Google Translate script when page is loaded
+        window.addEventListener('load', loadGoogleTranslate);
     </script>
 </body>
