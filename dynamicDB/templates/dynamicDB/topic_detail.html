@@ -1,0 +1,321 @@
+{% load dynamic_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ topic.title }} - Topic Detail</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2, h3, h4, h5, h6 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .text-muted {
+            color: #6c757d;
+        }
+        .small {
+            font-size: 0.875em;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            word-wrap: break-word;
+            background-color: #fff;
+            background-clip: border-box;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 15px 20px;
+            margin-bottom: 0;
+            background-color: rgba(0,0,0,.03);
+            border-bottom: 1px solid rgba(0,0,0,.125);
+        }
+        .bg-info {
+            background-color: #0dcaf0 !important;
+            color: white;
+        }
+        .bg-success {
+            background-color: #198754 !important;
+            color: white;
+        }
+        .border-success {
+            border-color: #198754 !important;
+        }
+        .card-body {
+            flex: 1 1 auto;
+            padding: 20px;
+        }
+        .card-footer {
+            padding: 15px 20px;
+            background-color: rgba(0,0,0,.03);
+            border-top: 1px solid rgba(0,0,0,.125);
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -15px;
+            margin-left: -15px;
+        }
+        .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            padding-right: 15px;
+            padding-left: 15px;
+            box-sizing: border-box;
+        }
+        .col-md-12 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            padding-right: 15px;
+            padding-left: 15px;
+            box-sizing: border-box;
+        }
+        .col-12 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            padding-right: 15px;
+            padding-left: 15px;
+            box-sizing: border-box;
+        }
+        .mb-3 {
+            margin-bottom: 15px;
+        }
+        .mb-4 {
+            margin-bottom: 20px;
+        }
+        .me-1 {
+            margin-right: 4px;
+        }
+        .me-2 {
+            margin-right: 8px;
+        }
+        .ms-1 {
+            margin-left: 4px;
+        }
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 8px 16px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+            text-decoration: none;
+        }
+        .btn-outline-primary {
+            color: #0d6efd;
+            border-color: #0d6efd;
+            background-color: transparent;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .h-100 {
+            height: 100%;
+        }
+        .hr {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            border: 0;
+            border-top: 1px solid rgba(0,0,0,.1);
+        }
+        .d-flex {
+            display: flex;
+        }
+        .justify-content-between {
+            justify-content: space-between;
+        }
+        .align-items-center {
+            align-items: center;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .py-4 {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25em 0.4em;
+            font-size: 75%;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+            color: #fff;
+        }
+        .bg-primary {
+            background-color: #0d6efd;
+        }
+        .bg-secondary {
+            background-color: #6c757d;
+        }
+        .breadcrumb {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            list-style: none;
+            background-color: #e9ecef;
+            border-radius: 0.25rem;
+        }
+        .breadcrumb-item {
+            display: flex;
+        }
+        .breadcrumb-item + .breadcrumb-item {
+            padding-left: 0.5rem;
+        }
+        .breadcrumb-item + .breadcrumb-item::before {
+            display: inline-block;
+            padding-right: 0.5rem;
+            color: #6c757d;
+            content: "/";
+        }
+        .breadcrumb-item a {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+        .breadcrumb-item.active {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dynamicDB:upload_pdf' %}">PDFs</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dynamicDB:view_textbook' topic.pdf_document.id %}">{{ topic.pdf_document.title }}</a></li>
+                {% if topic.chapter %}
+                <li class="breadcrumb-item"><a href="{% url 'dynamicDB:chapter_detail' topic.chapter.id %}">Chapter {{ topic.chapter.number }}</a></li>
+                {% endif %}
+                <li class="breadcrumb-item active">{{ topic.title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-info">
+                <h3>{{ topic.title }}</h3>
+                <p class="mb-0">
+                    {% if topic.chapter %}
+                    From Chapter {{ topic.chapter.number }} of
+                    {% endif %}
+                    {{ topic.pdf_document.title }}
+                </p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Topic Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>{{ topic.content }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Key Points</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for point in content_points %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card h-100 {% if point.is_key_point %}border-success{% endif %}">
+                                            <div class="card-header {% if point.is_key_point %}bg-success{% endif %}">
+                                                {% if point.is_key_point %}
+                                                <span class="me-2">★</span> Key Point
+                                                {% else %}
+                                                <span class="me-2">▷</span> Content Point
+                                                {% endif %}
+                                            </div>
+                                            <div class="card-body">
+                                                <p>{{ point.text }}</p>
+                                                {% if point.simplified_text %}
+                                                <hr>
+                                                <p class="text-muted small">
+                                                    <strong>Simplified:</strong> {{ point.simplified_text }}
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="card-footer">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Used in:</span>
+                                                    <div>
+                                                        {% for mapping in point.game_mappings.all %}
+                                                        <span class="badge {% if mapping.active %}bg-primary{% else %}bg-secondary{% endif %} me-1">
+                                                            {{ mapping.get_game_type_display }}
+                                                            <span class="ms-1">({{ mapping.difficulty }})</span>
+                                                        </span>
+                                                        {% empty %}
+                                                        <span class="badge bg-secondary">No games</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="col-12 text-center py-4">
+                                        <p class="text-muted">No content points available for this topic.</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-primary">{{ content_points.count }} Content Points</span>
+                        <span class="badge bg-success">{{ key_points_count }} Key Points</span>
+                    </div>
+                    {% if topic.chapter %}
+                    <a href="{% url 'dynamicDB:chapter_detail' topic.chapter.id %}" class="btn btn-outline-primary">
+                        Back to Chapter
+                    </a>
+                    {% else %}
+                    <a href="{% url 'dynamicDB:view_textbook' topic.pdf_document.id %}" class="btn btn-outline-primary">
+                        Back to Textbook
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
