@@ -4,30 +4,33 @@ import uuid
 import random
 
 class CellContent(models.Model):
-    """Model to store educational content segregated by part and type"""
-    PART_CHOICES = [
-        (5, 'Part 5'),
-        (6, 'Part 6'),
-    ]
-    
-    TYPE_CHOICES = [
-        ('JUD', 'Judiciary'),
-        ('LEG', 'Legislative'),
-        ('EXEC', 'Executive'),
-    ]
-
+    """Model to store educational content for game cells"""
     content = models.TextField(help_text="Educational content")
     topic = models.CharField(max_length=100, null=True, blank=True)
-    part = models.IntegerField(choices=PART_CHOICES, null=True, blank=True)
-    type = models.CharField(max_length=4, choices=TYPE_CHOICES, null=True, blank=True)
+    
+    # Legacy fields - kept for backward compatibility
+    part = models.IntegerField(choices=[(5, 'Part 5'), (6, 'Part 6')], null=True, blank=True)
+    type = models.CharField(
+        max_length=4, 
+        choices=[('JUD', 'Judiciary'), ('LEG', 'Legislative'), ('EXEC', 'Executive')], 
+        null=True, 
+        blank=True
+    )
+    
+    # New field to track which main topic the content is from
+    source_id = models.IntegerField(null=True, blank=True, 
+                                   help_text="ID of the MainTopic this content relates to")
     
     def __str__(self):
-        part_display = f"Part {self.part}" if self.part else "No Part"
-        type_display = self.get_type_display() if self.type else "No Type"
-        return f"Content - {part_display} {type_display}: {self.topic or 'No topic'}"
+        if self.source_id:
+            return f"Content - {self.topic}: {self.content[:30]}..."
+        else:
+            part_display = f"Part {self.part}" if self.part else "No Part"
+            type_display = self.get_type_display() if self.type else "No Type"
+            return f"Content - {part_display} {type_display}: {self.topic or 'No topic'}"
 
     class Meta:
-        ordering = ['part', 'type']
+        ordering = ['topic']
 
 class Cell(models.Model):
     number = models.IntegerField(unique=True)
@@ -122,12 +125,12 @@ class GameRoom(models.Model):
     
     # Add these new fields to track current content type
     current_content_part = models.IntegerField(
-        choices=CellContent.PART_CHOICES,
+        choices=[(5, 'Part 5'), (6, 'Part 6')],
         null=True
     )
     current_content_type = models.CharField(
         max_length=4,
-        choices=CellContent.TYPE_CHOICES,
+        choices=[('JUD', 'Judiciary'), ('LEG', 'Legislative'), ('EXEC', 'Executive')],
         null=True
     )
     

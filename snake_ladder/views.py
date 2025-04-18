@@ -21,6 +21,7 @@ import math
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.contrib import messages
 
 def generate_dice_roll():
     """
@@ -286,54 +287,124 @@ def game_board(request, room_id):
 @login_required
 def create_room(request):
     """Creates a new game room"""
-    # Create new room with default content type
+    # Get summary_id from GET parameters or use default content
+    summary_id = request.GET.get('summary_id')
+    auto_start = request.GET.get('auto_start', 'false').lower() == 'true'
+    
+    # Create new room
     room = GameRoom.objects.create(
-        creator=request.user,
-        current_content_part=5,
-        current_content_type='JUD'
+        creator=request.user
     )
     room.players.add(request.user)
+    room.current_turn = request.user
+    room.save()
     
-    # Set initial game content
-    room.set_game_content_type(
-        part=5,
-        type='JUD'
-    )
+    # If summary_id is provided, set it in the session for later use
+    if summary_id:
+        request.session['summary_id'] = summary_id
+        
+        # Try to get the summary topic
+        try:
+            from dynamicDB.models import SummaryTopic
+            summary_topic = SummaryTopic.objects.get(pk=summary_id)
+            
+            # Store the summary topic info in the session
+            request.session['summary_topic_title'] = summary_topic.title
+            request.session['summary_topic_description'] = summary_topic.description
+            
+            messages.success(request, f"Room created with content from '{summary_topic.title}'")
+            
+            # Automatically start the game if requested or summary_id is provided
+            if auto_start or summary_id:
+                # Run the start_game logic directly
+                return start_game(request, room.room_id)
+        except Exception as e:
+            print(f"Error loading summary topic: {e}")
+            messages.warning(request, "Could not load the specified summary topic. Using default content.")
+    else:
+        # No summary_id provided, check if we have active summary topics
+        try:
+            from dynamicDB.models import SummaryTopic, ActiveTopicGroups
+            active_groups = ActiveTopicGroups.get_active_groups()
+            
+            if active_groups.exists():
+                # Get the first active topic group
+                topic_group = active_groups.first().topic_group
+                
+                # Look for summary topics in this group
+                summary_topics = SummaryTopic.objects.filter(topic_group=topic_group)
+                
+                if summary_topics.exists():
+                    # Use the first summary topic
+                    summary_topic = summary_topics.first()
+                    summary_id = summary_topic.id
+                    
+                    # Store in session
+                    request.session['summary_id'] = summary_id
+                    request.session['summary_topic_title'] = summary_topic.title
+                    request.session['summary_topic_description'] = summary_topic.description
+                    
+                    messages.success(request, f"Room created with content from active topic '{summary_topic.title}'")
+            
+            # If we couldn't find a summary topic, fall back to default
+            if not summary_id:
+                # Set default part/type for backwards compatibility
+                room.current_content_part = 5
+                room.current_content_type = 'JUD'
+                room.save()
+                messages.info(request, "No summary topics available. Using default content.")
+                
+        except Exception as e:
+            print(f"Error finding active summary topics: {e}")
+            # Set default part/type for backwards compatibility
+            room.current_content_part = 5
+            room.current_content_type = 'JUD'
+            room.save()
+            messages.info(request, "Using default content.")
     
+    # Return the created room's detail page
     return redirect('snake_ladder:room_detail', room_id=room.room_id)
 
 @login_required
 def room_detail(request, room_id):
-    """
-    Shows room joining page with:
-    1. Room details and player list
-    2. QR code for easy joining
-    3. Shareable room link
-    """
+    """View a game room and its details"""
     room = get_object_or_404(GameRoom, room_id=room_id)
     
-    # Generate QR code
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    room_url = request.build_absolute_uri(reverse('snake_ladder:join_room', args=[room_id]))
-    qr.add_data(room_url)
-    qr.make(fit=True)
+    # Get summary topic info from session
+    summary_id = request.session.get('summary_id')
+    summary_topic_title = request.session.get('summary_topic_title')
+    summary_topic_description = request.session.get('summary_topic_description')
     
-    img = qr.make_image(fill_color="black", back_color="white")
-    buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    qr_code = b64encode(buffer.getvalue()).decode()
+    # If we don't have summary info in session but room has players, try to get it from the first player's session
+    if not summary_topic_title and room.players.exists():
+        try:
+            from django.contrib.sessions.models import Session
+            from django.contrib.sessions.backends.db import SessionStore
+            from dynamicDB.models import SummaryTopic
+            
+            # Try to get summary topic details if we have the ID
+            if summary_id:
+                summary_topic = SummaryTopic.objects.get(pk=summary_id)
+                summary_topic_title = summary_topic.title
+                summary_topic_description = summary_topic.description
+        except Exception as e:
+            print(f"Error retrieving summary topic info: {e}")
+    
+    # Check if game is started
+    is_started = not room.is_active and room.current_turn is not None
     
     context = {
         'room': room,
-        'qr_code': qr_code,
-        'room_url': room_url
+        'is_creator': request.user == room.creator,
+        'is_started': is_started,
+        'player_count': room.players.count(),
+        'player_colors': room.get_player_color(),
+        'summary_id': summary_id,
+        'summary_topic_title': summary_topic_title,
+        'summary_topic_description': summary_topic_description,
     }
-    return render(request, 'room_detail.html', context)
+    
+    return render(request, 'snake_ladder/room_detail.html', context)
 
 @login_required
 def join_room(request, room_id):
@@ -489,7 +560,44 @@ def game_state(request, room_id):
 
 @login_required
 def home(request):
-    return render(request, 'home.html')
+    """Homepage for the Snake & Ladder game with room creation options"""
+    # Get active rooms
+    active_rooms = GameRoom.objects.filter(is_active=True).order_by('-created_at')
+    
+    # Get active summary topics
+    summary_topics = []
+    first_summary_id = None
+    try:
+        from dynamicDB.models import SummaryTopic, ActiveTopicGroups
+        active_groups = ActiveTopicGroups.get_active_groups()
+        
+        for group in active_groups:
+            topic_group = group.topic_group
+            group_summary_topics = SummaryTopic.objects.filter(topic_group=topic_group)
+            
+            for topic in group_summary_topics:
+                main_topics_count = topic.main_topics.count()
+                summary_topics.append({
+                    'id': topic.id,
+                    'title': topic.title,
+                    'description': topic.description[:100] + '...' if len(topic.description) > 100 else topic.description,
+                    'main_topics_count': main_topics_count,
+                    'topic_group': topic_group.title
+                })
+                
+                # Remember the first summary topic ID
+                if first_summary_id is None:
+                    first_summary_id = topic.id
+    except Exception as e:
+        print(f"Error fetching summary topics: {e}")
+    
+    context = {
+        'active_rooms': active_rooms,
+        'summary_topics': summary_topics,
+        'first_summary_id': first_summary_id
+    }
+    
+    return render(request, 'snake_ladder/home.html', context)
 
 def verify_board(request):
     """
@@ -1069,40 +1177,81 @@ def room_state(request, room_id):
 
 @login_required
 def start_game(request, room_id):
-    """API endpoint to start the game"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-        
+    """Start the game and configure the board content"""
     try:
-        room = get_object_or_404(GameRoom, room_id=room_id)
+        # Get the room
+        room = GameRoom.objects.get(room_id=room_id)
         
-        if request.user != room.creator:
-            return JsonResponse({'error': 'Only creator can start game'}, status=403)
-            
-        if not room.is_active:
-            return JsonResponse({'error': 'Game already started'}, status=400)
-            
-        # Initialize game
-        room.current_turn = room.creator
-        room.is_active = False
-        room.save()
+        # Check if user is the creator
+        if room.creator != request.user:
+            messages.error(request, "Only the room creator can start the game.")
+            return redirect('snake_ladder:room_detail', room_id=room_id)
         
-        # Set initial positions
-        for player in room.players.all():
-            PlayerPosition.objects.get_or_create(
-                room=room,
-                player=player,
-                defaults={'position': 1}
+        # Get summary_id from session if available
+        summary_id = request.session.get('summary_id')
+        
+        if summary_id:
+            # Try to populate content based on this summary topic
+            try:
+                # Run Django management command to populate cells
+                from django.core.management import call_command
+                call_command('populate_cells', summary_id)
+                messages.success(request, "Game board populated with topic content!")
+                
+                # Clear all player positions to start fresh
+                PlayerPosition.objects.filter(room=room).delete()
+                
+                # Create positions at cell 1 for all players
+                for player in room.players.all():
+                    PlayerPosition.objects.create(room=room, player=player, position=1)
+                
+                # Set first player's turn
+                player_list = list(room.players.all())
+                if player_list:
+                    room.current_turn = player_list[0]
+                    room.save()
+                
+            except Exception as e:
+                messages.error(request, f"Error setting up game content: {str(e)}")
+                print(f"Error in start_game: {str(e)}")
+                
+                # Fall back to default content type
+                room.current_content_part = 5
+                room.current_content_type = 'JUD'
+                room.save()
+                
+                # Use default content population
+                room.set_game_content_type(part=5, type='JUD')
+        else:
+            # No summary topic, use default content
+            content_part = request.POST.get('content_part', 5)
+            content_type = request.POST.get('content_type', 'JUD')
+            
+            # Set content type in room
+            room.current_content_part = content_part
+            room.current_content_type = content_type
+            room.save()
+            
+            # Set game content
+            room.set_game_content_type(
+                part=int(content_part),
+                type=content_type
             )
             
-        return JsonResponse({
-            'success': True,
-            'redirect_url': reverse('snake_ladder:game_board', args=[room_id])
-        })
+            messages.success(request, "Game started with default content!")
+            
+        # Mark the game as active
+        room.is_active = True
+        room.save()
         
+        return redirect('snake_ladder:game_board', room_id=room_id)
+        
+    except GameRoom.DoesNotExist:
+        messages.error(request, "Room not found.")
+        return redirect('snake_ladder:home')
     except Exception as e:
-        print(f"Error starting game: {str(e)}")  # Server-side logging
-        return JsonResponse({'error': str(e)}, status=500)
+        messages.error(request, f"Error starting game: {str(e)}")
+        return redirect('snake_ladder:room_detail', room_id=room_id)
 
 @login_required
 def snake_ladder_intro(request):
@@ -1238,7 +1387,7 @@ def cell_content_details(request, part=None, type=None):
         'bookmark': bookmark_info,
         'selected_part': selected_part,
         'selected_type': selected_type,
-        'PART_CHOICES': dict(CellContent.PART_CHOICES),
+        'PART_CHOICES': {5: 'Part 5', 6: 'Part 6'},
         'TYPE_CHOICES': {
             'JUD': 'Judiciary',
             'LEG': 'Legislative',
