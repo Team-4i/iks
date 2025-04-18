@@ -1,4 +1,4 @@
-from .models import ActivePDFSelection, ActiveTopicGroups, SummaryTopic, TopicGroup
+from .models import ActivePDFSelection, ActiveTopicGroups, SubTopic, MainTopic
 
 def active_pdf_processor(request):
     """
@@ -24,10 +24,10 @@ def active_pdf_processor(request):
             context['global_active_topic_groups'] = active_groups
         
         # Add summary topics statistics
-        context['global_summary_topics_count'] = SummaryTopic.objects.count()
+        context['global_summary_topics_count'] = SubTopic.objects.count()
         
         # Count topic groups that have at least one summary topic
-        topic_groups_with_summaries = TopicGroup.objects.filter(summary_topics__isnull=False).distinct().count()
+        topic_groups_with_summaries = MainTopic.objects.filter(summary_topics__isnull=False).distinct().count()
         context['global_topic_groups_with_summaries'] = topic_groups_with_summaries
         
     except Exception as e:

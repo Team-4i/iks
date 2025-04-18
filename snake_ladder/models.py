@@ -19,7 +19,7 @@ class CellContent(models.Model):
     
     # New field to track which main topic the content is from
     source_id = models.IntegerField(null=True, blank=True, 
-                                   help_text="ID of the MainTopic this content relates to")
+                                   help_text="ID of the Topic this content relates to")
     
     def __str__(self):
         if self.source_id:

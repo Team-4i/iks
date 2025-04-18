@@ -11,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 from .models import ArticleBookmark
 from gtts import gTTS
 import io
-from dynamicDB.models import ActiveTopicGroups, MainTopic, SummaryTopic
+from dynamicDB.models import ActiveTopicGroups, Topic, SubTopic
 
 
 @login_required
@@ -95,7 +95,7 @@ def profile(request):
             topic_group_data[part_num] = {}
             
             # Get summary topics for this group instead of the top 3 main topics
-            summary_topics = SummaryTopic.objects.filter(topic_group=topic_group).order_by('order')[:3]
+            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')[:3]
             
             # If no summary topics exist, generate them on-the-fly
             if not summary_topics.exists():
@@ -260,7 +260,7 @@ def checkpoint_detail(request, part, type):
             if summary_topic_id:
                 # User clicked on a summary topic, show all main topics from this summary
                 try:
-                    summary_topic = SummaryTopic.objects.get(id=summary_topic_id, topic_group=topic_group)
+                    summary_topic = SubTopic.objects.get(id=summary_topic_id, topic_group=topic_group)
                     
                     # Get all main topics from this summary topic
                     main_topics = summary_topic.main_topics.all().order_by('id')
@@ -304,7 +304,7 @@ def checkpoint_detail(request, part, type):
                         'main_topics_count': main_topics.count()
                     })
                 
-                except SummaryTopic.DoesNotExist:
+                except SubTopic.DoesNotExist:
                     # Fallback to standard approach if summary topic not found
                     pass
             
@@ -312,7 +312,7 @@ def checkpoint_detail(request, part, type):
             type_index = {'JUD': 0, 'LEG': 1, 'EXEC': 2}.get(type, 0)
             
             # First check if there are summary topics for this group
-            summary_topics = SummaryTopic.objects.filter(topic_group=topic_group).order_by('order')
+            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
             
             if summary_topics.exists() and type_index < summary_topics.count():
                 # Use summary topic
@@ -534,7 +534,7 @@ def article_details(request, part, type):
             if summary_topic_id:
                 # User clicked on a summary topic
                 try:
-                    summary_topic = SummaryTopic.objects.get(id=summary_topic_id, topic_group=topic_group)
+                    summary_topic = SubTopic.objects.get(id=summary_topic_id, topic_group=topic_group)
                     
                     # Get the main topics from this summary topic
                     main_topics_in_summary = summary_topic.main_topics.all().order_by('id')
@@ -563,12 +563,12 @@ def article_details(request, part, type):
                     
                     return render(request, 'plat/article_details.html', context)
                     
-                except SummaryTopic.DoesNotExist:
+                except SubTopic.DoesNotExist:
                     # Fall back to standard approach if summary topic not found
                     pass
             
             # Check if summary topics exist for this topic group
-            summary_topics = SummaryTopic.objects.filter(topic_group=topic_group).order_by('order')
+            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
             
             # Get the type index based on JUD/LEG/EXEC
             type_index = {'JUD': 0, 'LEG': 1, 'EXEC': 2}.get(type, 0)

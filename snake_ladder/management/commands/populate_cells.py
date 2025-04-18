@@ -3,7 +3,7 @@ import random
 import time
 import google.generativeai as genai
 from snake_ladder.models import Cell, CellContent
-from dynamicDB.models import SummaryTopic, MainTopic
+from dynamicDB.models import SubTopic, Topic
 import json
 from django.conf import settings
 
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         """Fetch a summary topic and its associated main topics"""
         try:
             # Get the summary topic
-            summary_topic = SummaryTopic.objects.get(pk=summary_id)
+            summary_topic = SubTopic.objects.get(pk=summary_id)
             
             # Get all main topics associated with this summary topic
             main_topics = summary_topic.main_topics.all().order_by('id')
@@ -73,7 +73,7 @@ class Command(BaseCommand):
             
             return summary_topic, topic_data
             
-        except SummaryTopic.DoesNotExist:
+        except SubTopic.DoesNotExist:
             self.stdout.write(self.style.ERROR(f'Summary topic with ID {summary_id} not found'))
             return None, None
         except Exception as e:

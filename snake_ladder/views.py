@@ -305,8 +305,8 @@ def create_room(request):
         
         # Try to get the summary topic
         try:
-            from dynamicDB.models import SummaryTopic
-            summary_topic = SummaryTopic.objects.get(pk=summary_id)
+            from dynamicDB.models import SubTopic
+            summary_topic = SubTopic.objects.get(pk=summary_id)
             
             # Store the summary topic info in the session
             request.session['summary_topic_title'] = summary_topic.title
@@ -324,7 +324,7 @@ def create_room(request):
     else:
         # No summary_id provided, check if we have active summary topics
         try:
-            from dynamicDB.models import SummaryTopic, ActiveTopicGroups
+            from dynamicDB.models import SubTopic, ActiveTopicGroups
             active_groups = ActiveTopicGroups.get_active_groups()
             
             if active_groups.exists():
@@ -332,7 +332,7 @@ def create_room(request):
                 topic_group = active_groups.first().topic_group
                 
                 # Look for summary topics in this group
-                summary_topics = SummaryTopic.objects.filter(topic_group=topic_group)
+                summary_topics = SubTopic.objects.filter(topic_group=topic_group)
                 
                 if summary_topics.exists():
                     # Use the first summary topic
@@ -380,11 +380,11 @@ def room_detail(request, room_id):
         try:
             from django.contrib.sessions.models import Session
             from django.contrib.sessions.backends.db import SessionStore
-            from dynamicDB.models import SummaryTopic
+            from dynamicDB.models import SubTopic
             
             # Try to get summary topic details if we have the ID
             if summary_id:
-                summary_topic = SummaryTopic.objects.get(pk=summary_id)
+                summary_topic = SubTopic.objects.get(pk=summary_id)
                 summary_topic_title = summary_topic.title
                 summary_topic_description = summary_topic.description
         except Exception as e:
@@ -568,12 +568,12 @@ def home(request):
     summary_topics = []
     first_summary_id = None
     try:
-        from dynamicDB.models import SummaryTopic, ActiveTopicGroups
+        from dynamicDB.models import SubTopic, ActiveTopicGroups
         active_groups = ActiveTopicGroups.get_active_groups()
         
         for group in active_groups:
             topic_group = group.topic_group
-            group_summary_topics = SummaryTopic.objects.filter(topic_group=topic_group)
+            group_summary_topics = SubTopic.objects.filter(topic_group=topic_group)
             
             for topic in group_summary_topics:
                 main_topics_count = topic.main_topics.count()

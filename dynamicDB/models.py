@@ -38,7 +38,7 @@ class Chapter(models.Model):
     class Meta:
         ordering = ['order']
 
-class MainTopic(models.Model):
+class Topic(models.Model):
     pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='main_topics')
     title = models.CharField(max_length=255)
     summary = models.TextField(blank=True)
@@ -51,12 +51,12 @@ class MainTopic(models.Model):
     class Meta:
         ordering = ['order']
 
-class TopicGroup(models.Model):
+class MainTopic(models.Model):
     """Model to group related topics under a broader category"""
     pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='topic_groups')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    topics = models.ManyToManyField(MainTopic, related_name='topic_groups')
+    topics = models.ManyToManyField(Topic, related_name='topic_groups')
     order = models.IntegerField(default=0)
     
     # Optional parent-child relationship for hierarchical grouping
@@ -79,12 +79,12 @@ class TopicGroup(models.Model):
         verbose_name = 'Topic Group'
         verbose_name_plural = 'Topic Groups'
 
-class SummaryTopic(models.Model):
+class SubTopic(models.Model):
     """Model to create a summary topic that groups related main topics within a topic group"""
-    topic_group = models.ForeignKey(TopicGroup, on_delete=models.CASCADE, related_name='summary_topics')
+    topic_group = models.ForeignKey(MainTopic, on_delete=models.CASCADE, related_name='summary_topics')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    main_topics = models.ManyToManyField(MainTopic, related_name='summary_topics')
+    main_topics = models.ManyToManyField(Topic, related_name='summary_topics')
     order = models.IntegerField(default=0)
     
     # Generate compact summary for display
@@ -133,7 +133,7 @@ class ActivePDFSelection(models.Model):
 
 class ActiveTopicGroups(models.Model):
     """Model to track which topic groups are currently active (limited to 2)"""
-    topic_group = models.ForeignKey(TopicGroup, on_delete=models.CASCADE, related_name='active_selections')
+    topic_group = models.ForeignKey(MainTopic, on_delete=models.CASCADE, related_name='active_selections')
     selected_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):

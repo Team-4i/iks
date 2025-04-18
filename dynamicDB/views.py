@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from .models import PDFDocument, Chapter, MainTopic, TopicGroup, ActivePDFSelection, ActiveTopicGroups, SummaryTopic
+from .models import PDFDocument, Chapter, Topic, MainTopic, ActivePDFSelection, ActiveTopicGroups, SubTopic
 from .forms import PDFUploadForm, TopicExtractionForm
 import fitz  # PyMuPDF
 from PIL import Image
@@ -543,7 +543,7 @@ def analyze_pdf(request, pk):
                         print(f"Topic: {topic['title']} - {len(topic['chapters'])} chapters")
                     
                     # Import models
-                    from .models import MainTopic, Chapter
+                    from .models import Topic, Chapter
                     
                     # Delete existing chapters and topics
                     pdf_doc.chapters.all().delete()
@@ -554,8 +554,8 @@ def analyze_pdf(request, pk):
                     chapters_count = 0
                     
                     for topic_data in all_topics:
-                        # Create MainTopic
-                        main_topic = MainTopic.objects.create(
+                        # Create Topic
+                        main_topic = Topic.objects.create(
                             pdf_document=pdf_doc,
                             title=topic_data['title'],
                             summary=topic_data.get('summary', f"Main topic containing {len(topic_data['chapters'])} chapters"),
@@ -742,8 +742,8 @@ def visualize_topics(request, pk):
 def visualize_data(request, document_id=None):
     if document_id:
         document = get_object_or_404(PDFDocument, id=document_id)
-        topics = MainTopic.objects.filter(document=document)
-        groups = TopicGroup.objects.filter(document=document)
+        topics = Topic.objects.filter(document=document)
+        groups = MainTopic.objects.filter(document=document)
         
         # Prepare data for D3.js visualization
         topic_data = []
@@ -818,14 +818,14 @@ def admin_panel_dashboard(request):
     """Dashboard view showing statistics and recent items"""
     # Get counts
     pdf_count = PDFDocument.objects.count()
-    topic_group_count = TopicGroup.objects.count()
-    main_topic_count = MainTopic.objects.count()
+    topic_group_count = MainTopic.objects.count()
+    main_topic_count = Topic.objects.count()
     chapter_count = Chapter.objects.count()
     
     # Get recent items
     recent_pdfs = PDFDocument.objects.all().order_by('-uploaded_at')[:5]
-    recent_topic_groups = TopicGroup.objects.all().order_by('-updated_at')[:5]
-    recent_main_topics = MainTopic.objects.all().order_by('-pdf_document__uploaded_at')[:5]
+    recent_topic_groups = MainTopic.objects.all().order_by('-updated_at')[:5]
+    recent_main_topics = Topic.objects.all().order_by('-pdf_document__uploaded_at')[:5]
     recent_chapters = Chapter.objects.all().order_by('-pdf_document__uploaded_at')[:5]
     
     # Get active PDF information
@@ -915,7 +915,7 @@ def admin_panel_topic_groups(request):
     sort_by = request.GET.get('sort', 'recent')
     
     # Base queryset
-    topic_groups = TopicGroup.objects.all()
+    topic_groups = MainTopic.objects.all()
     
     # Apply search filter if provided
     if search_query:
@@ -955,13 +955,13 @@ def admin_panel_topic_groups(request):
 
 def admin_panel_topic_group_detail(request, pk):
     """Detail view for a single topic group with its topics"""
-    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    topic_group = get_object_or_404(MainTopic, pk=pk)
     
     # Get associated topics
     topics = topic_group.topics.order_by('order')
     
     # Get all available topics for this PDF for the add topic form
-    available_topics = MainTopic.objects.filter(
+    available_topics = Topic.objects.filter(
         pdf_document=topic_group.pdf_document
     ).exclude(
         id__in=topics.values_list('id', flat=True)
@@ -984,7 +984,7 @@ def admin_panel_main_topics(request):
     sort_by = request.GET.get('sort', 'recent')
     
     # Base queryset
-    main_topics = MainTopic.objects.all()
+    main_topics = Topic.objects.all()
     
     # Apply search filter if provided
     if search_query:
@@ -1024,7 +1024,7 @@ def admin_panel_main_topics(request):
 
 def admin_panel_main_topic_detail(request, pk):
     """Detail view for a single main topic with its chapters"""
-    main_topic = get_object_or_404(MainTopic, pk=pk)
+    main_topic = get_object_or_404(Topic, pk=pk)
     
     # Get associated chapters
     chapters = main_topic.chapters.order_by('order')
@@ -1149,7 +1149,7 @@ def admin_panel_update_topic_group(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
     
-    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    topic_group = get_object_or_404(MainTopic, pk=pk)
     
     title = request.POST.get('title', '')
     description = request.POST.get('description', '')
@@ -1171,7 +1171,7 @@ def admin_panel_delete_topic_group(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
     
-    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    topic_group = get_object_or_404(MainTopic, pk=pk)
     
     try:
         topic_group.delete()
@@ -1185,7 +1185,7 @@ def admin_panel_update_main_topic(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
     
-    main_topic = get_object_or_404(MainTopic, pk=pk)
+    main_topic = get_object_or_404(Topic, pk=pk)
     
     title = request.POST.get('title', '')
     summary = request.POST.get('summary', '')
@@ -1207,7 +1207,7 @@ def admin_panel_delete_main_topic(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
     
-    main_topic = get_object_or_404(MainTopic, pk=pk)
+    main_topic = get_object_or_404(Topic, pk=pk)
     
     try:
         main_topic.delete()
@@ -1400,7 +1400,7 @@ def active_topic_groups(request):
         return redirect('dynamicDB:pdf_selector')
     
     # Get all topic groups from the active PDF
-    topic_groups = TopicGroup.objects.filter(pdf_document=active_pdf).order_by('order')
+    topic_groups = MainTopic.objects.filter(pdf_document=active_pdf).order_by('order')
     
     # Get the currently active topic groups
     active_groups = ActiveTopicGroups.get_active_groups()
@@ -1428,7 +1428,7 @@ def set_active_topic_group(request):
             return redirect('dynamicDB:active_topic_groups')
         
         try:
-            topic_group = TopicGroup.objects.get(pk=topic_group_id)
+            topic_group = MainTopic.objects.get(pk=topic_group_id)
             
             # Check if this topic group is already active
             if ActiveTopicGroups.objects.filter(topic_group=topic_group).exists():
@@ -1438,7 +1438,7 @@ def set_active_topic_group(request):
                 ActiveTopicGroups.objects.create(topic_group=topic_group)
                 messages.success(request, f"Topic group '{topic_group.title}' set as active.")
             
-        except TopicGroup.DoesNotExist:
+        except MainTopic.DoesNotExist:
             messages.error(request, "Selected topic group does not exist.")
         
     return redirect('dynamicDB:active_topic_groups')
@@ -1459,8 +1459,8 @@ def remove_active_topic_group(request, pk):
 
 def admin_panel_summary_topics(request):
     """View for managing summary topics"""
-    summary_topics = SummaryTopic.objects.all().order_by('topic_group__title', 'order')
-    topic_groups = TopicGroup.objects.all().order_by('title')
+    summary_topics = SubTopic.objects.all().order_by('topic_group__title', 'order')
+    topic_groups = MainTopic.objects.all().order_by('title')
     
     context = {
         'active_page': 'summary_topics',
@@ -1472,8 +1472,8 @@ def admin_panel_summary_topics(request):
 
 def admin_panel_summary_topic_detail(request, pk):
     """View details of a specific summary topic"""
-    summary_topic = get_object_or_404(SummaryTopic, pk=pk)
-    all_main_topics = MainTopic.objects.filter(pdf_document=summary_topic.topic_group.pdf_document)
+    summary_topic = get_object_or_404(SubTopic, pk=pk)
+    all_main_topics = Topic.objects.filter(pdf_document=summary_topic.topic_group.pdf_document)
     
     context = {
         'active_page': 'summary_topics',
@@ -1488,7 +1488,7 @@ def generate_summary_topics(request, topic_group_id):
     Automatically generate summary topics for a topic group using Gemini AI
     Groups main topics into exactly 3 clusters and creates summary topics for each cluster
     """
-    topic_group = get_object_or_404(TopicGroup, pk=topic_group_id)
+    topic_group = get_object_or_404(MainTopic, pk=topic_group_id)
     
     try:
         # Get all main topics for this topic group
@@ -1499,7 +1499,7 @@ def generate_summary_topics(request, topic_group_id):
             return redirect('dynamicDB:admin_panel_topic_group_detail', pk=topic_group_id)
         
         # Delete existing summary topics for this group
-        SummaryTopic.objects.filter(topic_group=topic_group).delete()
+        SubTopic.objects.filter(topic_group=topic_group).delete()
         
         # Prepare data for Gemini API
         topic_data = []
@@ -1583,10 +1583,10 @@ def generate_summary_topics(request, topic_group_id):
             for i, cluster in enumerate(clusters):
                 # Get the topics in this cluster
                 topic_ids_in_cluster = cluster.get('topic_ids', [])
-                topics_in_cluster = MainTopic.objects.filter(id__in=topic_ids_in_cluster)
+                topics_in_cluster = Topic.objects.filter(id__in=topic_ids_in_cluster)
                 
                 # Create the summary topic
-                summary_topic = SummaryTopic.objects.create(
+                summary_topic = SubTopic.objects.create(
                     topic_group=topic_group,
                     title=cluster.get('title', f"Summary Group {i+1}"),
                     description=cluster.get('description', f"Automatically generated group of {len(topics_in_cluster)} related topics"),
@@ -1651,7 +1651,7 @@ def fallback_to_basic_grouping(topic_group, main_topics):
             title = f"Summary Group {i+1}"
         
         # Create the summary topic
-        summary_topic = SummaryTopic.objects.create(
+        summary_topic = SubTopic.objects.create(
             topic_group=topic_group,
             title=title,
             description=f"Automatically generated group of {len(group_topics)} topics",
@@ -1675,7 +1675,7 @@ def fallback_to_basic_grouping(topic_group, main_topics):
 @csrf_exempt
 def admin_panel_update_summary_topic(request, pk):
     """Update a summary topic via AJAX"""
-    summary_topic = get_object_or_404(SummaryTopic, pk=pk)
+    summary_topic = get_object_or_404(SubTopic, pk=pk)
     
     if request.method == 'POST':
         try:
@@ -1690,7 +1690,7 @@ def admin_panel_update_summary_topic(request, pk):
             # Update main topics if provided
             if 'main_topic_ids' in data:
                 main_topic_ids = data['main_topic_ids']
-                main_topics = MainTopic.objects.filter(id__in=main_topic_ids)
+                main_topics = Topic.objects.filter(id__in=main_topic_ids)
                 summary_topic.main_topics.set(main_topics)
             
             summary_topic.save()
@@ -1706,7 +1706,7 @@ def admin_panel_delete_summary_topic(request, pk):
     """Delete a summary topic via AJAX"""
     if request.method == 'POST':
         try:
-            summary_topic = get_object_or_404(SummaryTopic, pk=pk)
+            summary_topic = get_object_or_404(SubTopic, pk=pk)
             topic_group_id = summary_topic.topic_group.id
             summary_topic.delete()
             return JsonResponse({'success': True, 'redirect': f'/dynamicDB/admin-panel/topic-group/{topic_group_id}/'})
@@ -1741,7 +1741,7 @@ def generate_summary_for_active_groups(request):
                 continue
             
             # Delete existing summary topics for this group
-            SummaryTopic.objects.filter(topic_group=topic_group).delete()
+            SubTopic.objects.filter(topic_group=topic_group).delete()
             
             # Prepare data for Gemini API
             topic_data = []
@@ -1825,10 +1825,10 @@ def generate_summary_for_active_groups(request):
                 for i, cluster in enumerate(clusters):
                     # Get the topics in this cluster
                     topic_ids_in_cluster = cluster.get('topic_ids', [])
-                    topics_in_cluster = MainTopic.objects.filter(id__in=topic_ids_in_cluster)
+                    topics_in_cluster = Topic.objects.filter(id__in=topic_ids_in_cluster)
                     
                     # Create the summary topic
-                    summary_topic = SummaryTopic.objects.create(
+                    summary_topic = SubTopic.objects.create(
                         topic_group=topic_group,
                         title=cluster.get('title', f"Summary Group {i+1}"),
                         description=cluster.get('description', f"Automatically generated group of {len(topics_in_cluster)} related topics"),

@@ -146,21 +146,21 @@ class TextbookAnalyzer:
     def convert_to_db_format(self, hierarchical_data, pdf_document):
         """
         Convert hierarchical topics and chapters to database format.
-        This creates MainTopic and Chapter objects from the hierarchical data.
+        This creates Topic and Chapter objects from the hierarchical data.
         """
-        from .models import MainTopic, Chapter
+        from .models import Topic, Chapter
         
         created_topics = []
         created_chapters = []
         
         # Delete existing data for this document
-        MainTopic.objects.filter(pdf_document=pdf_document).delete()
+        Topic.objects.filter(pdf_document=pdf_document).delete()
         Chapter.objects.filter(pdf_document=pdf_document).delete()
         
         # Process each topic and its chapters
         for topic_data in hierarchical_data:
             # Create the main topic
-            main_topic = MainTopic.objects.create(
+            main_topic = Topic.objects.create(
                 pdf_document=pdf_document,
                 title=topic_data['title'],
                 summary=f"Main topic containing {len(topic_data['chapters'])} chapters",
@@ -192,7 +192,7 @@ class TextbookAnalyzer:
     def process_document(self, pdf_doc):
         """Process a PDF document by extracting hierarchical content and saving to database."""
         # Import models
-        from .models import MainTopic, Chapter
+        from .models import Topic, Chapter
         
         # Extract hierarchical content (topics and chapters)
         print(f"Extracting hierarchical content from: {pdf_doc.converted_image.path}")
@@ -218,8 +218,8 @@ class TextbookAnalyzer:
         # Save topics and chapters to database
         print("Creating new topics and chapters...")
         for topic_data in hierarchical_data:
-            # Create MainTopic
-            main_topic = MainTopic.objects.create(
+            # Create Topic
+            main_topic = Topic.objects.create(
                 pdf_document=pdf_doc,
                 title=topic_data['title'],
                 summary=topic_data.get('summary', f"Main topic containing {len(topic_data['chapters'])} chapters"),
@@ -360,9 +360,9 @@ class TopicGroupingService:
             pdf_doc: PDFDocument instance with extracted topics
             
         Returns:
-            List of TopicGroup objects
+            List of MainTopic objects
         """
-        from .models import TopicGroup
+        from .models import MainTopic
         
         # Get all topics for this document
         topics = pdf_doc.main_topics.all().prefetch_related('chapters')
@@ -452,7 +452,7 @@ class TopicGroupingService:
             created_groups = []
             for idx, group_info in enumerate(group_data):
                 # Create the topic group
-                topic_group = TopicGroup.objects.create(
+                topic_group = MainTopic.objects.create(
                     pdf_document=pdf_doc,
                     title=group_info['group_title'],
                     description=group_info['description'],
@@ -579,8 +579,8 @@ class TopicGroupingService:
                     
                 try:
                     # Set parent relationship
-                    child_group = TopicGroup.objects.get(id=item['group_id'], pdf_document=pdf_doc)
-                    parent_group = TopicGroup.objects.get(id=item['parent_id'], pdf_document=pdf_doc)
+                    child_group = MainTopic.objects.get(id=item['group_id'], pdf_document=pdf_doc)
+                    parent_group = MainTopic.objects.get(id=item['parent_id'], pdf_document=pdf_doc)
                     child_group.parent = parent_group
                     child_group.save()
                 except Exception as e:
