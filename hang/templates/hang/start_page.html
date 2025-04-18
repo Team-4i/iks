@@ -3,48 +3,726 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
-<div class="start-container">
-    <h1>Hangman Survival Challenge</h1>
-    <p>Test your knowledge and see how long you can survive!</p>
-    <a href="{% url 'hang:game' %}" class="start-button">Start Game (All Questions)</a>
-    <a href="{% url 'hang:leaderboard' %}" class="leaderboard-link-start">View Leaderboard</a>
+<div class="game-intro-screen">
+    <!-- Video Background -->
+    <div class="video-background">
+        <div class="overlay"></div>
+    </div>
     
-    <hr style="width: 80%; margin: 20px 0;">
+    <!-- Game Logo Animation -->
+    <div class="logo-container">
+        <div class="logo-wrapper">
+            <div class="game-logo">
+                <span class="letter">H</span>
+                <span class="letter">A</span>
+                <span class="letter">N</span>
+                <span class="letter">G</span>
+                <span class="letter">M</span>
+                <span class="letter">A</span>
+                <span class="letter">N</span>
+            </div>
+            <div class="tagline">CONSTITUTIONAL CHALLENGE</div>
+        </div>
+    </div>
     
-    <h2>Test Specific Question Types:</h2>
-    <div class="test-links">
-        <a href="{% url 'hang:game' %}?types=MCQ" class="test-link">MCQ Only</a>
-        <a href="{% url 'hang:game' %}?types=FILL" class="test-link">Fill Blank Only</a>
-        <a href="{% url 'hang:game' %}?types=MATCH" class="test-link">Match Pairs Only</a>
-        <a href="{% url 'hang:game' %}?types=TF" class="test-link">True/False Only</a>
-        <a href="{% url 'hang:game' %}?types=ODD" class="test-link">Odd One Out Only</a>
-        <a href="{% url 'hang:game' %}?types=CAT" class="test-link">Categorize Only</a>
-        <a href="{% url 'hang:game' %}?types=SCRAMBLE" class="test-link">Unscramble Only</a>
-        <a href="{% url 'hang:game' %}?types=MCQ,TF" class="test-link">MCQ & True/False</a>
+    <!-- Real Hangman Image -->
+    <div class="hangman-image-container">
+        <img src="https://www.nicepng.com/png/full/277-2770971_hangman-png.png" alt="Hangman" class="hangman-image">
+    </div>
+    
+    <!-- Game Menu -->
+    <div class="game-menu">
+        <a href="{% url 'hang:game' %}" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        
+        <div class="menu-button secondary" onclick="toggleGameModes()">
+            <div class="button-icon mode-icon">★</div>
+            <div class="button-text">SELECT MODE</div>
+        </div>
+        
+        <a href="{% url 'hang:leaderboard' %}" class="menu-button secondary">
+            <div class="button-icon trophy-icon">🏆</div>
+            <div class="button-text">LEADERBOARD</div>
+        </a>
+        
+        <div class="menu-button secondary" onclick="showTutorial()">
+            <div class="button-icon help-icon">?</div>
+            <div class="button-text">HOW TO PLAY</div>
+        </div>
+    </div>
+    
+    <!-- Game Modes Panel -->
+    <div class="game-modes-panel" id="gameModes">
+        <div class="panel-header">
+            <h2>SELECT QUESTION TYPE</h2>
+            <span class="close-panel" onclick="toggleGameModes()">×</span>
+        </div>
+        <div class="mode-options">
+            <a href="{% url 'hang:game' %}" class="mode-option">
+                <div class="mode-icon">★</div>
+                <div class="mode-name">ALL QUESTIONS</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=MCQ" class="mode-option">
+                <div class="mode-icon">Q</div>
+                <div class="mode-name">MULTIPLE CHOICE</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=FILL" class="mode-option">
+                <div class="mode-icon">__</div>
+                <div class="mode-name">FILL BLANKS</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=MATCH" class="mode-option">
+                <div class="mode-icon">≋</div>
+                <div class="mode-name">MATCH PAIRS</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=TF" class="mode-option">
+                <div class="mode-icon">T/F</div>
+                <div class="mode-name">TRUE/FALSE</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=ODD" class="mode-option">
+                <div class="mode-icon">≠</div>
+                <div class="mode-name">ODD ONE OUT</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=CAT" class="mode-option">
+                <div class="mode-icon">⊞</div>
+                <div class="mode-name">CATEGORIZE</div>
+            </a>
+            <a href="{% url 'hang:game' %}?types=SCRAMBLE" class="mode-option">
+                <div class="mode-icon">↹</div>
+                <div class="mode-name">UNSCRAMBLE</div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Tutorial Modal -->
+    <div class="tutorial-modal" id="tutorialModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>How to Play</h2>
+                <span class="close-button" onclick="hideTutorial()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="tutorial-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Answer Questions</h3>
+                        <p>Test your knowledge of constitutional law by answering questions of various types.</p>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Survive Longer</h3>
+                        <p>Each correct answer adds time to your survival timer!</p>
+                    </div>
+                </div>
+                <div class="tutorial-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Avoid the Hangman</h3>
+                        <p>Wrong answers will gradually reveal the hangman. Six wrong answers and it's game over!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <style>
-    .test-links {
+/* Game Intro Screen - Cinematic Style */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap');
+
+.game-intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; 
+    overflow: hidden;
+    font-family: 'Cinzel', serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #05101F;
+}
+
+/* Video Background Effect */
+.video-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    background: 
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" fill="%23050f1d"/><circle cx="10" cy="10" r="0.8" fill="white" opacity="0.3"/><circle cx="30" cy="40" r="0.4" fill="white" opacity="0.3"/><circle cx="70" cy="20" r="0.6" fill="white" opacity="0.3"/><circle cx="90" cy="60" r="0.5" fill="white" opacity="0.3"/><circle cx="50" cy="80" r="0.4" fill="white" opacity="0.3"/><circle cx="20" cy="70" r="0.3" fill="white" opacity="0.3"/><circle cx="60" cy="30" r="0.7" fill="white" opacity="0.3"/><circle cx="80" cy="90" r="0.4" fill="white" opacity="0.3"/></svg>'),
+        radial-gradient(circle at center, #091428 0%, #070e1a 70%, #050a12 100%);
+    background-size: 200px, cover;
+    animation: starMovement 120s linear infinite;
+}
+
+@keyframes starMovement {
+    0% { background-position: 0 0, center; }
+    100% { background-position: 2000px 1000px, center; }
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(5, 16, 31, 0) 0%, rgba(5, 16, 31, 0.3) 70%, rgba(5, 16, 31, 0.8) 100%);
+    z-index: 1;
+}
+
+/* Logo Animation */
+.logo-container {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    margin-bottom: 40px;
+    perspective: 1000px;
+}
+
+.logo-wrapper {
+    animation: logoIntro 2s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+    opacity: 0;
+    transform: translateY(-30px) rotateX(20deg);
+}
+
+@keyframes logoIntro {
+    0% { opacity: 0; transform: translateY(-30px) rotateX(20deg); }
+    100% { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+
+.game-logo {
+    font-size: 5rem;
+    font-weight: 900;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    letter-spacing: 0.5rem;
+    color: #E5E5E5;
+    text-shadow: 0 0 20px rgba(100, 100, 255, 0.3);
+}
+
+.letter {
+    display: inline-block;
+    animation: letterFade 1.5s ease forwards;
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+    text-shadow: 
+        0 2px 0 rgba(255, 255, 255, 0.1),
+        0 4px 0 rgba(255, 255, 255, 0.05),
+        0 6px 10px rgba(0, 0, 0, 0.5);
+}
+
+.letter:nth-child(1) { animation-delay: 0.2s; }
+.letter:nth-child(2) { animation-delay: 0.3s; }
+.letter:nth-child(3) { animation-delay: 0.4s; }
+.letter:nth-child(4) { animation-delay: 0.5s; }
+.letter:nth-child(5) { animation-delay: 0.6s; }
+.letter:nth-child(6) { animation-delay: 0.7s; }
+.letter:nth-child(7) { animation-delay: 0.8s; }
+
+@keyframes letterFade {
+    0% { opacity: 0; transform: translateY(-20px) scale(0.8); }
+    60% { transform: translateY(5px) scale(1.1); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tagline {
+    font-size: 1.2rem;
+    color: #5D9BF0;
+    margin-top: 5px;
+    letter-spacing: 0.2em;
+    opacity: 0;
+    animation: taglineFade 1s ease 1s forwards;
+    font-weight: 400;
+}
+
+@keyframes taglineFade {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Real Hangman Image */
+.hangman-image-container {
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    animation: imageFadeIn 1.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes imageFadeIn {
+    0% { opacity: 0; transform: translateY(-50%) translateX(50px); }
+    100% { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.hangman-image {
+    height: 350px;
+    filter: drop-shadow(0 0 15px rgba(93, 155, 240, 0.5));
+    animation: imageFloat 6s ease-in-out infinite;
+}
+
+@keyframes imageFloat {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0); }
+}
+
+/* Game Menu */
+.game-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 280px;
+    z-index: 10;
+    position: relative;
+    margin-bottom: 20px;
+    perspective: 1000px;
+}
+
+.menu-button {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background: rgba(10, 25, 50, 0.7);
+    border: 2px solid rgba(150, 180, 220, 0.3);
+    animation: menuButtonReveal 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.menu-button:nth-child(1) { animation-delay: 1.2s; }
+.menu-button:nth-child(2) { animation-delay: 1.4s; }
+.menu-button:nth-child(3) { animation-delay: 1.6s; }
+.menu-button:nth-child(4) { animation-delay: 1.8s; }
+
+@keyframes menuButtonReveal {
+    0% { opacity: 0; transform: translateX(-20px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+.menu-button:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.menu-button.primary {
+    background: #2F7E45;
+    border-color: #35A257;
+}
+
+.menu-button.primary:hover {
+    background: #35A257;
+}
+
+.menu-button.secondary {
+    background: #143157;
+    border-color: #2A5894;
+}
+
+.menu-button.secondary:hover {
+    background: #1C4270;
+}
+
+.button-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.menu-button:hover .button-icon {
+    transform: rotate(10deg) scale(1.1);
+}
+
+.play-icon {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.trophy-icon {
+    font-size: 1.1rem;
+}
+
+.button-text {
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+}
+
+/* Game Modes Panel */
+.game-modes-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: rgba(10, 30, 60, 0.95);
+    border: 2px solid rgba(100, 150, 200, 0.4);
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80%;
+    overflow-y: auto;
+    z-index: 30;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.game-modes-panel.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(100, 150, 200, 0.2);
+}
+
+.panel-header h2 {
+    margin: 0;
+    color: #6B98C3;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.close-panel {
+    font-size: 1.8rem;
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-panel:hover {
+    color: #6B98C3;
+}
+
+.mode-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.mode-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(30, 60, 100, 0.4);
+    border: 1px solid rgba(100, 150, 200, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.mode-option:hover {
+    background: rgba(50, 80, 120, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.mode-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: #fff;
+    background: rgba(10, 30, 60, 0.7);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.mode-name {
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* Tutorial Modal */
+.tutorial-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.tutorial-modal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 600px;
+    background: #0F1E30;
+    border: 2px solid #2A5894;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.tutorial-modal.visible .modal-content {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(100, 150, 200, 0.3);
+}
+
+.modal-header h2 {
+    color: #6B98C3;
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.close-button {
+    font-size: 2rem;
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover {
+    color: #6B98C3;
+}
+
+.tutorial-step {
+    display: flex;
+    margin-bottom: 25px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: stepReveal 0.5s ease forwards;
+}
+
+.tutorial-step:nth-child(1) { animation-delay: 0.2s; }
+.tutorial-step:nth-child(2) { animation-delay: 0.4s; }
+.tutorial-step:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes stepReveal {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: rgba(100, 150, 200, 0.2);
+    border: 2px solid rgba(100, 150, 200, 0.4);
+    border-radius: 50%;
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6B98C3;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.step-content {
+    flex-grow: 1;
+}
+
+.step-content h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    font-size: 1.2rem;
+}
+
+.step-content p {
+    margin: 0;
+    color: #B0C4E0;
+    line-height: 1.5;
+}
+
+/* Create stars */
+.star {
+    position: absolute;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 0.3;
+    animation: starTwinkle 3s infinite alternate;
+}
+
+@keyframes starTwinkle {
+    0% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+    100% { opacity: 0.3; transform: scale(1); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .game-logo {
+        font-size: 3.5rem;
+        letter-spacing: 0.3rem;
+    }
+    
+    .hangman-image {
+        height: 250px;
+    }
+    
+    .hangman-image-container {
+        right: 5%;
+    }
+    
+    .menu-button {
+        padding: 12px 18px;
+    }
+    
+    .button-text {
+        font-size: 1rem;
+    }
+}
+
+/* Landscape Mode */
+@media (max-height: 600px) and (orientation: landscape) {
+    .game-intro-screen {
+        flex-direction: row;
         justify-content: center;
-        margin-top: 10px;
+        padding: 0 5%;
     }
-    .test-link {
-        display: inline-block;
-        padding: 8px 15px;
-        font-size: 0.9em;
-        color: white;
-        background-color: #6c757d; /* Grey for test links */
-        border: none;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: background-color 0.3s ease;
+    
+    .logo-container {
+        margin-bottom: 0;
+        margin-right: 20px;
     }
-    .test-link:hover {
-        background-color: #5a6268;
+    
+    .game-logo {
+        font-size: 3rem;
+    }
+    
+    .hangman-image-container {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        margin: 0 50px;
+        animation: imageFadeInLandscape 1.5s ease-out forwards;
+        opacity: 0;
+    }
+    
+    @keyframes imageFadeInLandscape {
+        0% { opacity: 0; transform: translateX(50px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    
+    .hangman-image {
+        height: 200px;
+    }
+    
+    .game-menu {
+        margin-bottom: 0;
+    }
+    
+    .menu-button {
+        padding: 10px 15px;
+    }
+    
+    .button-text {
+        font-size: 0.9rem;
+    }
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Create stars for background
+    const background = document.querySelector('.video-background');
+    for (let i = 0; i < 150; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.width = `${Math.random() * 2 + 1}px`;
+        star.style.height = star.style.width;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.opacity = Math.random() * 0.7 + 0.3;
+        star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+        background.appendChild(star);
+    }
+    
+    // Add hover sound effect to menu buttons
+    const menuButtons = document.querySelectorAll('.menu-button');
+    menuButtons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            playHoverSound();
+        });
+    });
+    
+    // Initialize with flashing effect
+    setTimeout(function() {
+        document.querySelector('.game-intro-screen').classList.add('loaded');
+    }, 500);
+});
+
+// Play hover sound (silent function, would need actual sound implementation)
+function playHoverSound() {
+    // Would normally play a sound here
+    // Add sound implementation if needed
+}
+
+// Toggle game modes panel
+function toggleGameModes() {
+    const modesPanel = document.getElementById('gameModes');
+    modesPanel.classList.toggle('visible');
+}
+
+// Show tutorial
+function showTutorial() {
+    const tutorial = document.getElementById('tutorialModal');
+    tutorial.classList.add('visible');
+}
+
+// Hide tutorial
+function hideTutorial() {
+    const tutorial = document.getElementById('tutorialModal');
+    tutorial.classList.remove('visible');
+}
+</script>
 {% endblock %} 
