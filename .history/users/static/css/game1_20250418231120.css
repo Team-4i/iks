@@ -1,19 +1,22 @@
 .game-library {
-    min-height: 100vh;
-    padding: 100px 8% 100px;
+    min-height: 100%;
+    padding: 100px 8% 120px;
     background: linear-gradient(135deg, #F4ECD8 0%, #E8DFC6 100%);
     position: relative;
     overflow-y: visible;
     overflow-x: hidden;
 }
 
+
+
 .game-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 3rem;
     max-width: 1500px;
-    margin: 0 auto;
+    margin-top: -5rem;
     height: auto;
+    min-height: auto;
     padding-bottom: 100px;
 }
 
@@ -257,7 +260,7 @@
 @media (max-width: 768px) {
     .game-grid {
         grid-template-columns: 1fr;
-        max-width: 500px;
+        padding-bottom: 50px;
     }
     
     .game-card {
@@ -318,4 +321,11 @@
 .game-card {
     animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     animation-delay: calc(var(--card-index) * 0.15s);
+}
+
+/* Fix container height issue */
+body, html {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto !important;
 }

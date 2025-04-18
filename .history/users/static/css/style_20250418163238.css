@@ -19,9 +19,6 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     cursor: url('/static/images/hammer.png'), auto;
-    overflow-y: auto;
-    height: auto;
-    min-height: 100vh;
 }
 
 /* Enhanced Navigation */
@@ -1366,14 +1363,18 @@ nav.scrolled {
 
 /* Smoother scroll snapping */
 html {
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
     scroll-behavior: smooth;
-    overflow-y: auto;
+    --scroll-timeline: 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
 }
 
 section {
     min-height: 100vh;
     width: 100%;
     position: relative;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
     transition: transform var(--scroll-timeline);
 }
 

@@ -21,25 +21,12 @@
     
     .game-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 3rem;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 2rem;
         width: 100%;
-        max-width: 1500px;
+        max-width: 1600px;
         margin: 0 auto;
         padding-bottom: 80px;
-    }
-    
-    .game-card {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: 2rem;
-        background: linear-gradient(135deg, #FFFFFF 0%, #F8F4E9 100%);
-        border-radius: 20px;
-        padding: 1.5rem;
-        position: relative;
-        height: 280px;
-        border: 1px solid rgba(198, 162, 63, 0.15);
-        box-shadow: 0 10px 30px rgba(139, 69, 19, 0.08);
     }
     
     .scroll-decoration {
@@ -47,32 +34,9 @@
         height: 40px;
     }
     
-    @media (max-width: 1200px) {
-        .game-card {
-            height: 260px;
-            gap: 1.5rem;
-        }
-    }
-    
-    @media (max-width: 992px) {
-        .game-grid {
-            gap: 2rem;
-        }
-    }
-    
     @media (max-width: 768px) {
         .game-grid {
             grid-template-columns: 1fr;
-            max-width: 600px;
-        }
-        
-        .game-card {
-            grid-template-columns: 1fr;
-            height: auto;
-        }
-        
-        .game-image {
-            height: 220px;
         }
     }
 </style>
@@ -90,7 +54,7 @@
             </div>
             <div class="game-content">
                 <span class="game-type">Quiz Game</span>
-                <h3>Brain ladders</h3>
+                <h3>Brain Ladders</h3>
                 <div class="decorative-line"></div>
                 <p>Embark on an exciting adventure through the foundational principles of India's Constitution with this unique twist on the classic Snake and Ladder game.</p>
             
@@ -123,7 +87,7 @@
             <div class="corner-flourish"></div>
         </div>
 
-        
+        <!-- Samvidhan Squares -->
         <div class="game-card">
             <div class="corner-flourish"></div>
             <div class="game-image">
@@ -132,7 +96,7 @@
             </div>
             <div class="game-content">
                 <span class="game-type">Brain Game</span>
-                <h3>Mind Squares</h3>
+                <h3>Samvidhan Squares</h3>
                 <div class="decorative-line"></div>
                 <p>Challenge yourself with this strategic game that tests your knowledge of constitutional principles while competing to complete squares.</p>
                 <div class="game-footer">
