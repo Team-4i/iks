@@ -342,57 +342,6 @@ def start_page(request):
             context['checkpoint_name'] = f"Part {part} {type_names.get(type_code, '')}"
             context['from_checkpoint'] = True
     
-    # If no checkpoint parameters were provided, try to load the user's latest checkpoint
-    else:
-        print("No checkpoint parameters provided to start page, using user's latest checkpoint")
-        try:
-            # Import PlayerPlatPoints model
-            from plat.models import PlayerPlatPoints
-            
-            # Get or create the user's platform points record
-            user_points, created = PlayerPlatPoints.objects.get_or_create(player=request.user)
-            
-            # Get the user's current (highest unlocked) checkpoint
-            current_part = user_points.current_part
-            current_type = user_points.current_type
-            
-            print(f"User's current checkpoint: Part {current_part} {current_type}")
-            
-            # Map the part/type to topic_group_id/summary_id
-            from dynamicDB.models import ActiveTopicGroups
-            active_groups = ActiveTopicGroups.get_active_groups()
-            
-            if active_groups.exists():
-                # Part 5 = first active group, Part 6 = second active group
-                group_index = current_part - 5
-                if 0 <= group_index < active_groups.count():
-                    active_group = active_groups[group_index]
-                    topic_group = active_group.topic_group
-                    topic_group_id = topic_group.id
-                    
-                    # Map type code to summary topic (JUD=0, LEG=1, EXEC=2)
-                    type_index = {'JUD': 0, 'LEG': 1, 'EXEC': 2}.get(current_type, 0)
-                    summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
-                    
-                    if summary_topics.exists() and type_index < summary_topics.count():
-                        summary_id = summary_topics[type_index].id
-                        summary_topic = summary_topics[type_index]
-                        
-                        # Add checkpoint information to the context
-                        context['topic_group_id'] = topic_group_id
-                        context['summary_id'] = summary_id
-                        context['checkpoint_name'] = summary_topic.title
-                        context['from_checkpoint'] = True
-                        context['is_current_checkpoint'] = True
-                        
-                        # Also add part and type for legacy support
-                        context['part'] = current_part
-                        context['type'] = current_type
-                        
-                        print(f"Using user's current checkpoint: {summary_topic.title}")
-        except Exception as e:
-            print(f"Error loading user's latest checkpoint for start page: {e}")
-    
     return render(request, 'hang/start_page.html', context)
 
 @login_required
@@ -434,21 +383,6 @@ def game(request, topic_group_id=None, summary_id=None):
     if not allowed_types:  # If empty or not provided, allow all
         allowed_types = None
     
-    # Variable to track if this is the user's current checkpoint
-    is_current_checkpoint = False
-    user_current_part = None
-    user_current_type = None
-    
-    # Get the user's current checkpoint info for comparison
-    try:
-        from plat.models import PlayerPlatPoints
-        user_points, created = PlayerPlatPoints.objects.get_or_create(player=request.user)
-        user_current_part = user_points.current_part
-        user_current_type = user_points.current_type
-        print(f"User's current checkpoint: Part {user_current_part} {user_current_type}")
-    except Exception as e:
-        print(f"Error getting user's current checkpoint: {e}")
-    
     # If we have part and type but not topic_group_id and summary_id,
     # we need to map them to the corresponding topic group and summary
     if part and type_code and not (topic_group_id and summary_id):
@@ -474,11 +408,6 @@ def game(request, topic_group_id=None, summary_id=None):
                     if summary_topics.exists() and type_index < summary_topics.count():
                         summary_id = summary_topics[type_index].id
                         print(f"Mapped type {type_code} to summary_id {summary_id}")
-                        
-                        # Check if this is the user's current checkpoint
-                        if int(part) == user_current_part and type_code == user_current_type:
-                            is_current_checkpoint = True
-                            print("This is the user's current checkpoint")
         except Exception as e:
             print(f"Error mapping part/type to topic_group/summary: {e}")
     
@@ -522,10 +451,6 @@ def game(request, topic_group_id=None, summary_id=None):
                         # Set part and type_code for context information
                         part = current_part
                         type_code = current_type
-                        
-                        # This is the user's current checkpoint
-                        is_current_checkpoint = True
-                        print("Using user's current checkpoint")
         except Exception as e:
             print(f"Error loading user's latest checkpoint: {e}")
     
@@ -553,7 +478,6 @@ def game(request, topic_group_id=None, summary_id=None):
         context['from_checkpoint'] = True
         context['topic_group_id'] = topic_group_id
         context['summary_id'] = summary_id
-        context['is_current_checkpoint'] = is_current_checkpoint
         
         try:
             subtopic = SubTopic.objects.get(id=summary_id)
@@ -567,7 +491,6 @@ def game(request, topic_group_id=None, summary_id=None):
         context['from_checkpoint'] = True
         context['part'] = part
         context['type'] = type_code
-        context['is_current_checkpoint'] = is_current_checkpoint
         
         type_names = {'JUD': 'Judiciary', 'LEG': 'Legislative', 'EXEC': 'Executive'}
         context['checkpoint_name'] = f"Part {part} {type_names.get(type_code, '')}"

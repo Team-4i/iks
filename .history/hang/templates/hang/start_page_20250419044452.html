@@ -51,8 +51,64 @@
             <div class="button-icon play-icon">▶</div>
             <div class="button-text">START GAME</div>
         </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=MCQ" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=FILL" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=MATCH" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=TF" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=ODD" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=CAT" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game_checkpoint' topic_group_id=topic_group_id summary_id=summary_id %}?types=SCRAMBLE" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
         {% else %}
         <a href="{% url 'hang:game' %}" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=MCQ" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=FILL" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=MATCH" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=TF" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=ODD" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=CAT" class="menu-button primary">
+            <div class="button-icon play-icon">▶</div>
+            <div class="button-text">START GAME</div>
+        </a>
+        <a href="{% url 'hang:game' %}?types=SCRAMBLE" class="menu-button primary">
             <div class="button-icon play-icon">▶</div>
             <div class="button-text">START GAME</div>
         </a>

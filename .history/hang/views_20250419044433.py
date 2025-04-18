@@ -434,21 +434,6 @@ def game(request, topic_group_id=None, summary_id=None):
     if not allowed_types:  # If empty or not provided, allow all
         allowed_types = None
     
-    # Variable to track if this is the user's current checkpoint
-    is_current_checkpoint = False
-    user_current_part = None
-    user_current_type = None
-    
-    # Get the user's current checkpoint info for comparison
-    try:
-        from plat.models import PlayerPlatPoints
-        user_points, created = PlayerPlatPoints.objects.get_or_create(player=request.user)
-        user_current_part = user_points.current_part
-        user_current_type = user_points.current_type
-        print(f"User's current checkpoint: Part {user_current_part} {user_current_type}")
-    except Exception as e:
-        print(f"Error getting user's current checkpoint: {e}")
-    
     # If we have part and type but not topic_group_id and summary_id,
     # we need to map them to the corresponding topic group and summary
     if part and type_code and not (topic_group_id and summary_id):
@@ -474,11 +459,6 @@ def game(request, topic_group_id=None, summary_id=None):
                     if summary_topics.exists() and type_index < summary_topics.count():
                         summary_id = summary_topics[type_index].id
                         print(f"Mapped type {type_code} to summary_id {summary_id}")
-                        
-                        # Check if this is the user's current checkpoint
-                        if int(part) == user_current_part and type_code == user_current_type:
-                            is_current_checkpoint = True
-                            print("This is the user's current checkpoint")
         except Exception as e:
             print(f"Error mapping part/type to topic_group/summary: {e}")
     
@@ -522,10 +502,6 @@ def game(request, topic_group_id=None, summary_id=None):
                         # Set part and type_code for context information
                         part = current_part
                         type_code = current_type
-                        
-                        # This is the user's current checkpoint
-                        is_current_checkpoint = True
-                        print("Using user's current checkpoint")
         except Exception as e:
             print(f"Error loading user's latest checkpoint: {e}")
     
@@ -553,7 +529,6 @@ def game(request, topic_group_id=None, summary_id=None):
         context['from_checkpoint'] = True
         context['topic_group_id'] = topic_group_id
         context['summary_id'] = summary_id
-        context['is_current_checkpoint'] = is_current_checkpoint
         
         try:
             subtopic = SubTopic.objects.get(id=summary_id)
@@ -567,7 +542,6 @@ def game(request, topic_group_id=None, summary_id=None):
         context['from_checkpoint'] = True
         context['part'] = part
         context['type'] = type_code
-        context['is_current_checkpoint'] = is_current_checkpoint
         
         type_names = {'JUD': 'Judiciary', 'LEG': 'Legislative', 'EXEC': 'Executive'}
         context['checkpoint_name'] = f"Part {part} {type_names.get(type_code, '')}"
