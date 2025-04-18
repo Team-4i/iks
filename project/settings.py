@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 ELEVEN_LABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-
+GOOGLE_API_KEY=os.getenv('GOOGLE_API_KEY')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 

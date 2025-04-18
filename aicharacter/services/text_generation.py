@@ -1,9 +1,6 @@
 import os
-from groq import Groq
-from dotenv import load_dotenv
 from django.conf import settings
-
-load_dotenv()  # Load environment variables from .env file
+import google.generativeai as genai
 
 # Generation settings for Gemini
 generation_config = {
@@ -15,10 +12,11 @@ generation_config = {
 
 class TextGenerationService:
     def __init__(self):
-        api_key = settings.GROQ_API_KEY
+        api_key = settings.GOOGLE_API_KEY
         if not api_key:
-            raise ValueError("GROQ_API_KEY not found in settings")
-        self.client = Groq(api_key=api_key)
+            raise ValueError("GOOGLE_API_KEY not found in settings")
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
 
     def generate_response(self, user_input: str) -> str:
         try:
@@ -27,20 +25,15 @@ class TextGenerationService:
             
             context = f"User:{user_input}\nAssistant:"
             
-            chat_completion = self.client.chat.completions.create(
-                messages=[{
-                    "role": "user",
-                    "content": context
-                }],
-                model="mixtral-8x7b-32768",
-                temperature=0.9,
-                max_tokens=2048,
+            response = self.model.generate_content(
+                context,
+                generation_config=generation_config
             )
             
-            if not chat_completion or not chat_completion.choices:
+            if not response:
                 return "I apologize, but I was unable to generate a response."
             
-            return chat_completion.choices[0].message.content
+            return response.text
         except Exception as e:
             print(f"Error in generate_response: {str(e)}")
             return "I encountered an error while processing your request. Please try again." 
