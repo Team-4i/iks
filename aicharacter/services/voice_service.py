@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from elevenlabs import ElevenLabs
-import base64
+from elevenlabs import ElevenLabs, VoiceSettings
 from django.conf import settings
+import base64
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -17,18 +17,28 @@ class VoiceService:
             if not text:
                 return None, "No text provided"
             
-            # Generate audio using the client
-            voice = self.eleven.voices.get("21m00Tcm4TlvDq8ikWAM")  # Rachel voice ID
-            audio = self.eleven.generate(
-                text=text,
-                voice=voice,
-                model="eleven_multilingual_v2",
+            # Use Adam voice (male voice) instead of Rachel
+            voice = self.eleven.voices.get("pNInz6obpgDQGcFmaJgB")  # Adam voice ID
+            
+            # Create voice settings
+            voice_settings = VoiceSettings(
                 stability=0.5,
                 similarity_boost=0.75
             )
             
+            # Generate audio with voice settings
+            audio_generator = self.eleven.generate(
+                text=text,
+                voice=voice,
+                model="eleven_multilingual_v2",
+                voice_settings=voice_settings
+            )
+            
+            # Convert generator to bytes
+            audio_bytes = b''.join(audio_generator)
+            
             # Convert audio bytes to base64 string
-            audio_base64 = base64.b64encode(audio).decode('utf-8')
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
             return audio_base64, None
             
         except Exception as e:
