@@ -1,0 +1,22 @@
+<!-- Hangman SVG Component -->
+<div class="hangman-container">
+    <svg class="hangman-svg" viewBox="0 0 300 400">
+        <!-- Gallows -->
+        <g id="gallows" class="hangman-parts">
+            <line x1="50" y1="350" x2="250" y2="350" />
+            <line x1="150" y1="350" x2="150" y2="50" />
+            <line x1="150" y1="50" x2="250" y2="50" />
+            <line x1="250" y1="50" x2="250" y2="100" />
+        </g>
+        
+        <!-- Hangman Parts -->
+        <g id="hangman-body">
+            <circle cx="250" cy="130" r="30" class="hangman-parts hidden" id="head" data-order="1" />
+            <line x1="250" y1="160" x2="250" y2="250" class="hangman-parts hidden" id="body" data-order="2" />
+            <line x1="250" y1="180" x2="200" y2="230" class="hangman-parts hidden" id="leftArm" data-order="3" />
+            <line x1="250" y1="180" x2="300" y2="230" class="hangman-parts hidden" id="rightArm" data-order="4" />
+            <line x1="250" y1="250" x2="200" y2="300" class="hangman-parts hidden" id="leftLeg" data-order="5" />
+            <line x1="250" y1="250" x2="300" y2="300" class="hangman-parts hidden" id="rightLeg" data-order="6" />
+        </g>
+    </svg>
+</div> 

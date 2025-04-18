@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Survival</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .hangman-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hangman-svg {
+            width: 300px;
+            height: 400px;
+        }
+
+        /* Gallows styles */
+        .gallows {
+            stroke: #2c3e50;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        /* Hangman figure styles */
+        .hangman-part {
+            stroke: #2c3e50;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .head {
+            fill: #2c3e50;
+        }
+
+        .visible {
+            opacity: 1;
+        }
+
+        /* Content section placeholder */
+        .content-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="game-container">
+            <div class="timer">
+                Time Remaining: <span id="time">20</span>s
+            </div>
+            
+            <div class="hangman-container">
+                <svg class="hangman-svg" viewBox="0 0 300 400">
+                    <!-- Base -->
+                    <g class="gallows">
+                        <!-- Horizontal base -->
+                        <line x1="40" y1="360" x2="260" y2="360" />
+                        <!-- Vertical pole -->
+                        <line x1="100" y1="360" x2="100" y2="40" />
+                        <!-- Top beam -->
+                        <line x1="98" y1="40" x2="220" y2="40" />
+                        <!-- Support beam -->
+                        <line x1="100" y1="80" x2="140" y2="40" />
+                        <!-- Rope -->
+                        <line x1="180" y1="40" x2="180" y2="80" />
+                    </g>
+
+                    <!-- Hangman Figure -->
+                    <g id="hangman">
+                        <!-- Head -->
+                        <circle cx="180" cy="100" r="20" class="hangman-part head" id="head" />
+                        
+                        <!-- Body -->
+                        <line x1="180" y1="120" x2="180" y2="220" class="hangman-part" id="body" />
+                        
+                        <!-- Arms -->
+                        <line x1="180" y1="150" x2="140" y2="180" class="hangman-part" id="left-arm" />
+                        <line x1="180" y1="150" x2="220" y2="180" class="hangman-part" id="right-arm" />
+                        
+                        <!-- Legs -->
+                        <line x1="180" y1="220" x2="150" y2="280" class="hangman-part" id="left-leg" />
+                        <line x1="180" y1="220" x2="210" y2="280" class="hangman-part" id="right-leg" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <!-- This section will be for your game content, word display, keyboard, etc. -->
+        </div>
+    </div>
+
+    <script>
+        class HangmanGame {
+            constructor() {
+                this.timeLeft = 20;
+                this.timerInterval = null;
+                this.parts = ['head', 'body', 'left-arm', 'right-arm', 'left-leg', 'right-leg'];
+                this.currentPart = 0;
+            }
+
+            init() {
+                this.startTimer();
+                this.showPartsInterval = setInterval(() => this.showNextPart(), 3000);
+            }
+
+            showNextPart() {
+                if (this.currentPart < this.parts.length) {
+                    const part = document.getElementById(this.parts[this.currentPart]);
+                    if (part) {
+                        part.classList.add('visible');
+                    }
+                    this.currentPart++;
+                }
+            }
+
+            updateTimer() {
+                this.timeLeft--;
+                document.getElementById('time').textContent = this.timeLeft;
+                
+                if (this.timeLeft <= 0) {
+                    this.handleGameOver();
+                }
+            }
+
+            startTimer() {
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+            }
+
+            handleGameOver() {
+                clearInterval(this.timerInterval);
+                clearInterval(this.showPartsInterval);
+                alert('Game Over!');
+            }
+        }
+
+        // Initialize game when page loads
+        window.addEventListener('load', () => {
+            const game = new HangmanGame();
+            game.init();
+        });
+    </script>
+</body>
+</html> 
