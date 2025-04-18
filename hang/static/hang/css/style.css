@@ -603,7 +603,7 @@ body {
 
 .draggable-item {
     padding: 8px 15px;
-    background: #e9ecef;
+    
     border: 1px solid #ced4da;
     border-radius: 4px;
     cursor: move;
