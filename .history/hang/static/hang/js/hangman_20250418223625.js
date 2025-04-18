@@ -371,8 +371,8 @@ class HangmanGame {
 
     displayOddOneOut(question) {
         question.options.forEach(option => {
-                const button = document.createElement('button');
-                button.textContent = option;
+            const button = document.createElement('button');
+            button.textContent = option;
             button.classList.add('question-option');
             button.addEventListener('click', () => {
                 const isCorrect = option === question.correct_answer;
@@ -427,7 +427,7 @@ class HangmanGame {
                         if (correctlyCategorizedCount === totalItems) {
                             this.handleAnswer(true);
                         }
-        } else {
+                    } else {
                          // Incorrect drop - provide visual feedback (e.g., shake)
                         droppedItemElement.classList.add('incorrect-drop');
                         setTimeout(() => droppedItemElement.classList.remove('incorrect-drop'), 500);
@@ -776,11 +776,11 @@ class HangmanGame {
     }
 
     resetGame() {
-         if (this.config.startPageUrl) {
-             window.location.href = this.config.startPageUrl;
-         } else {
-             console.error("Start page URL not configured for reset.");
-             window.location.href = '/';
-         }
+        if (this.config.startPageUrl) {
+            window.location.href = this.config.startPageUrl;
+        } else {
+            console.error("Start page URL not configured for reset.");
+            window.location.href = '/';
+        }
     }
 } 

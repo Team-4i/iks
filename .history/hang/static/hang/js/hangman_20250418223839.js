@@ -9,17 +9,34 @@ class HangmanGame {
             ...gameData
         };
 
-        this.questions = this.config.questions || [];
-        this.currentQuestionIndex = 0;
-        this.correctAnswers = 0;
-        this.wrongAnswers = 0;
+        // Try to load saved state from localStorage
+        const savedState = this.loadGameState();
+        
+        if (savedState) {
+            // Restore game from saved state
+            this.questions = this.config.questions || [];
+            this.currentQuestionIndex = savedState.currentQuestionIndex || 0;
+            this.correctAnswers = savedState.correctAnswers || 0;
+            this.wrongAnswers = savedState.wrongAnswers || 0;
+            this.timeLeft = savedState.timeLeft || this.config.initialTime;
+            this.currentPart = savedState.currentPart || 0;
+            this.startTime = savedState.startTime || Date.now();
+            this.maxTime = savedState.maxTime || this.config.initialTime;
+            this.isGameOver = savedState.isGameOver || false;
+        } else {
+            // Initialize new game
+            this.questions = this.config.questions || [];
+            this.currentQuestionIndex = 0;
+            this.correctAnswers = 0;
+            this.wrongAnswers = 0;
+            this.timeLeft = this.config.initialTime;
+            this.currentPart = 0;
+            this.isGameOver = false;
+            this.startTime = Date.now();
+            this.maxTime = this.config.initialTime;
+        }
 
-        this.timeLeft = this.config.initialTime;
-        this.currentPart = 0;
         this.timerInterval = null;
-        this.isGameOver = false;
-        this.startTime = Date.now();
-        this.maxTime = this.config.initialTime;
 
         // DOM Elements
         this.questionTextElement = document.getElementById('question-text');
@@ -45,15 +62,99 @@ class HangmanGame {
         this.sounds.gameOver.volume = 1.0;
         
         this.isWarningSoundPlaying = false;
+        
+        // Set up autosave interval
+        this.autosaveInterval = setInterval(() => this.saveGameState(), 1000);
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // Save state when page is hidden
+                this.saveGameState();
+                this.pauseGame();
+            } else if (document.visibilityState === 'visible' && !this.isGameOver) {
+                // Resume when page becomes visible again
+                this.resumeGame();
+            }
+        });
+    }
+
+    // Save current game state to localStorage
+    saveGameState() {
+        if (this.isGameOver) return; // Don't save if game is over
+        
+        const state = {
+            currentQuestionIndex: this.currentQuestionIndex,
+            correctAnswers: this.correctAnswers,
+            wrongAnswers: this.wrongAnswers,
+            timeLeft: this.timeLeft,
+            currentPart: this.currentPart,
+            startTime: this.startTime,
+            maxTime: this.maxTime,
+            isGameOver: this.isGameOver,
+            lastSaved: Date.now()
+        };
+        
+        try {
+            localStorage.setItem('hangmanGameState', JSON.stringify(state));
+        } catch (e) {
+            console.error('Failed to save game state:', e);
+        }
+    }
+    
+    // Load game state from localStorage
+    loadGameState() {
+        try {
+            const savedState = localStorage.getItem('hangmanGameState');
+            if (!savedState) return null;
+            
+            const state = JSON.parse(savedState);
+            
+            // Check if saved state is too old (e.g., more than 1 hour)
+            if (Date.now() - state.lastSaved > 3600000) {
+                this.clearGameState();
+                return null;
+            }
+            
+            return state;
+        } catch (e) {
+            console.error('Failed to load game state:', e);
+            return null;
+        }
+    }
+    
+    // Clear saved game state
+    clearGameState() {
+        try {
+            localStorage.removeItem('hangmanGameState');
+        } catch (e) {
+            console.error('Failed to clear game state:', e);
+        }
     }
 
     init() {
         this.setupEventListeners();
-        this.startTimer();
-        this.displayCurrentQuestion();
-        this.updateStatsDisplay();
-        this.hideAllParts();
-        this.sounds.background.play().catch(e => console.log('Background music waiting for interaction.'));
+        
+        if (!this.isGameOver) {
+            this.startTimer();
+            this.displayCurrentQuestion();
+            this.updateStatsDisplay();
+            this.hideAllParts();
+            
+            // Update hangman parts based on current state
+            this.updateHangmanParts();
+            
+            // Try to resume background music with user interaction
+            document.body.addEventListener('click', () => {
+                if (this.sounds.background.paused) {
+                    this.sounds.background.play().catch(e => console.log('Background music waiting for interaction.'));
+                }
+            }, { once: true });
+        } else {
+            // If game was over when refreshed, show game over modal again
+            this.showGameOverModal('refresh');
+        }
+        
         this.isWarningSoundPlaying = false;
     }
 
@@ -699,6 +800,9 @@ class HangmanGame {
              this.sounds.warning.currentTime = 0;
              this.isWarningSoundPlaying = false;
         }
+        
+        // Clear saved game state when game is over
+        this.clearGameState();
 
         // Play game over sound
         this.sounds.gameOver.play().catch(e => console.log('Error playing game over sound:', e));

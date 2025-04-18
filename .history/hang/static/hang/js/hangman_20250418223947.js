@@ -9,17 +9,38 @@ class HangmanGame {
             ...gameData
         };
 
-        this.questions = this.config.questions || [];
-        this.currentQuestionIndex = 0;
-        this.correctAnswers = 0;
-        this.wrongAnswers = 0;
+        // Try to load saved state from localStorage
+        const savedState = this.loadGameState();
+        
+        if (savedState) {
+            // Restore game from saved state
+            this.questions = this.config.questions || [];
+            this.currentQuestionIndex = savedState.currentQuestionIndex || 0;
+            this.correctAnswers = savedState.correctAnswers || 0;
+            this.wrongAnswers = savedState.wrongAnswers || 0;
+            this.timeLeft = savedState.timeLeft || this.config.initialTime;
+            this.currentPart = savedState.currentPart || 0;
+            this.startTime = savedState.startTime || Date.now();
+            this.maxTime = savedState.maxTime || this.config.initialTime;
+            this.isGameOver = savedState.isGameOver || false;
+            this.currentQuestionAnswered = savedState.currentQuestionAnswered || false;
+            this.pendingNextQuestion = savedState.pendingNextQuestion || false;
+        } else {
+            // Initialize new game
+            this.questions = this.config.questions || [];
+            this.currentQuestionIndex = 0;
+            this.correctAnswers = 0;
+            this.wrongAnswers = 0;
+            this.timeLeft = this.config.initialTime;
+            this.currentPart = 0;
+            this.isGameOver = false;
+            this.startTime = Date.now();
+            this.maxTime = this.config.initialTime;
+            this.currentQuestionAnswered = false;
+            this.pendingNextQuestion = false;
+        }
 
-        this.timeLeft = this.config.initialTime;
-        this.currentPart = 0;
         this.timerInterval = null;
-        this.isGameOver = false;
-        this.startTime = Date.now();
-        this.maxTime = this.config.initialTime;
 
         // DOM Elements
         this.questionTextElement = document.getElementById('question-text');
@@ -45,6 +66,21 @@ class HangmanGame {
         this.sounds.gameOver.volume = 1.0;
         
         this.isWarningSoundPlaying = false;
+        
+        // Set up autosave interval
+        this.autosaveInterval = setInterval(() => this.saveGameState(), 1000);
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // Save state when page is hidden
+                this.saveGameState();
+                this.pauseGame();
+            } else if (document.visibilityState === 'visible' && !this.isGameOver) {
+                // Resume when page becomes visible again
+                this.resumeGame();
+            }
+        });
     }
 
     init() {
@@ -782,5 +818,43 @@ class HangmanGame {
              console.error("Start page URL not configured for reset.");
              window.location.href = '/';
          }
+    }
+
+    // Save current game state to localStorage
+    saveGameState() {
+        if (this.isGameOver) return; // Don't save if game is over
+        
+        const state = {
+            currentQuestionIndex: this.currentQuestionIndex,
+            correctAnswers: this.correctAnswers,
+            wrongAnswers: this.wrongAnswers,
+            timeLeft: this.timeLeft,
+            currentPart: this.currentPart,
+            startTime: this.startTime,
+            maxTime: this.maxTime,
+            isGameOver: this.isGameOver,
+            currentQuestionAnswered: this.currentQuestionAnswered,
+            pendingNextQuestion: this.pendingNextQuestion,
+            lastSaved: Date.now()
+        };
+        
+        try {
+            localStorage.setItem('hangmanGameState', JSON.stringify(state));
+        } catch (e) {
+            console.error('Failed to save game state:', e);
+        }
+    }
+
+    // Load game state from localStorage
+    loadGameState() {
+        const savedState = localStorage.getItem('hangmanGameState');
+        if (savedState) {
+            try {
+                return JSON.parse(savedState);
+            } catch (e) {
+                console.error('Failed to parse saved game state:', e);
+            }
+        }
+        return null;
     }
 } 
