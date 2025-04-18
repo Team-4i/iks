@@ -235,16 +235,45 @@ class HangmanGame {
         this.isGameOver = true;
         this.pauseGame();
 
+        // Ensure all parts are fully visible when game is over
+        if (reason === 'hanged') {
+            // Force show all parts
+            this.config.partOrder.forEach((partId, index) => {
+                const part = document.getElementById(partId);
+                if (part) {
+                    part.classList.add('visible');
+                }
+            });
+            
+            // Small delay to ensure animations complete before showing modal
+            setTimeout(() => {
+                this.showGameOverModal(reason);
+            }, 500);
+        } else {
+            this.showGameOverModal(reason);
+        }
+    }
+    
+    showGameOverModal(reason) {
         const survivalTime = Math.max(0, Math.floor((Date.now() - this.startTime) / 1000));
 
-        let gameOverMessage = `Game Over! You survived for ${survivalTime} seconds.`;
+        let gameOverMessage = `You survived for ${survivalTime} seconds.`;
         if (reason === 'time') {
-            gameOverMessage = `Time's up! You survived for ${survivalTime} seconds.`;
+            gameOverMessage = `Time's up! ${gameOverMessage}`;
         } else if (reason === 'hanged') {
-            gameOverMessage = `You were hanged! You survived for ${survivalTime} seconds.`;
+            gameOverMessage = `You were hanged! ${gameOverMessage}`;
         }
         
-        gameOverMessage += `\nCorrect answers: ${this.correctAnswers}, Wrong answers: ${this.wrongAnswers}`;
+        gameOverMessage += `<br><br>Correct answers: ${this.correctAnswers}<br>Wrong answers: ${this.wrongAnswers}`;
+
+        // Update and show the modal
+        const modal = document.getElementById('game-over-modal');
+        const messageEl = document.getElementById('game-over-message');
+        
+        if (modal && messageEl) {
+            messageEl.innerHTML = gameOverMessage;
+            modal.classList.add('show');
+        }
 
         // Send game data to server
         if (this.config.gameId && this.config.endGameUrl && this.config.csrfToken) {
@@ -264,24 +293,15 @@ class HangmanGame {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    alert(gameOverMessage);
-                    window.location.href = '/hang/leaderboard/';
-                } else {
+                if (data.status !== 'success') {
                     console.error("Failed to save game:", data.message);
-                    alert(gameOverMessage + "\n(Could not save score)");
-                    window.location.href = '/hang/leaderboard/'; 
                 }
             })
             .catch(error => {
-                 console.error("Error sending game data:", error);
-                 alert(gameOverMessage + "\n(Error connecting to server)");
-                 window.location.href = '/hang/leaderboard/';
+                console.error("Error sending game data:", error);
             });
         } else {
-            alert(gameOverMessage);
             console.warn("Game config missing. Score not saved.");
-            window.location.href = '/hang/leaderboard/';
         }
     }
 

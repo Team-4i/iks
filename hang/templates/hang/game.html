@@ -41,6 +41,18 @@
         </div>
     </div>
 
+    <!-- Custom Modal Popup -->
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2>Game Over</h2>
+            <p id="game-over-message"></p>
+            <div class="modal-buttons">
+                <button id="view-leaderboard-btn" class="modal-btn primary-btn">View Leaderboard</button>
+                <button id="play-again-btn" class="modal-btn secondary-btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Pass MCQs and URLs to JavaScript
         const mcqData = {{ mcqs|safe }};
@@ -48,7 +60,8 @@
             gameId: {{ game_id }},
             endGameUrl: "{% url 'hang:end_game' %}",
             csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value,
-            startPageUrl: "{{ start_page_url }}"
+            startPageUrl: "{{ start_page_url }}",
+            leaderboardUrl: "{% url 'hang:leaderboard' %}"
         };
     </script>
     <script src="{% static 'hang/js/hangman.js' %}"></script>
@@ -57,6 +70,15 @@
         window.addEventListener('load', () => {
             const game = new HangmanGame(gameConfig, mcqData);
             game.init();
+            
+            // Setup modal buttons
+            document.getElementById('view-leaderboard-btn').addEventListener('click', () => {
+                window.location.href = gameConfig.leaderboardUrl;
+            });
+            
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                window.location.href = gameConfig.startPageUrl;
+            });
         });
     </script>
 </body>
