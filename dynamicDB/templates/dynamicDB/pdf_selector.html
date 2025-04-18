@@ -1,0 +1,167 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}Select PDF Content - PDF Content Manager{% endblock %}
+
+{% block page_title %}Select PDF Content{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Select PDF for Platform Use</h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">
+            Select a PDF document to use its topics and chapters throughout the platform. 
+            This content will be available for all platform features.
+        </p>
+        
+        <form method="post" action="{% url 'dynamicDB:set_active_pdf' %}">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="pdf-select" class="form-label">PDF Document</label>
+                <select class="form-select" id="pdf-select" name="pdf_id" required>
+                    <option value="" disabled {% if not active_pdf %}selected{% endif %}>Select a PDF...</option>
+                    {% for pdf in pdfs %}
+                        <option value="{{ pdf.id }}" {% if active_pdf and active_pdf.id == pdf.id %}selected{% endif %}>
+                            {{ pdf.title }} ({{ pdf.main_topics.count }} topics, {{ pdf.chapters.count }} chapters)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div id="pdf-details" class="mb-4 {% if not active_pdf %}d-none{% endif %}">
+                <h6>Selected Content Structure:</h6>
+                <div class="border rounded p-3 bg-light">
+                    <div id="topic-groups-container">
+                        {% if active_pdf %}
+                            <p><strong>Topic Groups:</strong> {{ active_pdf.topic_groups.count }}</p>
+                            <ul>
+                                {% for group in active_topic_groups %}
+                                    <li>{{ group.title }} ({{ group.topics.count }} topics)</li>
+                                {% endfor %}
+                            </ul>
+                            
+                            <p><strong>Main Topics:</strong> {{ active_pdf.main_topics.count }}</p>
+                            <ul>
+                                {% for topic in active_topics %}
+                                    <li>{{ topic.title }} ({{ topic.chapters.count }} chapters)</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">Set as Active Content</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if active_pdf %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Current Active Content</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="card-title">{{ active_pdf.title }}</h6>
+                <p class="card-text text-muted">Selected on: {{ active_pdf_selection.selected_at|date:"F d, Y, g:i a" }}</p>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{% url 'dynamicDB:admin_panel_pdf_detail' active_pdf.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i> Manage Content
+                    </a>
+                    <a href="{% url 'dynamicDB:view_pdf' active_pdf.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-pdf me-2"></i> View PDF
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Content Statistics</h6>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Topic Groups:</span>
+                            <span class="badge bg-primary rounded-pill">{{ active_pdf.topic_groups.count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Main Topics:</span>
+                            <span class="badge bg-primary rounded-pill">{{ active_pdf.main_topics.count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Chapters:</span>
+                            <span class="badge bg-primary rounded-pill">{{ active_pdf.chapters.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Show PDF details when a PDF is selected
+        $('#pdf-select').change(function() {
+            const pdfId = $(this).val();
+            
+            if (pdfId) {
+                // Show the PDF details section
+                $('#pdf-details').removeClass('d-none');
+                
+                // Fetch PDF structure data via AJAX
+                $.ajax({
+                    url: "{% url 'dynamicDB:get_pdf_structure' %}",
+                    method: 'GET',
+                    data: {
+                        pdf_id: pdfId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update the topic groups container with structure data
+                            let html = `
+                                <p><strong>Topic Groups:</strong> ${response.topic_groups.length}</p>
+                                <ul>
+                            `;
+                            
+                            response.topic_groups.forEach(function(group) {
+                                html += `<li>${group.title} (${group.topic_count} topics)</li>`;
+                            });
+                            
+                            html += `</ul>
+                                <p><strong>Main Topics:</strong> ${response.main_topics.length}</p>
+                                <ul>
+                            `;
+                            
+                            response.main_topics.forEach(function(topic) {
+                                html += `<li>${topic.title} (${topic.chapter_count} chapters)</li>`;
+                            });
+                            
+                            html += `</ul>`;
+                            
+                            $('#topic-groups-container').html(html);
+                        } else {
+                            $('#topic-groups-container').html('<p class="text-danger">Error loading structure data</p>');
+                        }
+                    },
+                    error: function() {
+                        $('#topic-groups-container').html('<p class="text-danger">Error loading structure data</p>');
+                    }
+                });
+            } else {
+                // Hide the PDF details section if no PDF is selected
+                $('#pdf-details').addClass('d-none');
+            }
+        });
+    });
+</script>
+{% endblock %} 

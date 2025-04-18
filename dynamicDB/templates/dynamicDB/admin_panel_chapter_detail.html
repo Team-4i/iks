@@ -1,0 +1,343 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}{{ chapter.title }} - PDF Content Manager{% endblock %}
+
+{% block page_title %}{{ chapter.title }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'dynamicDB:admin_panel_pdf_detail' pdf.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-pdf me-2"></i> Back to PDF
+    </a>
+    <button type="button" class="btn btn-outline-danger" id="delete-chapter-btn" data-chapter-id="{{ chapter.id }}" data-chapter-title="{{ chapter.title }}">
+        <i class="bi bi-trash me-2"></i> Delete
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left column - Chapter information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Chapter Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="chapter-form">
+                    <div class="mb-3">
+                        <label for="chapter-title" class="form-label fw-bold">Title</label>
+                        <input type="text" class="form-control" id="chapter-title" value="{{ chapter.title }}" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="chapter-start-page" class="form-label fw-bold">Start Page</label>
+                            <input type="number" class="form-control" id="chapter-start-page" value="{{ chapter.start_page }}" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="chapter-end-page" class="form-label fw-bold">End Page</label>
+                            <input type="number" class="form-control" id="chapter-end-page" value="{{ chapter.end_page }}" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chapter-order" class="form-label fw-bold">Order</label>
+                        <input type="number" class="form-control" id="chapter-order" value="{{ chapter.order }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">PDF Document</label>
+                        <p class="form-control-plaintext">
+                            <a href="{% url 'dynamicDB:admin_panel_pdf_detail' pdf.id %}">{{ pdf.title }}</a>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Confidence Score</label>
+                        <div class="progress">
+                            <div class="progress-bar {% if chapter.confidence_score < 0.5 %}bg-danger{% elif chapter.confidence_score < 0.75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ chapter.confidence_score|floatformat:2|multiply:100 }}%;" 
+                                 aria-valuenow="{{ chapter.confidence_score|floatformat:2|multiply:100 }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ chapter.confidence_score|floatformat:2|multiply:100 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="save-chapter-info" class="btn btn-primary w-100">Save Changes</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Associated Topics</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="add-topic-btn">
+                    <i class="bi bi-plus-lg"></i> Add
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="topics-list">
+                    {% if topics %}
+                        {% for topic in topics %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <a href="{% url 'dynamicDB:admin_panel_main_topic_detail' topic.id %}">
+                                    {{ topic.title }}
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-topic" data-topic-id="{{ topic.id }}">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4" id="no-topics-message">
+                            <p class="text-muted mb-0">No topics associated with this chapter.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right column - Chapter content -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Chapter Content</h5>
+            </div>
+            <div class="card-body">
+                <textarea id="chapter-content" class="form-control" rows="20">{{ chapter.content }}</textarea>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" id="save-chapter-content" class="btn btn-primary">Save Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Chapter Confirmation Modal -->
+<div class="modal fade" id="deleteChapterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete chapter <strong id="chapter-title-placeholder"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-chapter">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Topic Modal -->
+<div class="modal fade" id="addTopicModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select a topic to associate with this chapter:</p>
+                <select id="topic-select" class="form-select">
+                    {% for topic in available_topics %}
+                        <option value="{{ topic.id }}">{{ topic.title }}</option>
+                    {% empty %}
+                        <option value="" disabled>No available topics</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-topic-association" {% if not available_topics %}disabled{% endif %}>
+                    Add Topic
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    #chapter-content {
+        font-family: monospace;
+        resize: vertical;
+        min-height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle chapter info update
+        $('#save-chapter-info').click(function() {
+            const title = $('#chapter-title').val();
+            const startPage = $('#chapter-start-page').val();
+            const endPage = $('#chapter-end-page').val();
+            const order = $('#chapter-order').val();
+            
+            if (!title) {
+                alert('Title cannot be empty');
+                return;
+            }
+            
+            $.ajax({
+                url: "{% url 'dynamicDB:admin_panel_update_chapter' chapter.id %}",
+                method: 'POST',
+                data: {
+                    title: title,
+                    start_page: startPage,
+                    end_page: endPage,
+                    order: order
+                },
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                        
+                        // Update page title
+                        document.title = `${title} - PDF Content Manager`;
+                        $('h2').text(title);
+                    } else {
+                        const alertHtml = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred while updating the chapter. Please try again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.alert-container').html(alertHtml);
+                }
+            });
+        });
+        
+        // Handle chapter content update
+        $('#save-chapter-content').click(function() {
+            const content = $('#chapter-content').val();
+            
+            $.ajax({
+                url: "{% url 'dynamicDB:admin_panel_update_chapter' chapter.id %}",
+                method: 'POST',
+                data: {
+                    title: $('#chapter-title').val(),
+                    content: content,
+                    start_page: $('#chapter-start-page').val(),
+                    end_page: $('#chapter-end-page').val(),
+                    order: $('#chapter-order').val()
+                },
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    } else {
+                        const alertHtml = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred while updating the chapter content. Please try again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.alert-container').html(alertHtml);
+                }
+            });
+        });
+        
+        // Handle chapter delete
+        $('#delete-chapter-btn').click(function() {
+            const chapterId = $(this).data('chapter-id');
+            const chapterTitle = $(this).data('chapter-title');
+            
+            $('#chapter-title-placeholder').text(chapterTitle);
+            $('#confirm-delete-chapter').data('chapter-id', chapterId);
+            $('#deleteChapterModal').modal('show');
+        });
+        
+        $('#confirm-delete-chapter').click(function() {
+            const chapterId = $(this).data('chapter-id');
+            
+            $.ajax({
+                url: "{% url 'dynamicDB:admin_panel_delete_chapter' chapter.id %}",
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = "{% url 'dynamicDB:admin_panel_pdf_detail' pdf.id %}";
+                    } else {
+                        const alertHtml = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred while deleting the chapter. Please try again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.alert-container').html(alertHtml);
+                }
+            });
+        });
+        
+        // Topic association
+        $('#add-topic-btn').click(function() {
+            $('#addTopicModal').modal('show');
+        });
+        
+        // The remaining functionality for adding/removing topic associations would be similar
+        // to the examples above but would require additional backend endpoints
+    });
+</script>
+{% endblock %} 

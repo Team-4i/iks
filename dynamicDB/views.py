@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from .models import PDFDocument, Chapter, MainTopic, TopicGroup
+from .models import PDFDocument, Chapter, MainTopic, TopicGroup, ActivePDFSelection, ActiveTopicGroups, SummaryTopic
 from .forms import PDFUploadForm, TopicExtractionForm
 import fitz  # PyMuPDF
 from PIL import Image
@@ -17,6 +17,17 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 import uuid
+import numpy as np
+from collections import defaultdict
+import re  # For regex pattern matching in Gemini response
+
+# Try to import Google Generative AI library
+try:
+    import google.generativeai as genai
+except ImportError:
+    # If import fails, provide a message but continue without failing
+    print("Google Generative AI library not found. Install with: pip install google-generativeai")
+    genai = None
 
 MAX_IMAGE_HEIGHT = 4000  # Further reduced to avoid any issues
 MAX_PAGES_PER_IMAGE = 3  # Reduced for better processing of large PDFs
@@ -801,3 +812,1055 @@ def visualize_data(request, document_id=None):
         # If no document_id is provided, show a list of documents to choose from
         documents = PDFDocument.objects.all().order_by('-upload_date')
         return render(request, 'dynamicDB/choose_document.html', {'documents': documents})
+
+# Admin Panel Views
+def admin_panel_dashboard(request):
+    """Dashboard view showing statistics and recent items"""
+    # Get counts
+    pdf_count = PDFDocument.objects.count()
+    topic_group_count = TopicGroup.objects.count()
+    main_topic_count = MainTopic.objects.count()
+    chapter_count = Chapter.objects.count()
+    
+    # Get recent items
+    recent_pdfs = PDFDocument.objects.all().order_by('-uploaded_at')[:5]
+    recent_topic_groups = TopicGroup.objects.all().order_by('-updated_at')[:5]
+    recent_main_topics = MainTopic.objects.all().order_by('-pdf_document__uploaded_at')[:5]
+    recent_chapters = Chapter.objects.all().order_by('-pdf_document__uploaded_at')[:5]
+    
+    # Get active PDF information
+    active_pdf = None
+    active_pdf_selection = None
+    
+    try:
+        active_pdf_selection = ActivePDFSelection.objects.filter(is_active=True).first()
+        if active_pdf_selection:
+            active_pdf = active_pdf_selection.pdf
+    except Exception as e:
+        print(f"Error fetching active PDF for dashboard: {e}")
+    
+    context = {
+        'active_page': 'dashboard',
+        'pdf_count': pdf_count,
+        'topic_group_count': topic_group_count,
+        'main_topic_count': main_topic_count,
+        'chapter_count': chapter_count,
+        'recent_pdfs': recent_pdfs,
+        'recent_topic_groups': recent_topic_groups,
+        'recent_main_topics': recent_main_topics,
+        'recent_chapters': recent_chapters,
+        'active_pdf': active_pdf,
+        'active_pdf_selection': active_pdf_selection
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_dashboard.html', context)
+
+def admin_panel_pdfs(request):
+    """List view of all PDF documents with search and filter options"""
+    search_query = request.GET.get('search', '')
+    sort_by = request.GET.get('sort', 'recent')
+    
+    # Base queryset
+    pdfs = PDFDocument.objects.all()
+    
+    # Apply search filter if provided
+    if search_query:
+        pdfs = pdfs.filter(title__icontains=search_query)
+    
+    # Apply sorting
+    if sort_by == 'title_asc':
+        pdfs = pdfs.order_by('title')
+    elif sort_by == 'title_desc':
+        pdfs = pdfs.order_by('-title')
+    else:  # Default to recent
+        pdfs = pdfs.order_by('-uploaded_at')
+    
+    # Pagination
+    paginator = Paginator(pdfs, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'active_page': 'pdfs',
+        'pdfs': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_pdfs.html', context)
+
+def admin_panel_pdf_detail(request, pk):
+    """Detail view for a single PDF document with its topics and chapters"""
+    pdf = get_object_or_404(PDFDocument, pk=pk)
+    
+    # Get related items
+    topic_groups = pdf.topic_groups.order_by('order')
+    main_topics = pdf.main_topics.order_by('order')
+    chapters = pdf.chapters.order_by('order')
+    
+    context = {
+        'active_page': 'pdfs',
+        'pdf': pdf,
+        'topic_groups': topic_groups,
+        'main_topics': main_topics,
+        'chapters': chapters
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_pdf_detail.html', context)
+
+def admin_panel_topic_groups(request):
+    """List view of all topic groups"""
+    search_query = request.GET.get('search', '')
+    pdf_filter = request.GET.get('pdf', '')
+    sort_by = request.GET.get('sort', 'recent')
+    
+    # Base queryset
+    topic_groups = TopicGroup.objects.all()
+    
+    # Apply search filter if provided
+    if search_query:
+        topic_groups = topic_groups.filter(title__icontains=search_query)
+    
+    # Filter by PDF if provided
+    if pdf_filter and pdf_filter.isdigit():
+        topic_groups = topic_groups.filter(pdf_document_id=pdf_filter)
+    
+    # Apply sorting
+    if sort_by == 'title_asc':
+        topic_groups = topic_groups.order_by('title')
+    elif sort_by == 'title_desc':
+        topic_groups = topic_groups.order_by('-title')
+    elif sort_by == 'pdf':
+        topic_groups = topic_groups.order_by('pdf_document__title', 'order')
+    else:  # Default to recent
+        topic_groups = topic_groups.order_by('-updated_at')
+    
+    # Get all PDFs for filter dropdown
+    pdfs = PDFDocument.objects.all().order_by('title')
+    
+    # Pagination
+    paginator = Paginator(topic_groups, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'active_page': 'topic_groups',
+        'topic_groups': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1,
+        'pdfs': pdfs
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_topic_groups.html', context)
+
+def admin_panel_topic_group_detail(request, pk):
+    """Detail view for a single topic group with its topics"""
+    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    
+    # Get associated topics
+    topics = topic_group.topics.order_by('order')
+    
+    # Get all available topics for this PDF for the add topic form
+    available_topics = MainTopic.objects.filter(
+        pdf_document=topic_group.pdf_document
+    ).exclude(
+        id__in=topics.values_list('id', flat=True)
+    ).order_by('title')
+    
+    context = {
+        'active_page': 'topic_groups',
+        'topic_group': topic_group,
+        'topics': topics,
+        'available_topics': available_topics,
+        'pdf': topic_group.pdf_document
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_topic_group_detail.html', context)
+
+def admin_panel_main_topics(request):
+    """List view of all main topics"""
+    search_query = request.GET.get('search', '')
+    pdf_filter = request.GET.get('pdf', '')
+    sort_by = request.GET.get('sort', 'recent')
+    
+    # Base queryset
+    main_topics = MainTopic.objects.all()
+    
+    # Apply search filter if provided
+    if search_query:
+        main_topics = main_topics.filter(title__icontains=search_query)
+    
+    # Filter by PDF if provided
+    if pdf_filter and pdf_filter.isdigit():
+        main_topics = main_topics.filter(pdf_document_id=pdf_filter)
+    
+    # Apply sorting
+    if sort_by == 'title_asc':
+        main_topics = main_topics.order_by('title')
+    elif sort_by == 'title_desc':
+        main_topics = main_topics.order_by('-title')
+    elif sort_by == 'pdf':
+        main_topics = main_topics.order_by('pdf_document__title', 'order')
+    else:  # Default to order
+        main_topics = main_topics.order_by('pdf_document__title', 'order')
+    
+    # Get all PDFs for filter dropdown
+    pdfs = PDFDocument.objects.all().order_by('title')
+    
+    # Pagination
+    paginator = Paginator(main_topics, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'active_page': 'main_topics',
+        'main_topics': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1,
+        'pdfs': pdfs
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_main_topics.html', context)
+
+def admin_panel_main_topic_detail(request, pk):
+    """Detail view for a single main topic with its chapters"""
+    main_topic = get_object_or_404(MainTopic, pk=pk)
+    
+    # Get associated chapters
+    chapters = main_topic.chapters.order_by('order')
+    
+    # Get all available chapters for this PDF for the add chapter form
+    available_chapters = Chapter.objects.filter(
+        pdf_document=main_topic.pdf_document
+    ).exclude(
+        id__in=chapters.values_list('id', flat=True)
+    ).order_by('title')
+    
+    context = {
+        'active_page': 'main_topics',
+        'main_topic': main_topic,
+        'chapters': chapters,
+        'available_chapters': available_chapters,
+        'pdf': main_topic.pdf_document
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_main_topic_detail.html', context)
+
+def admin_panel_chapters(request):
+    """List view of all chapters"""
+    search_query = request.GET.get('search', '')
+    pdf_filter = request.GET.get('pdf', '')
+    sort_by = request.GET.get('sort', 'order')
+    
+    # Base queryset
+    chapters = Chapter.objects.all()
+    
+    # Apply search filter if provided
+    if search_query:
+        chapters = chapters.filter(title__icontains=search_query)
+    
+    # Filter by PDF if provided
+    if pdf_filter and pdf_filter.isdigit():
+        chapters = chapters.filter(pdf_document_id=pdf_filter)
+    
+    # Apply sorting
+    if sort_by == 'title_asc':
+        chapters = chapters.order_by('title')
+    elif sort_by == 'title_desc':
+        chapters = chapters.order_by('-title')
+    elif sort_by == 'pdf':
+        chapters = chapters.order_by('pdf_document__title', 'order')
+    elif sort_by == 'pages':
+        chapters = chapters.order_by('start_page')
+    else:  # Default to order
+        chapters = chapters.order_by('pdf_document__title', 'order')
+    
+    # Get all PDFs for filter dropdown
+    pdfs = PDFDocument.objects.all().order_by('title')
+    
+    # Pagination
+    paginator = Paginator(chapters, 10)  # 10 items per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'active_page': 'chapters',
+        'chapters': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1,
+        'pdfs': pdfs
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_chapters.html', context)
+
+def admin_panel_chapter_detail(request, pk):
+    """Detail view for a single chapter"""
+    chapter = get_object_or_404(Chapter, pk=pk)
+    
+    # Get associated topics
+    topics = chapter.main_topics.order_by('order')
+    
+    context = {
+        'active_page': 'chapters',
+        'chapter': chapter,
+        'topics': topics,
+        'pdf': chapter.pdf_document
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_chapter_detail.html', context)
+
+# AJAX API Endpoints
+
+@csrf_exempt
+def admin_panel_update_pdf(request, pk):
+    """Update a PDF document via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    pdf = get_object_or_404(PDFDocument, pk=pk)
+    title = request.POST.get('title', '')
+    
+    if not title:
+        return JsonResponse({'success': False, 'message': 'Title cannot be empty'})
+    
+    pdf.title = title
+    pdf.save()
+    
+    return JsonResponse({'success': True, 'message': 'PDF updated successfully'})
+
+@csrf_exempt
+def admin_panel_delete_pdf(request, pk):
+    """Delete a PDF document via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    pdf = get_object_or_404(PDFDocument, pk=pk)
+    
+    try:
+        # This will also delete all related topic groups, main topics, and chapters due to CASCADE
+        pdf.delete()
+        return JsonResponse({'success': True, 'message': 'PDF deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error deleting PDF: {str(e)}'})
+
+@csrf_exempt
+def admin_panel_update_topic_group(request, pk):
+    """Update a topic group via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    
+    title = request.POST.get('title', '')
+    description = request.POST.get('description', '')
+    order = request.POST.get('order', '0')
+    
+    if not title:
+        return JsonResponse({'success': False, 'message': 'Title cannot be empty'})
+    
+    topic_group.title = title
+    topic_group.description = description
+    topic_group.order = int(order)
+    topic_group.save()
+    
+    return JsonResponse({'success': True, 'message': 'Topic group updated successfully'})
+
+@csrf_exempt
+def admin_panel_delete_topic_group(request, pk):
+    """Delete a topic group via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    topic_group = get_object_or_404(TopicGroup, pk=pk)
+    
+    try:
+        topic_group.delete()
+        return JsonResponse({'success': True, 'message': 'Topic group deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error deleting topic group: {str(e)}'})
+
+@csrf_exempt
+def admin_panel_update_main_topic(request, pk):
+    """Update a main topic via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    main_topic = get_object_or_404(MainTopic, pk=pk)
+    
+    title = request.POST.get('title', '')
+    summary = request.POST.get('summary', '')
+    order = request.POST.get('order', '0')
+    
+    if not title:
+        return JsonResponse({'success': False, 'message': 'Title cannot be empty'})
+    
+    main_topic.title = title
+    main_topic.summary = summary
+    main_topic.order = int(order)
+    main_topic.save()
+    
+    return JsonResponse({'success': True, 'message': 'Main topic updated successfully'})
+
+@csrf_exempt
+def admin_panel_delete_main_topic(request, pk):
+    """Delete a main topic via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    main_topic = get_object_or_404(MainTopic, pk=pk)
+    
+    try:
+        main_topic.delete()
+        return JsonResponse({'success': True, 'message': 'Main topic deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error deleting main topic: {str(e)}'})
+
+@csrf_exempt
+def admin_panel_update_chapter(request, pk):
+    """Update a chapter via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    chapter = get_object_or_404(Chapter, pk=pk)
+    
+    title = request.POST.get('title', '')
+    content = request.POST.get('content', '')
+    start_page = request.POST.get('start_page', '1')
+    end_page = request.POST.get('end_page', '1')
+    order = request.POST.get('order', '0')
+    
+    if not title:
+        return JsonResponse({'success': False, 'message': 'Title cannot be empty'})
+    
+    chapter.title = title
+    chapter.content = content
+    chapter.start_page = int(start_page)
+    chapter.end_page = int(end_page)
+    chapter.order = int(order)
+    chapter.save()
+    
+    return JsonResponse({'success': True, 'message': 'Chapter updated successfully'})
+
+@csrf_exempt
+def admin_panel_delete_chapter(request, pk):
+    """Delete a chapter via AJAX"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method is allowed'})
+    
+    chapter = get_object_or_404(Chapter, pk=pk)
+    
+    try:
+        chapter.delete()
+        return JsonResponse({'success': True, 'message': 'Chapter deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Error deleting chapter: {str(e)}'})
+
+# PDF Selector Views
+
+def pdf_selector(request):
+    """View for selecting a PDF to use in the platform"""
+    # Get all PDFs
+    pdfs = PDFDocument.objects.all().order_by('-uploaded_at')
+    
+    # Get the current active PDF, if any
+    active_pdf = None
+    active_pdf_selection = None
+    active_topic_groups = []
+    active_topics = []
+    
+    try:
+        active_pdf_selection = ActivePDFSelection.objects.filter(is_active=True).first()
+        if active_pdf_selection:
+            active_pdf = active_pdf_selection.pdf
+            active_topic_groups = active_pdf.topic_groups.all().order_by('order')[:5]  # Show first 5 groups
+            active_topics = active_pdf.main_topics.all().order_by('order')[:5]  # Show first 5 topics
+    except Exception as e:
+        print(f"Error fetching active PDF: {e}")
+    
+    context = {
+        'active_page': 'pdf_selector',
+        'pdfs': pdfs,
+        'active_pdf': active_pdf,
+        'active_pdf_selection': active_pdf_selection,
+        'active_topic_groups': active_topic_groups,
+        'active_topics': active_topics,
+    }
+    
+    return render(request, 'dynamicDB/pdf_selector.html', context)
+
+def set_active_pdf(request):
+    """Set a PDF as active for the platform"""
+    if request.method != 'POST':
+        return redirect('dynamicDB:pdf_selector')
+    
+    pdf_id = request.POST.get('pdf_id')
+    if not pdf_id:
+        messages.error(request, 'No PDF selected')
+        return redirect('dynamicDB:pdf_selector')
+    
+    try:
+        pdf = PDFDocument.objects.get(pk=pdf_id)
+        
+        # Check if the PDF has content
+        if pdf.main_topics.count() == 0 or pdf.chapters.count() == 0:
+            messages.warning(request, f'PDF "{pdf.title}" has no topics or chapters. Please analyze it first.')
+            return redirect('dynamicDB:analyze_pdf', pk=pdf.id)
+        
+        # Create or update active PDF selection
+        selection, created = ActivePDFSelection.objects.get_or_create(
+            pdf=pdf,
+            defaults={'is_active': True}
+        )
+        
+        if not created:
+            # If it already exists, make sure it's active
+            selection.is_active = True
+            selection.save()
+        
+        messages.success(request, f'PDF "{pdf.title}" set as active content for the platform')
+        
+    except PDFDocument.DoesNotExist:
+        messages.error(request, 'PDF not found')
+    except Exception as e:
+        messages.error(request, f'Error setting active PDF: {str(e)}')
+    
+    return redirect('dynamicDB:pdf_selector')
+
+def get_pdf_structure(request):
+    """AJAX endpoint to get PDF structure data"""
+    pdf_id = request.GET.get('pdf_id')
+    if not pdf_id:
+        return JsonResponse({'success': False, 'message': 'No PDF ID provided'})
+    
+    try:
+        pdf = PDFDocument.objects.get(pk=pdf_id)
+        
+        # Get topic groups data
+        topic_groups_data = []
+        for group in pdf.topic_groups.all().order_by('order'):
+            topic_groups_data.append({
+                'id': group.id,
+                'title': group.title,
+                'topic_count': group.topics.count()
+            })
+        
+        # Get main topics data
+        main_topics_data = []
+        for topic in pdf.main_topics.all().order_by('order'):
+            main_topics_data.append({
+                'id': topic.id,
+                'title': topic.title,
+                'chapter_count': topic.chapters.count()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'topic_groups': topic_groups_data,
+            'main_topics': main_topics_data
+        })
+        
+    except PDFDocument.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'PDF not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+def get_active_pdf_data():
+    """
+    Utility function to get active PDF data for use in other views
+    Returns a dictionary with active PDF and related data
+    """
+    result = {
+        'active_pdf': None,
+        'topic_groups': [],
+        'main_topics': [],
+        'chapters': []
+    }
+    
+    try:
+        active_pdf = ActivePDFSelection.get_active_pdf()
+        if active_pdf:
+            result['active_pdf'] = active_pdf
+            result['topic_groups'] = list(active_pdf.topic_groups.all().order_by('order'))
+            result['main_topics'] = list(active_pdf.main_topics.all().order_by('order'))
+            result['chapters'] = list(active_pdf.chapters.all().order_by('order'))
+    except Exception as e:
+        print(f"Error getting active PDF data: {e}")
+    
+    return result
+
+def active_topic_groups(request):
+    """
+    View for managing active topic groups
+    """
+    # Get the active PDF
+    active_pdf = ActivePDFSelection.get_active_pdf()
+    
+    if not active_pdf:
+        messages.warning(request, "Please select an active PDF first.")
+        return redirect('dynamicDB:pdf_selector')
+    
+    # Get all topic groups from the active PDF
+    topic_groups = TopicGroup.objects.filter(pdf_document=active_pdf).order_by('order')
+    
+    # Get the currently active topic groups
+    active_groups = ActiveTopicGroups.get_active_groups()
+    active_group_ids = [group.topic_group.id for group in active_groups]
+    
+    context = {
+        'active_page': 'active_topic_groups',
+        'active_pdf': active_pdf,
+        'topic_groups': topic_groups,
+        'active_group_ids': active_group_ids,
+        'active_groups': active_groups,
+    }
+    
+    return render(request, 'dynamicDB/active_topic_groups.html', context)
+
+def set_active_topic_group(request):
+    """
+    View to set a topic group as active
+    """
+    if request.method == 'POST':
+        topic_group_id = request.POST.get('topic_group_id')
+        
+        if not topic_group_id:
+            messages.error(request, "No topic group selected.")
+            return redirect('dynamicDB:active_topic_groups')
+        
+        try:
+            topic_group = TopicGroup.objects.get(pk=topic_group_id)
+            
+            # Check if this topic group is already active
+            if ActiveTopicGroups.objects.filter(topic_group=topic_group).exists():
+                messages.info(request, f"Topic group '{topic_group.title}' is already active.")
+            else:
+                # Create new active topic group
+                ActiveTopicGroups.objects.create(topic_group=topic_group)
+                messages.success(request, f"Topic group '{topic_group.title}' set as active.")
+            
+        except TopicGroup.DoesNotExist:
+            messages.error(request, "Selected topic group does not exist.")
+        
+    return redirect('dynamicDB:active_topic_groups')
+
+def remove_active_topic_group(request, pk):
+    """
+    View to remove a topic group from active groups
+    """
+    try:
+        active_group = ActiveTopicGroups.objects.get(topic_group_id=pk)
+        group_title = active_group.topic_group.title
+        active_group.delete()
+        messages.success(request, f"'{group_title}' removed from active topic groups.")
+    except ActiveTopicGroups.DoesNotExist:
+        messages.error(request, "This topic group is not active.")
+    
+    return redirect('dynamicDB:active_topic_groups')
+
+def admin_panel_summary_topics(request):
+    """View for managing summary topics"""
+    summary_topics = SummaryTopic.objects.all().order_by('topic_group__title', 'order')
+    topic_groups = TopicGroup.objects.all().order_by('title')
+    
+    context = {
+        'active_page': 'summary_topics',
+        'summary_topics': summary_topics,
+        'topic_groups': topic_groups
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_summary_topics.html', context)
+
+def admin_panel_summary_topic_detail(request, pk):
+    """View details of a specific summary topic"""
+    summary_topic = get_object_or_404(SummaryTopic, pk=pk)
+    all_main_topics = MainTopic.objects.filter(pdf_document=summary_topic.topic_group.pdf_document)
+    
+    context = {
+        'active_page': 'summary_topics',
+        'summary_topic': summary_topic,
+        'all_main_topics': all_main_topics
+    }
+    
+    return render(request, 'dynamicDB/admin_panel_summary_topic_detail.html', context)
+
+def generate_summary_topics(request, topic_group_id):
+    """
+    Automatically generate summary topics for a topic group using Gemini AI
+    Groups main topics into exactly 3 clusters and creates summary topics for each cluster
+    """
+    topic_group = get_object_or_404(TopicGroup, pk=topic_group_id)
+    
+    try:
+        # Get all main topics for this topic group
+        main_topics = topic_group.topics.all()
+        
+        if main_topics.count() < 3:
+            messages.warning(request, f"Topic group '{topic_group.title}' has fewer than 3 main topics. Please add more topics before generating summary topics.")
+            return redirect('dynamicDB:admin_panel_topic_group_detail', pk=topic_group_id)
+        
+        # Delete existing summary topics for this group
+        SummaryTopic.objects.filter(topic_group=topic_group).delete()
+        
+        # Prepare data for Gemini API
+        topic_data = []
+        topic_ids = []
+        
+        for topic in main_topics:
+            topic_data.append({
+                'id': topic.id,
+                'title': topic.title,
+                'summary': topic.summary
+            })
+            topic_ids.append(topic.id)
+        
+        # Check if GOOGLE_API_KEY is available
+        if not settings.GOOGLE_API_KEY:
+            messages.error(request, "Google API key is missing. Please set GOOGLE_API_KEY in your environment variables.")
+            return redirect('dynamicDB:admin_panel_topic_group_detail', pk=topic_group_id)
+        
+        # Configure the Gemini API
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        
+        # Create a model instance
+        model = genai.GenerativeModel('gemini-1.5-pro')
+        
+        # Construct the prompt for Gemini
+        prompt = f"""
+        Please analyze the following list of topics and group them into exactly 3 clusters based on semantic similarity:
+        
+        {json.dumps(topic_data, indent=2)}
+        
+        For each cluster:
+        1. Create a title that captures the essence of the topics in that cluster (based on common words or themes)
+        2. Generate a brief description of what these topics have in common
+        3. Create a summary that combines the key points from all topics in the cluster
+        
+        Return your response as a valid JSON array with 3 items in this exact format:
+        [
+          {{
+            "title": "Generated Title for Cluster 1",
+            "description": "Description for Cluster 1",
+            "summary": "Summary text for Cluster 1",
+            "topic_ids": [list of topic IDs in this cluster]
+          }},
+          {{
+            "title": "Generated Title for Cluster 2",
+            "description": "Description for Cluster 2",
+            "summary": "Summary text for Cluster 2",
+            "topic_ids": [list of topic IDs in this cluster]
+          }},
+          {{
+            "title": "Generated Title for Cluster 3",
+            "description": "Description for Cluster 3",
+            "summary": "Summary text for Cluster 3",
+            "topic_ids": [list of topic IDs in this cluster]
+          }}
+        ]
+        
+        Ensure all topic IDs are assigned to one of the clusters, with no duplicates.
+        """
+        
+        try:
+            # Get response from Gemini
+            response = model.generate_content(prompt)
+            response_text = response.text
+            
+            # Extract the JSON part from the response
+            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_text)
+            if json_match:
+                response_json = json_match.group(1)
+            else:
+                response_json = response_text
+            
+            # Parse the JSON
+            clusters = json.loads(response_json)
+            
+            # Ensure we have exactly 3 clusters
+            if len(clusters) != 3:
+                raise ValueError(f"Expected 3 clusters, but got {len(clusters)}")
+            
+            # Create summary topics for each cluster
+            for i, cluster in enumerate(clusters):
+                # Get the topics in this cluster
+                topic_ids_in_cluster = cluster.get('topic_ids', [])
+                topics_in_cluster = MainTopic.objects.filter(id__in=topic_ids_in_cluster)
+                
+                # Create the summary topic
+                summary_topic = SummaryTopic.objects.create(
+                    topic_group=topic_group,
+                    title=cluster.get('title', f"Summary Group {i+1}"),
+                    description=cluster.get('description', f"Automatically generated group of {len(topics_in_cluster)} related topics"),
+                    summary=cluster.get('summary', ''),
+                    order=i,
+                    relevance_score=1.0  # Default score
+                )
+                
+                # Add the main topics to this summary topic
+                summary_topic.main_topics.set(topics_in_cluster)
+            
+            messages.success(request, f"Successfully created 3 summary topics for '{topic_group.title}' using Gemini AI")
+            
+        except Exception as e:
+            messages.error(request, f"Error processing Gemini response: {str(e)}")
+            # Fall back to basic grouping if Gemini fails
+            fallback_to_basic_grouping(topic_group, main_topics)
+    
+    except Exception as e:
+        messages.error(request, f"Error generating summary topics: {str(e)}")
+    
+    return redirect('dynamicDB:admin_panel_topic_group_detail', pk=topic_group_id)
+
+def fallback_to_basic_grouping(topic_group, main_topics):
+    """Fallback method to group topics without ML when Gemini fails"""
+    # Divide topics into 3 roughly equal groups
+    topics_list = list(main_topics)
+    total_topics = len(topics_list)
+    chunk_size = max(1, total_topics // 3)
+    
+    for i in range(3):
+        # Calculate start and end indices for this group
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, total_topics) if i < 2 else total_topics
+        
+        # Get topics for this group
+        group_topics = topics_list[start_idx:end_idx]
+        
+        if not group_topics:
+            continue
+            
+        # Collect common words from titles
+        common_words = []
+        for topic in group_topics:
+            words = topic.title.split()
+            for word in words:
+                if len(word) > 3 and word.lower() not in ['and', 'the', 'for', 'with']:
+                    common_words.append(word)
+        
+        # Find frequent words for title
+        word_counts = defaultdict(int)
+        for word in common_words:
+            word_counts[word.lower()] += 1
+            
+        most_common = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+        most_common_words = [word for word, count in most_common]
+        
+        # Create title from most common words or use default
+        if most_common_words:
+            title = " ".join(most_common_words).title()
+        else:
+            title = f"Summary Group {i+1}"
+        
+        # Create the summary topic
+        summary_topic = SummaryTopic.objects.create(
+            topic_group=topic_group,
+            title=title,
+            description=f"Automatically generated group of {len(group_topics)} topics",
+            order=i,
+            relevance_score=1.0  # Default score
+        )
+        
+        # Add the main topics to this summary topic
+        summary_topic.main_topics.set(group_topics)
+        
+        # Generate a summary
+        topic_summaries = [t.summary for t in group_topics if t.summary]
+        if topic_summaries:
+            combined_summary = " ".join(topic_summaries)
+            # Truncate to a reasonable length
+            if len(combined_summary) > 500:
+                combined_summary = combined_summary[:497] + "..."
+            summary_topic.summary = combined_summary
+            summary_topic.save()
+
+@csrf_exempt
+def admin_panel_update_summary_topic(request, pk):
+    """Update a summary topic via AJAX"""
+    summary_topic = get_object_or_404(SummaryTopic, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Update basic fields
+            summary_topic.title = data.get('title', summary_topic.title)
+            summary_topic.description = data.get('description', summary_topic.description)
+            summary_topic.summary = data.get('summary', summary_topic.summary)
+            summary_topic.order = data.get('order', summary_topic.order)
+            
+            # Update main topics if provided
+            if 'main_topic_ids' in data:
+                main_topic_ids = data['main_topic_ids']
+                main_topics = MainTopic.objects.filter(id__in=main_topic_ids)
+                summary_topic.main_topics.set(main_topics)
+            
+            summary_topic.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@csrf_exempt
+def admin_panel_delete_summary_topic(request, pk):
+    """Delete a summary topic via AJAX"""
+    if request.method == 'POST':
+        try:
+            summary_topic = get_object_or_404(SummaryTopic, pk=pk)
+            topic_group_id = summary_topic.topic_group.id
+            summary_topic.delete()
+            return JsonResponse({'success': True, 'redirect': f'/dynamicDB/admin-panel/topic-group/{topic_group_id}/'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def generate_summary_for_active_groups(request):
+    """Generate summary topics for all active topic groups"""
+    # Get all active topic groups
+    active_groups = ActiveTopicGroups.get_active_groups()
+    
+    if not active_groups.exists():
+        messages.warning(request, "No active topic groups found.")
+        return redirect('dynamicDB:admin_panel_dashboard')
+    
+    success_count = 0
+    error_count = 0
+    
+    # Process each active topic group
+    for active_group in active_groups:
+        topic_group = active_group.topic_group
+        
+        try:
+            # Get all main topics for this topic group
+            main_topics = topic_group.topics.all()
+            
+            if main_topics.count() < 3:
+                messages.warning(request, f"Topic group '{topic_group.title}' has fewer than 3 main topics. Skipping.")
+                error_count += 1
+                continue
+            
+            # Delete existing summary topics for this group
+            SummaryTopic.objects.filter(topic_group=topic_group).delete()
+            
+            # Prepare data for Gemini API
+            topic_data = []
+            topic_ids = []
+            
+            for topic in main_topics:
+                topic_data.append({
+                    'id': topic.id,
+                    'title': topic.title,
+                    'summary': topic.summary
+                })
+                topic_ids.append(topic.id)
+            
+            # Check if GOOGLE_API_KEY is available
+            if not settings.GOOGLE_API_KEY:
+                messages.error(request, "Google API key is missing. Please set GOOGLE_API_KEY in your environment variables.")
+                return redirect('dynamicDB:admin_panel_dashboard')
+            
+            # Configure the Gemini API
+            genai.configure(api_key=settings.GOOGLE_API_KEY)
+            
+            # Create a model instance
+            model = genai.GenerativeModel('gemini-1.5-pro')
+            
+            # Construct the prompt for Gemini
+            prompt = f"""
+            Please analyze the following list of topics and group them into exactly 3 clusters based on semantic similarity:
+            
+            {json.dumps(topic_data, indent=2)}
+            
+            For each cluster:
+            1. Create a title that captures the essence of the topics in that cluster (based on common words or themes)
+            2. Generate a brief description of what these topics have in common
+            3. Create a summary that combines the key points from all topics in the cluster
+            
+            Return your response as a valid JSON array with 3 items in this exact format:
+            [
+              {{
+                "title": "Generated Title for Cluster 1",
+                "description": "Description for Cluster 1",
+                "summary": "Summary text for Cluster 1",
+                "topic_ids": [list of topic IDs in this cluster]
+              }},
+              {{
+                "title": "Generated Title for Cluster 2",
+                "description": "Description for Cluster 2",
+                "summary": "Summary text for Cluster 2",
+                "topic_ids": [list of topic IDs in this cluster]
+              }},
+              {{
+                "title": "Generated Title for Cluster 3",
+                "description": "Description for Cluster 3",
+                "summary": "Summary text for Cluster 3",
+                "topic_ids": [list of topic IDs in this cluster]
+              }}
+            ]
+            
+            Ensure all topic IDs are assigned to one of the clusters, with no duplicates.
+            """
+            
+            try:
+                # Get response from Gemini
+                response = model.generate_content(prompt)
+                response_text = response.text
+                
+                # Extract the JSON part from the response
+                json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_text)
+                if json_match:
+                    response_json = json_match.group(1)
+                else:
+                    response_json = response_text
+                
+                # Parse the JSON
+                clusters = json.loads(response_json)
+                
+                # Ensure we have exactly 3 clusters
+                if len(clusters) != 3:
+                    raise ValueError(f"Expected 3 clusters, but got {len(clusters)}")
+                
+                # Create summary topics for each cluster
+                for i, cluster in enumerate(clusters):
+                    # Get the topics in this cluster
+                    topic_ids_in_cluster = cluster.get('topic_ids', [])
+                    topics_in_cluster = MainTopic.objects.filter(id__in=topic_ids_in_cluster)
+                    
+                    # Create the summary topic
+                    summary_topic = SummaryTopic.objects.create(
+                        topic_group=topic_group,
+                        title=cluster.get('title', f"Summary Group {i+1}"),
+                        description=cluster.get('description', f"Automatically generated group of {len(topics_in_cluster)} related topics"),
+                        summary=cluster.get('summary', ''),
+                        order=i,
+                        relevance_score=1.0  # Default score
+                    )
+                    
+                    # Add the main topics to this summary topic
+                    summary_topic.main_topics.set(topics_in_cluster)
+                
+                success_count += 1
+                
+            except Exception as e:
+                error_message = f"Error processing Gemini response for '{topic_group.title}': {str(e)}"
+                print(error_message)
+                messages.error(request, error_message)
+                
+                # Fall back to basic grouping
+                fallback_to_basic_grouping(topic_group, main_topics)
+                success_count += 1  # Count as success since we used fallback
+            
+        except Exception as e:
+            error_message = f"Error generating summary topics for '{topic_group.title}': {str(e)}"
+            print(error_message)
+            messages.error(request, error_message)
+            error_count += 1
+    
+    # Show the final result message
+    if success_count > 0:
+        messages.success(request, f"Successfully generated summary topics for {success_count} active topic groups.")
+    if error_count > 0:
+        messages.warning(request, f"Failed to generate summary topics for {error_count} topic groups.")
+    
+    return redirect('dynamicDB:admin_panel_dashboard')
