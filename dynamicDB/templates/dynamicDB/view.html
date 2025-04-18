@@ -1,3 +1,5 @@
+{% load dynamicdb_filters %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,13 +86,43 @@
         .topic-title {
             color: #2c3e50;
             margin-bottom: 10px;
-            font-size: 1.2em;
+            font-size: 1.4em;
             font-weight: bold;
             border-bottom: 2px solid #3498db;
             padding-bottom: 5px;
         }
         
-        .topic-content {
+        .topic-summary {
+            color: #34495e;
+            line-height: 1.6;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-style: italic;
+            padding-left: 10px;
+            border-left: 3px solid #e67e22;
+        }
+        
+        .chapter-container {
+            margin-top: 20px;
+            padding-left: 15px;
+        }
+        
+        .chapter-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .chapter-title {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        .chapter-content {
             color: #34495e;
             line-height: 1.6;
             font-size: 1em;
@@ -141,6 +173,216 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .form-container {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .form-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #1565c0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .form-help {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .submit-btn {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .submit-btn:hover {
+            background-color: #388e3c;
+        }
+        
+        .all-pages-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .page-group-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .page-group-container h4 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+        
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+        
+        .page-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .page-button {
+            padding: 8px 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .page-button:hover, .page-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .page-groups {
+            display: none; /* Hide all page groups initially */
+        }
+        
+        .page-groups.active {
+            display: block; /* Show only the active group */
+        }
+        
+        /* Topic Grouping styles */
+        .topic-groups-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f0f7ff;
+            border-radius: 10px;
+        }
+        
+        .topic-group-card {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid #3498db;
+        }
+        
+        .topic-group-title {
+            color: #2c3e50;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .topic-group-description {
+            color: #34495e;
+            font-style: italic;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .topic-group-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .keyword-tag {
+            background-color: #e8f4f8;
+            color: #2980b9;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .topic-list {
+            margin-top: 15px;
+            padding-left: 0;
+        }
+        
+        .topic-item {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #27ae60;
+        }
+        
+        .child-group {
+            margin-left: 40px;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #9b59b6;
+        }
+        
+        .child-group-title {
+            color: #2c3e50;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .relationship-indicator {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .arrow-icon {
+            margin: 0 5px;
+            color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -148,30 +390,327 @@
         <h2>{{ pdf_doc.title }}</h2>
         
         <div class="button-container">
-            <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}" class="analyze-btn" onclick="showLoading()">Analyze Content</a>
             <a href="{% url 'dynamicDB:upload_pdf' %}" class="btn">Upload Another</a>
             <a href="{% url 'dynamicDB:visualize_topics' pdf_doc.pk %}" class="btn btn-primary">
                 View Topic Visualization
             </a>
+            {% if main_topics %}
+            <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?group_topics=true" class="btn" style="background-color: #28a745;">
+                Group Topics
+            </a>
+            {% endif %}
+            {% if show_all_pages %}
+            <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?cleanup=true" class="btn" style="background-color: #dc3545;">
+                Clean Up Temporary Files
+            </a>
+            {% endif %}
         </div>
+        
+        {% if analysis_status == 'not_analyzed' %}
+            <div class="form-container">
+                <div class="form-title">Document Analysis Options</div>
+                <form action="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ topic_form.topic_count.id_for_label }}">{{ topic_form.topic_count.label }}</label>
+                        {{ topic_form.topic_count }}
+                        <div class="form-help">{{ topic_form.topic_count.help_text }}</div>
+                    </div>
+                    <button type="submit" class="submit-btn" onclick="showLoading()">Analyze Document</button>
+                </form>
+            </div>
+        {% endif %}
         
         <div class="loading" id="loadingSpinner">
             <div class="loading-spinner"></div>
-            <p>Analyzing document... Please wait...</p>
+            <p>Analyzing document... This may take a few moments...</p>
         </div>
         
         <div class="image-container">
-            <img src="{{ pdf_doc.converted_image.url }}" alt="Converted PDF">
+            <h3>Document Preview</h3>
+            <img src="{{ pdf_doc.converted_image.url }}" alt="Converted PDF Preview">
+            
+            {% if show_all_pages %}
+                <div class="form-container">
+                    <a href="{% url 'dynamicDB:view_pdf' pdf_doc.pk %}" class="btn">Show Preview Only</a>
+                </div>
+            {% else %}
+                <div class="form-container">
+                    <a href="{% url 'dynamicDB:view_pdf' pdf_doc.pk %}?show_all_pages=true" class="btn">View All Pages</a>
+                </div>
+            {% endif %}
         </div>
         
-        {% if pdf_doc.topics.exists %}
+        {% if show_all_pages and page_images %}
+        <div class="all-pages-container">
+            <h3>All Pages</h3>
+            
+            <!-- Pagination controls -->
+            <div class="pagination-container">
+                <button class="page-button" onclick="showAllPages()">Show All</button>
+                {% for image in page_images %}
+                    <button class="page-button" onclick="showPage({{ forloop.counter }})" id="page-btn-{{ forloop.counter }}" data-group="{{ image.group_num }}">{{ image.group_num }}</button>
+                {% endfor %}
+            </div>
+
+            <!-- Page groups with lazy loading -->
+            {% for image in page_images %}
+            <div class="page-group-container page-groups" id="page-group-{{ forloop.counter }}" data-group-num="{{ image.group_num }}">
+                <h4>Page Group {{ image.group_num }} ({{ image.filename }})</h4>
+                <img 
+                    src="{{ image.url }}" 
+                    alt="Page Group {{ image.group_num }}" 
+                    class="page-image" 
+                    loading="lazy"
+                    onload="imageLoaded({{ forloop.counter }}, {{ image.group_num }})"
+                    onerror="imageError({{ forloop.counter }}, {{ image.group_num }})"
+                >
+            </div>
+            {% endfor %}
+        </div>
+
+        <script>
+            // JavaScript to handle pagination
+            function showPage(pageIndex) {
+                // Hide all page groups
+                const pageGroups = document.querySelectorAll('.page-groups');
+                pageGroups.forEach(group => {
+                    group.classList.remove('active');
+                });
+                
+                // Show the selected page group
+                const selectedGroup = document.getElementById(`page-group-${pageIndex}`);
+                if (selectedGroup) {
+                    selectedGroup.classList.add('active');
+                }
+                
+                // Update button styles
+                const buttons = document.querySelectorAll('.page-button');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                const selectedBtn = document.getElementById(`page-btn-${pageIndex}`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('active');
+                }
+                
+                // Force image to load if it hasn't already
+                const img = selectedGroup.querySelector('img');
+                if (img && img.getAttribute('data-src')) {
+                    img.src = img.getAttribute('data-src');
+                }
+            }
+            
+            function showAllPages() {
+                // Show all page groups
+                const pageGroups = document.querySelectorAll('.page-groups');
+                pageGroups.forEach(group => {
+                    group.classList.add('active');
+                });
+                
+                // Update button styles
+                const buttons = document.querySelectorAll('.page-button');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Highlight the "Show All" button
+                buttons[0].classList.add('active');
+                
+                // Force all images to load
+                const images = document.querySelectorAll('.page-image');
+                images.forEach(img => {
+                    if (img.getAttribute('data-src')) {
+                        img.src = img.getAttribute('data-src');
+                    }
+                });
+            }
+            
+            function imageLoaded(pageIndex, groupNum) {
+                console.log(`Image ${pageIndex} (Group ${groupNum}) loaded successfully`);
+                const btn = document.getElementById(`page-btn-${pageIndex}`);
+                if (btn) {
+                    btn.style.backgroundColor = '#28a745';
+                    btn.style.color = 'white';
+                    btn.title = 'Loaded successfully';
+                }
+            }
+            
+            function imageError(pageIndex, groupNum) {
+                console.error(`Error loading image ${pageIndex} (Group ${groupNum})`);
+                const img = document.querySelector(`#page-group-${pageIndex} img`);
+                if (img) {
+                    // Try reloading with cache-busting parameter
+                    const originalSrc = img.src;
+                    img.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + 'nocache=' + new Date().getTime();
+                    
+                    // Add error message
+                    const errorMsg = document.createElement('div');
+                    errorMsg.style.color = 'red';
+                    errorMsg.style.marginTop = '10px';
+                    errorMsg.innerHTML = `Error loading image. <a href="${img.src}" target="_blank">Try direct link</a>`;
+                    img.parentNode.appendChild(errorMsg);
+                }
+                
+                const btn = document.getElementById(`page-btn-${pageIndex}`);
+                if (btn) {
+                    btn.style.backgroundColor = '#dc3545';
+                    btn.style.color = 'white';
+                    btn.title = 'Error loading';
+                }
+            }
+            
+            // Initialize: show first page by default
+            document.addEventListener('DOMContentLoaded', function() {
+                if (document.querySelectorAll('.page-groups').length > 0) {
+                    showPage(1);
+                }
+            });
+        </script>
+        {% endif %}
+        
+        {% if topic_groups %}
+        <div class="topic-groups-container">
+            <h3>Topic Groups</h3>
+            <p class="form-help">Topics have been automatically grouped into related categories using AI analysis.</p>
+            
+            {% if grouped_data %}
+                {% for group, data in grouped_data.items %}
+                    {% if data.level == 0 %}
+                    <div class="topic-group-card">
+                        <div class="topic-group-title">{{ group.title }}</div>
+                        <div class="topic-group-description">{{ group.description }}</div>
+                        
+                        {% if group.keywords %}
+                        <div class="topic-group-keywords">
+                            {% with keywords=group.keywords|stringformat:'s'|cut:' ' %}
+                                {% for keyword in keywords|split:',' %}
+                                    <span class="keyword-tag">{{ keyword }}</span>
+                                {% endfor %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="topic-list">
+                            <h4>Topics in this group:</h4>
+                            {% for topic in data.topics %}
+                            <div class="topic-item">
+                                <strong>{{ topic.title }}</strong>
+                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if data.children %}
+                        <div class="child-groups">
+                            <h4>Related Sub-Groups:</h4>
+                            {% for child in data.children %}
+                            <div class="child-group">
+                                <div class="relationship-indicator">
+                                    <span>{{ group.title }}</span>
+                                    <span class="arrow-icon">→</span>
+                                    <span>{{ child.title }}</span>
+                                </div>
+                                <div class="child-group-title">{{ child.title }}</div>
+                                <div class="topic-group-description">{{ child.description }}</div>
+                                
+                                <div class="topic-list">
+                                    {% with child_data=grouped_data|get_item:child %}
+                                        {% if child_data %}
+                                            {% for topic in child_data.topics %}
+                                            <div class="topic-item">
+                                                <strong>{{ topic.title }}</strong>
+                                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="form-container">
+                    <p>Topic groups have been created but no hierarchical structure is available.</p>
+                    
+                    {% for group in topic_groups %}
+                    <div class="topic-group-card">
+                        <div class="topic-group-title">{{ group.title }}</div>
+                        <div class="topic-group-description">{{ group.description }}</div>
+                        
+                        <div class="topic-list">
+                            <h4>Topics in this group:</h4>
+                            {% for topic in group.topics.all %}
+                            <div class="topic-item">
+                                <strong>{{ topic.title }}</strong>
+                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if main_topics %}
         <div class="topics-container">
-            <h3>Identified Topics</h3>
-            {% for topic in pdf_doc.topics.all %}
+            <h3>Main Topics and Chapters</h3>
+            
+            {% if not topic_groups %}
+            <div class="button-container" style="margin-bottom: 20px;">
+                <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?group_topics=true" class="btn" style="background-color: #28a745;">
+                    Group These Topics
+                </a>
+                <span class="form-help">Use AI to group related topics into broader categories</span>
+            </div>
+            {% endif %}
+            
+            {% for topic in main_topics %}
             <div class="topic-card">
-                <div class="topic-title">{{ topic.title }}</div>
-                <div class="topic-content">{{ topic.content }}</div>
-                <div class="confidence-score">Confidence: {{ topic.confidence_score|floatformat:2 }}%</div>
+                <div class="topic-title">Topic {{ topic.order }}: {{ topic.title }}</div>
+                <div class="topic-summary">{{ topic.summary }}</div>
+                
+                <div class="chapter-container">
+                    <h4>Chapters in this Topic:</h4>
+                    {% for chapter in topic.chapters.all %}
+                    <div class="chapter-card">
+                        <div class="chapter-title">{{ chapter.title }}</div>
+                        <div class="chapter-content">{{ chapter.content }}</div>
+                        <div class="confidence-score">Confidence: {{ chapter.confidence_score|floatformat:2 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% elif chapters %}
+        <div class="topics-container">
+            <h3>Identified Chapters</h3>
+            <div class="form-container">
+                <div class="form-title">Group Chapters into Topics</div>
+                <form action="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ topic_form.topic_count.id_for_label }}">{{ topic_form.topic_count.label }}</label>
+                        {{ topic_form.topic_count }}
+                        <div class="form-help">{{ topic_form.topic_count.help_text }}</div>
+                    </div>
+                    <button type="submit" class="submit-btn" onclick="showLoading()">Group Chapters</button>
+                </form>
+            </div>
+            
+            {% for chapter in chapters %}
+            <div class="chapter-card">
+                <div class="chapter-title">{{ chapter.title }}</div>
+                <div class="chapter-content">{{ chapter.content }}</div>
+                <div class="confidence-score">Confidence: {{ chapter.confidence_score|floatformat:2 }}</div>
             </div>
             {% endfor %}
         </div>

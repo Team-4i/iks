@@ -1,0 +1,139 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}Manage Active Topic Groups - PDF Content Manager{% endblock %}
+
+{% block page_title %}Manage Active Topic Groups{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Select Active Topic Groups</h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">
+            Select up to 2 topic groups from the active PDF to make them available throughout the platform.
+            Only these selected topic groups will be used in games and other platform features.
+        </p>
+        
+        {% if not active_pdf %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i> 
+            No active PDF selected. Please select an active PDF first.
+            <a href="{% url 'dynamicDB:pdf_selector' %}" class="btn btn-sm btn-primary ms-3">
+                Select PDF
+            </a>
+        </div>
+        {% else %}
+        <div class="mb-3">
+            <h6>Currently Active PDF:</h6>
+            <p class="mb-0">{{ active_pdf.title }}</p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Currently Active Topic Groups ({{ active_groups|length }}/2)</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if active_groups %}
+                            <div class="list-group">
+                                {% for group in active_groups %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ group.topic_group.title }}</h6>
+                                        <small class="text-muted">
+                                            {{ group.topic_group.topics.count }} topics • Selected: {{ group.selected_at|date:"M d, Y, g:i a" }}
+                                        </small>
+                                    </div>
+                                    <a href="{% url 'dynamicDB:remove_active_topic_group' group.topic_group.id %}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('Are you sure you want to remove this topic group from active groups?');">
+                                        <i class="bi bi-x-circle"></i> Remove
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mt-3 d-grid">
+                                <a href="{% url 'dynamicDB:generate_summary_for_active_groups' %}" 
+                                   class="btn btn-success"
+                                   onclick="return confirm('Generate summary topics for all active topic groups using Gemini AI? This will replace any existing summary topics.');">
+                                    <i class="bi bi-robot me-2"></i> Generate Summaries with Gemini AI
+                                </a>
+                                <small class="text-muted mt-1">
+                                    This will create 3 summary topics for each active topic group using Gemini AI.
+                                </small>
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center my-3">No active topic groups selected.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Available Topic Groups</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if topic_groups %}
+                            <form method="post" action="{% url 'dynamicDB:set_active_topic_group' %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="topic-group-select" class="form-label">Topic Group</label>
+                                    <select class="form-select" id="topic-group-select" name="topic_group_id" required>
+                                        <option value="" disabled selected>Select a topic group...</option>
+                                        {% for group in topic_groups %}
+                                            <option value="{{ group.id }}" {% if group.id in active_group_ids %}disabled{% endif %}>
+                                                {{ group.title }} ({{ group.topics.count }} topics)
+                                                {% if group.id in active_group_ids %}(Already Active){% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" {% if active_groups|length >= 2 %}disabled{% endif %}>
+                                        <i class="bi bi-plus-circle me-2"></i> Add to Active Groups
+                                    </button>
+                                    {% if active_groups|length >= 2 %}
+                                        <small class="text-danger mt-2">
+                                            You've reached the maximum of 2 active topic groups. 
+                                            Remove one to add another.
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        {% else %}
+                            <p class="text-muted text-center my-3">No topic groups available in the active PDF.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">How Active Topic Groups Are Used</h5>
+    </div>
+    <div class="card-body">
+        <p>
+            The selected active topic groups determine which content is available in the platform's games and learning features.
+            This allows you to focus the platform on specific areas of the content at a time.
+        </p>
+        <p>
+            <strong>Important Notes:</strong>
+        </p>
+        <ul>
+            <li>You can select a maximum of 2 topic groups at any given time.</li>
+            <li>When you select a new topic group (beyond the limit of 2), the oldest selected group will be automatically removed.</li>
+            <li>All platform games and features will use only the content from these selected topic groups.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %} 

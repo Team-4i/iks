@@ -1,13 +1,12 @@
+{% load dynamicdb_filters %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Topic Visualization - {{ pdf_doc.title }}</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <title>Visualize Topics</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,219 +14,578 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
-
-        .container-fluid {
-            max-width: 1400px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
         h2 {
             color: #333;
             margin-bottom: 30px;
             text-align: center;
         }
-
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .visualization-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .viz-controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .viz-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 14px;
+        }
+        .viz-btn.active {
+            background-color: #28a745;
+        }
+        #visualization {
+            width: 100%;
+            height: 700px;
+            margin: 20px 0;
+            position: relative;
+        }
         .node circle {
             fill: #fff;
-            stroke: #1f77b4;
-            stroke-width: 2px;
-            transition: all 0.3s ease;
+            stroke-width: 3px;
         }
-
-        .node circle:hover {
-            fill: #1f77b4;
-            cursor: pointer;
-        }
-
         .node text {
             font: 14px sans-serif;
-            fill: #333;
-            font-weight: bold;
         }
-
         .link {
             fill: none;
-            stroke: #1f77b4;
+            stroke: #ccc;
             stroke-width: 2px;
         }
-
-        .topic-node:hover {
-            cursor: pointer;
-        }
-
-        #topic-details {
-            background: white;
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
             border: 1px solid #ddd;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 1000;
-            padding: 20px;
-            border-radius: 8px;
+            border-radius: 5px;
+            pointer-events: none;
+            max-width: 300px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 10;
+            transition: opacity 0.3s;
         }
-
-        #topic-details .card-title {
-            color: #1f77b4;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+        .tooltip h4 {
+            margin: 0 0 5px 0;
+            color: #333;
         }
-
-        #topic-details .card-text {
-            color: #666;
-            line-height: 1.6;
+        .tooltip p {
+            margin: 5px 0;
+            color: #555;
+            font-size: 14px;
         }
-
-        .back-button {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #1f77b4;
-            color: white;
-            text-decoration: none;
+        .legend {
+            background-color: #f5f5f5;
+            padding: 10px;
             border-radius: 5px;
             margin-bottom: 20px;
-            transition: background-color 0.3s ease;
         }
-
-        .back-button:hover {
-            background-color: #145c8e;
+        .legend-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .legend-circle {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        /* Nodes color scheme */
+        .document-color { background-color: #9b59b6; }  /* Purple */
+        .group-color { background-color: #e74c3c; }     /* Red */
+        .topic-color { background-color: #f39c12; }     /* Orange */
+        .chapter-color { background-color: #3498db; }   /* Blue */
+        
+        /* Radial Dendrogram specific styles */
+        .node-radial {
+            cursor: pointer;
+        }
+        .node-radial circle {
+            fill: #fff;
+            stroke-width: 2px;
+        }
+        .node-radial text {
+            font: 12px sans-serif;
+        }
+        .document-node circle {
+            stroke: #9b59b6;
+            fill: #fff;
+        }
+        .group-node circle {
+            stroke: #e74c3c;
+            fill: #fff;
+        }
+        .topic-node circle {
+            stroke: #f39c12;
+            fill: #fff;
+        }
+        .chapter-node circle {
+            stroke: #3498db;
+            fill: #fff;
+        }
+        .vis-controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .vis-controls button {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .vis-controls button.active {
+            background-color: #4CAF50;
             color: white;
+            border-color: #4CAF50;
+        }
+        
+        .vis-controls button:hover:not(.active) {
+            background-color: #e0e0e0;
+        }
+        
+        svg {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        
+        .links path {
+            transition: stroke 0.3s;
+        }
+        
+        .nodes circle {
+            transition: r 0.3s;
+        }
+        
+        .nodes circle:hover {
+            stroke: #333;
+            stroke-width: 3px;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <a href="{% url 'dynamicDB:view_pdf' pdf_doc.pk %}" class="back-button">← Back to Document</a>
+    <div class="container">
+        <h2>Topic Visualization for {{ pdf_doc.title }}</h2>
         
-        <h2>Topic Visualization: {{ pdf_doc.title }}</h2>
-        <div id="topic-graph" style="width: 100%; height: 600px;"></div>
+        <div class="button-container">
+            <a href="{% url 'dynamicDB:view_pdf' pdf_doc.pk %}" class="btn">Back to PDF View</a>
+            <a href="{% url 'dynamicDB:upload_pdf' %}" class="btn">Upload Another PDF</a>
+        </div>
         
-        <!-- Topic Details Panel -->
-        <div id="topic-details" class="card position-fixed" style="right: 20px; top: 20px; width: 300px; display: none;">
-            <div class="card-body">
-                <h5 class="card-title" id="detail-title"></h5>
-                <p class="card-text" id="detail-content"></p>
+        <div class="legend">
+            <h3>Legend</h3>
+            <div class="legend-item">
+                <span class="legend-circle document-color"></span>
+                <span>Document (Root)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-circle group-color"></span>
+                <span>Topic Group</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-circle topic-color"></span>
+                <span>Main Topic</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-circle chapter-color"></span>
+                <span>Chapter</span>
             </div>
         </div>
+        
+        <div class="visualization-container">
+            <div class="vis-controls">
+                <button id="radialViewBtn" class="active">Radial View</button>
+                <button id="treeViewBtn">Tree View</button>
+                <button id="toggleGroupsBtn">Toggle Topic Groups</button>
+            </div>
+            <div id="visualization"></div>
+        </div>
+        
+        <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+        
+        <!-- Hidden data containers -->
+        <div id="topic-data" style="display:none;">{{ topic_data|safe }}</div>
+        {% if group_data %}
+        <div id="group-data" style="display:none;">{{ group_data|safe }}</div>
+        {% endif %}
     </div>
 
-    <!-- D3.js -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const data = {{ topic_data|safe }};
+        // Parse the data from hidden divs
+        let topicData;
+        let groupData = null;
+        let showGroups = false;
+        
+        try {
+            // Get data from hidden divs
+            const topicDataElement = document.getElementById('topic-data');
+            topicData = JSON.parse(topicDataElement.textContent || topicDataElement.innerText);
             
-            // Convert the hierarchical data to a flat array of topics and ensure proper ordering
-            const topics = [{ 
-                name: data.name, 
-                content: "Main document",
-                order: 0 
-            }].concat(
-                data.children.sort((a, b) => a.order - b.order) || []
-            );
-            
-            // Set up the D3 visualization
-            const width = document.getElementById('topic-graph').offsetWidth;
-            const height = 600;
-            const margin = {top: 50, right: 150, bottom: 50, left: 150};
-            const nodeSpacing = (width - margin.left - margin.right) / (topics.length - 1);
-            
-            // Create the SVG container
-            const svg = d3.select("#topic-graph")
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${height/2})`);
-            
-            // Create links (lines connecting topics)
-            for (let i = 0; i < topics.length - 1; i++) {
-                svg.append("line")
-                    .attr("class", "link")
-                    .attr("x1", i * nodeSpacing)
-                    .attr("y1", 0)
-                    .attr("x2", (i + 1) * nodeSpacing)
-                    .attr("y2", 0);
+            const groupDataElement = document.getElementById('group-data');
+            if (groupDataElement) {
+                groupData = JSON.parse(groupDataElement.textContent || groupDataElement.innerText);
+                showGroups = true;
             }
             
-            // Create nodes
-            const nodes = svg.selectAll(".node")
-                .data(topics)
-                .join("g")
-                .attr("class", "node")
-                .attr("transform", (d, i) => `translate(${i * nodeSpacing},0)`);
-            
-            // Add circles to nodes
-            nodes.append("circle")
-                .attr("r", 10)
-                .attr("class", "topic-node")
-                .on("click", function(event, d) {
-                    showTopicDetails(d);
-                });
-            
-            // Add order numbers above nodes
-            nodes.append("text")
-                .attr("dy", -15)
-                .attr("text-anchor", "middle")
-                .text((d, i) => i === 0 ? "Start" : d.order)
-                .style("font-size", "12px")
-                .style("fill", "#666");
-            
-            // Add labels to nodes
-            nodes.append("text")
-                .attr("dy", 30)
-                .attr("text-anchor", "middle")
-                .text(d => d.name)
-                .call(wrap, nodeSpacing - 10);
-            
-            // Function to show topic details
-            function showTopicDetails(topic) {
-                const detailsPanel = document.getElementById('topic-details');
-                const titleElement = document.getElementById('detail-title');
-                const contentElement = document.getElementById('detail-content');
-                
-                titleElement.textContent = topic.name;
-                contentElement.textContent = topic.content || "Main document";
-                
-                detailsPanel.style.display = 'block';
-            }
-            
-            // Function to wrap text
-            function wrap(text, width) {
-                text.each(function() {
-                    const text = d3.select(this);
-                    const words = text.text().split(/\s+/).reverse();
-                    let word;
-                    let line = [];
-                    let lineNumber = 0;
-                    const lineHeight = 1.1;
-                    const y = text.attr("y");
-                    const dy = parseFloat(text.attr("dy"));
-                    let tspan = text.text(null).append("tspan")
-                        .attr("x", 0)
-                        .attr("y", y)
-                        .attr("dy", dy + "px");
-                    
-                    while (word = words.pop()) {
-                        line.push(word);
-                        tspan.text(line.join(" "));
-                        if (tspan.node().getComputedTextLength() > width) {
-                            line.pop();
-                            tspan.text(line.join(" "));
-                            line = [word];
-                            tspan = text.append("tspan")
-                                .attr("x", 0)
-                                .attr("y", y)
-                                .attr("dy", ++lineNumber * lineHeight + dy + "px")
-                                .text(word);
-                        }
-                    }
-                });
-            }
+            console.log("Topic data loaded successfully");
+            if (groupData) console.log("Group data loaded successfully");
+        } catch (error) {
+            console.error("Error parsing JSON data:", error);
+            topicData = {"name": "Error parsing data", "children": []};
+        }
+        
+        // Set up the SVG container
+        const width = 1200;
+        const height = 800;
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        
+        // Clear any existing content
+        svg.selectAll("*").remove();
+        
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 10])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // Main container group with initial transform
+        const g = svg.append("g")
+            .attr("transform", `translate(${width/2},${height/2})`);
+        
+        // Color scale for different types of nodes
+        const colorScale = d3.scaleOrdinal()
+            .domain(["document", "group", "subgroup", "topic", "chapter"])
+            .range(["#4CAF50", "#2196F3", "#03A9F4", "#FF9800", "#E91E63"]);
+        
+        // Initialize visualizations
+        let currentView = "radial";
+        
+        drawVisualization();
+        
+        // Toggle between different visualization types
+        document.getElementById("radialViewBtn").addEventListener("click", function() {
+            this.classList.add("active");
+            document.getElementById("treeViewBtn").classList.remove("active");
+            currentView = "radial";
+            drawVisualization();
         });
+        
+        document.getElementById("treeViewBtn").addEventListener("click", function() {
+            this.classList.add("active");
+            document.getElementById("radialViewBtn").classList.remove("active");
+            currentView = "tree";
+            drawVisualization();
+        });
+        
+        {% if group_data %}
+        document.getElementById("toggleGroupsBtn").addEventListener("click", function() {
+            showGroups = !showGroups;
+            this.textContent = showGroups ? "Hide Topic Groups" : "Show Topic Groups";
+            drawVisualization();
+        });
+        {% else %}
+        document.getElementById("toggleGroupsBtn").style.display = "none";
+        {% endif %}
+        
+        function drawVisualization() {
+            // Clear existing visualization
+            g.selectAll("*").remove();
+            
+            let visualizationData;
+            
+            // Create the combined data structure depending on whether to show groups
+            if (showGroups && groupData) {
+                // Combine document with group structure
+                visualizationData = {
+                    name: "Document",
+                    type: "document",
+                    children: []
+                };
+                
+                // Add group data first
+                visualizationData.children = groupData.map(group => {
+                    return {
+                        name: group.name,
+                        type: "group",
+                        description: group.description,
+                        keywords: group.keywords,
+                        similarity_score: group.similarity_score,
+                        children: (group.children || []).map(topic => {
+                            return {
+                                name: topic.name,
+                                type: "topic",
+                                summary: topic.summary,
+                                children: (topic.children || []).map(chapter => {
+                                    return {
+                                        name: chapter.name,
+                                        content: chapter.content,
+                                        value: chapter.value,
+                                        type: "chapter"
+                                    };
+                                })
+                            };
+                        })
+                    };
+                });
+                
+            } else {
+                // Use regular topic data structure, but add type information
+                visualizationData = {
+                    name: topicData.name || "Document",
+                    type: "document",
+                    children: (topicData.children || []).map(topic => {
+                        return {
+                            name: topic.name,
+                            type: "topic",
+                            summary: topic.summary,
+                            children: (topic.children || []).map(chapter => ({
+                                name: chapter.name,
+                                content: chapter.content,
+                                value: chapter.value,
+                                type: "chapter"
+                            }))
+                        };
+                    })
+                };
+            }
+            
+            if (currentView === "radial") {
+                drawRadialView(visualizationData);
+            } else {
+                drawTreeView(visualizationData);
+            }
+        }
+        
+        function drawRadialView(data) {
+            const radius = Math.min(width, height) / 2 - 100;
+            
+            // Radial cluster layout
+            const cluster = d3.cluster()
+                .size([360, radius]);
+            
+            // Create hierarchy from data
+            const root = d3.hierarchy(data);
+            cluster(root);
+            
+            // Draw links
+            const links = g.append("g")
+                .attr("class", "links")
+                .selectAll("path")
+                .data(root.links())
+                .enter().append("path")
+                .attr("d", d => {
+                    return `M${d.target.y * Math.cos((d.target.x - 90) * Math.PI / 180)},${d.target.y * Math.sin((d.target.x - 90) * Math.PI / 180)}
+                            C${(d.target.y + d.source.y) / 2 * Math.cos((d.target.x - 90) * Math.PI / 180)},${(d.target.y + d.source.y) / 2 * Math.sin((d.target.x - 90) * Math.PI / 180)}
+                             ${(d.target.y + d.source.y) / 2 * Math.cos((d.source.x - 90) * Math.PI / 180)},${(d.target.y + d.source.y) / 2 * Math.sin((d.source.x - 90) * Math.PI / 180)}
+                             ${d.source.y * Math.cos((d.source.x - 90) * Math.PI / 180)},${d.source.y * Math.sin((d.source.x - 90) * Math.PI / 180)}`;
+                })
+                .attr("fill", "none")
+                .attr("stroke", "#999")
+                .attr("stroke-width", 1);
+            
+            // Draw nodes
+            const nodes = g.append("g")
+                .attr("class", "nodes")
+                .selectAll("circle")
+                .data(root.descendants())
+                .enter().append("circle")
+                .attr("transform", d => `translate(${d.y * Math.cos((d.x - 90) * Math.PI / 180)},${d.y * Math.sin((d.x - 90) * Math.PI / 180)})`)
+                .attr("r", d => getNodeSize(d))
+                .attr("fill", d => colorScale(d.data.type || "topic"))
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip);
+            
+            // Draw labels
+            const labels = g.append("g")
+                .attr("class", "labels")
+                .selectAll("text")
+                .data(root.descendants())
+                .enter().append("text")
+                .attr("transform", d => {
+                    const angle = (d.x - 90) * Math.PI / 180;
+                    const y = d.y * Math.sin(angle);
+                    const x = d.y * Math.cos(angle);
+                    return `translate(${x},${y}) rotate(${d.x < 180 ? d.x - 90 : d.x + 90})`;
+                })
+                .attr("dy", ".31em")
+                .attr("text-anchor", d => d.x < 180 ? "start" : "end")
+                .text(d => d.data.name.length > 20 ? d.data.name.substring(0, 20) + '...' : d.data.name)
+                .attr("font-size", d => d.depth === 0 ? "14px" : "10px")
+                .attr("fill", "#333");
+        }
+        
+        function drawTreeView(data) {
+            // Tree layout
+            const tree = d3.tree()
+                .size([height - 100, width - 400])
+                .nodeSize([40, 160]);
+            
+            // Create hierarchy from data
+            const root = d3.hierarchy(data);
+            tree(root);
+            
+            // Center the tree
+            g.attr("transform", `translate(${-width/3},${-height/3})`);
+            
+            // Draw links
+            const links = g.append("g")
+                .attr("class", "links")
+                .selectAll("path")
+                .data(root.links())
+                .enter().append("path")
+                .attr("d", d => {
+                    return `M${d.source.y},${d.source.x}
+                            C${(d.source.y + d.target.y) / 2},${d.source.x}
+                             ${(d.source.y + d.target.y) / 2},${d.target.x}
+                             ${d.target.y},${d.target.x}`;
+                })
+                .attr("fill", "none")
+                .attr("stroke", "#999")
+                .attr("stroke-width", 1);
+            
+            // Draw nodes
+            const nodes = g.append("g")
+                .attr("class", "nodes")
+                .selectAll("circle")
+                .data(root.descendants())
+                .enter().append("circle")
+                .attr("cx", d => d.y)
+                .attr("cy", d => d.x)
+                .attr("r", d => getNodeSize(d))
+                .attr("fill", d => colorScale(d.data.type || "topic"))
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip);
+            
+            // Draw labels
+            const labels = g.append("g")
+                .attr("class", "labels")
+                .selectAll("text")
+                .data(root.descendants())
+                .enter().append("text")
+                .attr("x", d => d.y)
+                .attr("y", d => d.x - getNodeSize(d) - 5)
+                .attr("text-anchor", "middle")
+                .text(d => d.data.name.length > 30 ? d.data.name.substring(0, 30) + '...' : d.data.name)
+                .attr("font-size", d => d.depth === 0 ? "14px" : "10px")
+                .attr("fill", "#333");
+        }
+        
+        function getNodeSize(d) {
+            // Size nodes based on depth and type
+            if (d.depth === 0) return 15; // Document
+            if (d.data.type === "group" || d.data.type === "subgroup") return 12;
+            if (d.data.type === "topic") return 8;
+            return 5; // Chapter
+        }
+        
+        // Tooltip functionality
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0)
+            .style("position", "absolute")
+            .style("background", "white")
+            .style("border", "1px solid #ddd")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+            .style("pointer-events", "none")
+            .style("max-width", "300px");
+        
+        function showTooltip(event, d) {
+            let tooltipContent = "";
+            
+            // Customize tooltip based on node type
+            if (d.depth === 0) {
+                // Document node
+                tooltipContent = `<strong>Document:</strong> ${d.data.name}`;
+            } else if (d.data.type === "group" || d.data.type === "subgroup") {
+                // Group node
+                tooltipContent = `
+                    <strong>Topic Group:</strong> ${d.data.name}<br>
+                    ${d.data.description ? `<strong>Description:</strong> ${d.data.description}<br>` : ''}
+                    ${d.data.keywords ? `<strong>Keywords:</strong> ${d.data.keywords}<br>` : ''}
+                    ${d.data.similarity_score ? `<strong>Similarity:</strong> ${d.data.similarity_score.toFixed(2)}` : ''}
+                `;
+            } else if (d.data.type === "topic") {
+                // Topic node
+                tooltipContent = `
+                    <strong>Topic:</strong> ${d.data.name}<br>
+                    ${d.data.summary ? `<strong>Summary:</strong> ${d.data.summary}` : ''}
+                `;
+            } else if (d.data.type === "chapter") {
+                // Chapter node
+                tooltipContent = `
+                    <strong>Chapter:</strong> ${d.data.name}<br>
+                    ${d.data.content ? `<strong>Content:</strong> ${d.data.content.substring(0, 150)}${d.data.content.length > 150 ? '...' : ''}<br>` : ''}
+                    ${d.data.value ? `<strong>Confidence:</strong> ${d.data.value.toFixed(2)}` : ''}
+                `;
+            }
+            
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            
+            tooltip.html(tooltipContent)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        }
+        
+        function hideTooltip() {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
     </script>
 </body>
 </html> 

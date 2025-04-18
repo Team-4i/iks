@@ -34,7 +34,7 @@ urlpatterns = [
     path('spinwheel/', include('spinwheel.urls')),
     path('dbs/', include('dbs.urls')),
     path('plat/', include('plat.urls')),
-    path('flip-card/', include('flip_card.urls')),
+    # path('flip-card/', include('flip_card.urls')),
     path('users/', include('users.urls', namespace='users')),
     # path('chat/', include('ChatAssis.urls', namespace='chat')),
     path('custom-login/', LoginView.as_view(template_name='account/login.html'), name='custom_login'),

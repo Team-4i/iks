@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load combo_filters %}
+
+{% block content %}
+<div class="combos-page">
+    <header class="combos-header">
+        <div class="header-content">
+            <nav class="nav-links">
+                <a href="{% url 'spinwheel:index' %}" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Game
+                </a>
+            </nav>
+            <h1>Card Combos</h1>
+        </div>
+    </header>
+
+    <div class="combos-content">
+        {% for combo in combos %}
+        <div class="combo-card">
+            <h3>{{ combo.name }}</h3>
+            <p>{{ combo.description }}</p>
+            <p>Bonus: {{ combo.bonus_coins }} Coins</p>
+            {% if player_progress|get_combo_status:combo %}
+                <p>Status: Completed</p>
+            {% else %}
+                <p>Status: In Progress</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .combos-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a1c2c 0%, #2a2d3f 100%);
+        color: #ffffff;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .combos-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    /* Common Back Button Style - Global */
+    .nav-links {
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
+    }
+
+    .nav-link {
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.15);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        z-index: 2001;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .nav-link i {
+        font-size: 0.9rem;
+    }
+
+    .combos-content {
+        max-width: 1200px;
+        margin: 2rem auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .combo-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease;
+    }
+
+    .combo-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %} 

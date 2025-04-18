@@ -2,6 +2,14 @@
 {% load static %}
 {% load text_filters_plat %}
 
+{% block title %}
+{% if is_dynamic %}
+{{ topic_group.title }} - {{ main_topic.title }}
+{% else %}
+Constitutional Part {{ part }} - {{ type_name }}
+{% endif %}
+{% endblock %}
+
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css?family=Lovers+Quarrel" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -586,365 +594,284 @@
 {% endblock %}
 
 {% block content %}
-<div class="articles-container">
- 
-
-    <!-- Add audio element -->
-    <audio id="pageFlipSound" preload="auto">
-        <source src="{% static 'sounds/page-flip-sound.mp3' %}" type="audio/mpeg">
-    </audio>
-
-    <div class="book">
-        <div id="pages" class="pages">
-            <!-- Cover page -->
-            <div class="page">
-                <div class="cover-content">
-                    <div class="cover-title">Constitutional Articles</div>
-                    <div class="cover-subtitle">Part {{ part }} - {{ type }}</div>
-                </div>
-                <div class="page-number">Cover</div>
-            </div>
-            <!-- Table of Contents pages -->
-            {% with toc_items=articles|slice_toc_items:6 %}  <!-- 6 items per page -->
-                {% for page_items in toc_items %}
-                    <!-- Right page -->
-                    <div class="page">
-                        <div class="toc">
-                            {% if forloop.first %}
-                            <div class="toc-title">Table of Contents</div>
-                            {% endif %}
-                            <ul class="toc-list">
-                                {% for article in page_items %}
-                                <li class="toc-item">Article {{ article.article_number }} - {{ article.article_title }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        <div class="page-number">{{ forloop.counter|roman }}</div>
-                    </div>
-                    <!-- Left page -->
-                    <div class="page">
-                        <div class="toc">
-                            <ul class="toc-list">
-                                {% for article in page_items %}
-                                <li class="toc-item">
-                                    <span class="toc-page">Page {{ article.page_number }}</span>
-                                    <span class="toc-dots"></span>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        <div class="page-number">{{ forloop.counter|roman }}</div>
-                    </div>
-                {% endfor %}
-            {% endwith %}
-
-            <!-- Article pages -->
-            {% for article in articles %}
-                <!-- Article content -->
-                {% with explanation_parts=article.simplified_explanation|split_explanation %}
-                    <!-- First spread: Title and start of content -->
-                    <div class="page">
-                        <div class="article-content">
-                            <div class="article-header">
-                                <div class="article-number">Article {{ article.article_number }}</div>
-                                <div class="article-title">{{ article.article_title }}</div>
-                            </div>
-                            <div class="article-explanation">
-                                <strong>Explanation:</strong><br>
-                                {{ explanation_parts.0 }}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Continue content across pages -->
-                    {% for part in explanation_parts|slice:"1:" %}
-                        <div class="page">
-                            <div class="article-content">
-                                <div class="article-explanation">
-                                    {{ part }}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endwith %}
-            {% endfor %}
-        </div>
+<div class="container p-4">
+    <!-- Back button and title section -->
+    <div class="flex justify-between items-center mb-6">
+        <a href="{% url 'plat:profile' %}" class="btn btn-primary">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+        </a>
+        <h1 class="text-3xl font-bold text-center">
+            {% if is_dynamic %}
+            {{ topic_group.title }} - {{ main_topic.title }}
+            {% else %}
+            Constitutional Part {{ part }} - {{ type_name }}
+            {% endif %}
+        </h1>
+        <div class="w-[80px]"></div> <!-- For layout balance -->
     </div>
 
-    <button class="close-book-btn" onclick="closeBook()">Close Book</button>
+    <!-- Main content area -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        {% if is_dynamic %}
+        <!-- Dynamic content display (chapters) -->
+        {% if chapters %}
+        <div class="space-y-8">
+            {% for chapter in chapters %}
+            <div class="article-section" id="chapter-{{ chapter.id }}">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    {{ chapter.title }}
+                </h2>
+                <div class="article-content mb-4">
+                    <p>{{ chapter.content|linebreaks }}</p>
+                </div>
+            </div>
+            {% if not forloop.last %}<hr class="my-6">{% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-xl text-gray-600">No chapters available for this topic yet.</p>
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- Traditional content display (articles) -->
+        {% if articles %}
+        <div class="space-y-8">
+            {% for article in articles %}
+            <div class="article-section" id="article-{{ article.id }}">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    Article {{ article.article_number }}: {{ article.article_title }}
+                    <button class="ml-3 text-gray-500 hover:text-blue-500 read-article-btn" 
+                            data-article="{{ article.id }}" data-text="{{ article.simplified_explanation }}">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </h2>
+                <div class="article-content mb-4">
+                    <p>{{ article.simplified_explanation|linebreaks }}</p>
+                </div>
+                <div class="flex justify-end">
+                    <button class="bookmark-btn px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center" 
+                            data-page="{{ forloop.counter }}" data-part="{{ part }}" data-type="{{ type }}">
+                        <i class="fas fa-bookmark mr-2"></i> Bookmark
+                    </button>
+                </div>
+            </div>
+            {% if not forloop.last %}<hr class="my-6">{% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-xl text-gray-600">No articles available for this checkpoint yet.</p>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Audio player section -->
+    <div id="audio-player" class="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 hidden">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="fas fa-volume-up mr-3 text-blue-600"></i>
+                <div>
+                    <p class="font-bold">Now Reading:</p>
+                    <p id="reading-title" class="text-sm text-gray-600"></p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="pause-btn" class="text-xl text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button id="stop-btn" class="text-xl text-red-600 hover:text-red-800">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Add this near your book content -->
-<div class="speech-controls">
-    <button id="startSpeech" class="speech-btn">Start Speaking</button>
-    <button id="stopSpeech" class="speech-btn" disabled>Stop Speaking</button>
-</div>
+{% if has_bookmark %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Scroll to the bookmarked article if present
+        const bookmarkPage = {{ bookmark.page_number }};
+        
+        if (bookmarkPage) {
+            const articles = document.querySelectorAll('.article-section');
+            if (articles.length >= bookmarkPage) {
+                const bookmarkedArticle = articles[bookmarkPage - 1];
+                if (bookmarkedArticle) {
+                    setTimeout(() => {
+                        bookmarkedArticle.scrollIntoView({ behavior: 'smooth' });
+                        bookmarkedArticle.classList.add('highlight-bookmark');
+                        setTimeout(() => {
+                            bookmarkedArticle.classList.remove('highlight-bookmark');
+                        }, 2000);
+                    }, 500);
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var pages = document.getElementsByClassName('page');
-    var pageFlipSound = document.getElementById('pageFlipSound');
-    var book = document.querySelector('.book');
+    const audioPlayer = document.getElementById('audio-player');
+    const readingTitle = document.getElementById('reading-title');
+    const pauseBtn = document.getElementById('pause-btn');
+    const stopBtn = document.getElementById('stop-btn');
     
-    // Function to add bookmark button to a page
-    function addBookmarkButton(page) {
-        // Remove existing bookmark button if any
-        const existingBtn = page.querySelector('.bookmark-btn');
-        if (existingBtn) {
-            existingBtn.remove();
-        }
-        
-        // Add new bookmark button
-        const bookmarkBtn = document.createElement('button');
-        bookmarkBtn.className = 'bookmark-btn';
-        bookmarkBtn.innerHTML = '🔖';
-        bookmarkBtn.onclick = (e) => {
-            e.stopPropagation();
-            addBookmark(page.pageNum);
-        };
-        page.appendChild(bookmarkBtn);
-    }
-
-    // Set initial z-index and add bookmark buttons
-    for(var i = 0; i < pages.length; i++) {
-        if (i % 2 === 0) {
-            pages[i].style.zIndex = (pages.length - i);
-        }
-        pages[i].pageNum = i + 1;
-        addBookmarkButton(pages[i]);
-    }
-
-    // Function to flip to a specific page
-    function flipToPage(pageNum) {
-        for(var i = 1; i < pageNum; i++) {
-            if(i % 2 === 1) {
-                pages[i-1].classList.add('flipped');
-                if(pages[i]) {
-                    pages[i].classList.add('flipped');
-                }
+    let audio = null;
+    let isPaused = false;
+    
+    {% if not is_dynamic %}
+    // Only set up text-to-speech for traditional articles
+    // Add event listeners to article reading buttons
+    document.querySelectorAll('.read-article-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const articleId = this.getAttribute('data-article');
+            const articleText = this.getAttribute('data-text');
+            const articleTitle = this.closest('.article-section').querySelector('h2').textContent.trim();
+            
+            // Stop any existing audio
+            if (audio) {
+                audio.pause();
+                audio = null;
             }
-        }
-    }
-
-    // Check if there's a bookmark and flip to that page
-    {% if bookmark.has_bookmark %}
-        // Add a small delay to ensure animations work properly
-        setTimeout(() => {
-            flipToPage({{ bookmark.page_number }});
-            updateBookmarkVisual({{ bookmark.page_number }});
-        }, 500);
-    {% endif %}
-
-    // Function to play page flip sound
-    function playPageFlipSound() {
-        pageFlipSound.currentTime = 0;
-        pageFlipSound.play().catch(function(error) {
-            console.log("Audio play failed:", error);
+            
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Fetch speech audio
+            fetch('/plat/speech/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    text: articleText
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.blob();
+            })
+            .then(blob => {
+                // Reset button
+                this.innerHTML = '<i class="fas fa-volume-up"></i>';
+                
+                // Create and play audio
+                const url = URL.createObjectURL(blob);
+                audio = new Audio(url);
+                
+                // Show player controls
+                audioPlayer.classList.remove('hidden');
+                readingTitle.textContent = articleTitle;
+                
+                // Play audio
+                audio.play();
+                
+                // Set up event for when audio ends
+                audio.onended = function() {
+                    audioPlayer.classList.add('hidden');
+                    audio = null;
+                };
+            })
+            .catch(error => {
+                console.error('Error fetching speech:', error);
+                this.innerHTML = '<i class="fas fa-volume-up"></i>';
+                alert('Error generating speech. Please try again.');
+            });
         });
-    }
-
-    // Add click handlers to pages
-    for(var i = 0; i < pages.length; i++) {
-        pages[i].onclick = function() {
-            if (this.pageNum % 2 === 0) {
-                this.classList.remove('flipped');
-                this.previousElementSibling.classList.remove('flipped');
-            } else {
-                this.classList.add('flipped');
-                this.nextElementSibling.classList.add('flipped');
-            }
-            playPageFlipSound();
-        }
-    }
-
-    // Add grabbing class for animation control
-    document.addEventListener('mousedown', function() {
-        document.body.classList.add('grabbing');
     });
     
-    document.addEventListener('mouseup', function() {
-        document.body.classList.remove('grabbing');
-    });
-
-    // Add initialization code to load bookmark on page load
-    fetch('{% url "plat:get_bookmark" %}')
-        .then(response => response.json())
-        .then(data => {
-            if(data.success && data.part == "{{ part|escapejs }}" && data.type == "{{ type|escapejs }}") {
-                updateBookmarkVisual(data.page_number);
-            }
-        });
-
-    const startBtn = document.getElementById('startSpeech');
-    const stopBtn = document.getElementById('stopSpeech');
-    let currentAudio = null;
-    let currentPage = 0;
-    let speaking = false;
-
-    // Add this function to get bookmark page
-    function getBookmarkPage() {
-        return fetch('/plat/get_bookmark/')
-            .then(response => response.json())
+    // Bookmark functionality
+    document.querySelectorAll('.bookmark-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const pageNumber = this.getAttribute('data-page');
+            const part = this.getAttribute('data-part');
+            const type = this.getAttribute('data-type');
+            
+            fetch('/plat/bookmark/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    page_number: pageNumber,
+                    part: part,
+                    type: type
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    return data.page_number - 1;
+                    // Show success message
+                    alert('Bookmark saved!');
+                } else {
+                    alert('Error saving bookmark: ' + data.message);
                 }
-                return 0;
             })
             .catch(error => {
-                console.error('Error getting bookmark:', error);
-                return 0;
+                console.error('Error saving bookmark:', error);
+                alert('Error saving bookmark. Please try again.');
             });
-    }
-
-    function speakPage(pageNumber) {
-        const pages = document.querySelectorAll('.page');
-        if (pageNumber >= pages.length || !speaking) {
-            stopSpeaking();
-            return;
-        }
-
-        const pageText = pages[pageNumber].textContent.trim();
-        currentPage = pageNumber; // Update current page
-        
-        fetch(`/plat/get_speech/?text=${encodeURIComponent(pageText)}`)
-            .then(response => response.blob())
-            .then(blob => {
-                if (!speaking) return; // Don't start new audio if stopped
-                currentAudio = new Audio(URL.createObjectURL(blob));
-                currentAudio.addEventListener('ended', () => {
-                    if (speaking) {
-                        speakPage(pageNumber + 1);
-                    }
-                }, { once: true }); // Add event listener that only triggers once
-                currentAudio.play();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                stopSpeaking();
-            });
-    }
-
-    function startSpeaking() {
-        getBookmarkPage().then(bookmarkPage => {
-            speaking = true;
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            startBtn.classList.add('speaking');
-            currentPage = bookmarkPage;
-            speakPage(currentPage);
         });
-    }
-
-    function stopSpeaking() {
-        speaking = false;
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.currentTime = 0; // Reset audio position
-            currentAudio = null;
-        }
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        startBtn.classList.remove('speaking');
-
-        // Add bookmark at current page when stopping
-        fetch('{% url "plat:add_bookmark" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                part: "{{ part|escapejs }}",
-                type: "{{ type|escapejs }}",
-                page_number: currentPage + 1 // Convert from 0-based to 1-based index
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                updateBookmarkVisual(currentPage + 1);
+    });
+    {% endif %}
+    
+    // Audio player controls
+    pauseBtn.addEventListener('click', function() {
+        if (audio) {
+            if (isPaused) {
+                audio.play();
+                this.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                audio.pause();
+                this.innerHTML = '<i class="fas fa-play"></i>';
             }
-        })
-        .catch(error => console.error('Error adding bookmark:', error));
-    }
-
-    startBtn.addEventListener('click', startSpeaking);
-    stopBtn.addEventListener('click', stopSpeaking);
-});
-
-// Function to close the book
-function closeBook() {
-    var pages = document.getElementsByClassName('page');
-    var book = document.querySelector('.book');
-    
-    // Flip all pages to closed position
-    for(var i = 0; i < pages.length; i++) {
-        if (i % 2 === 1) {
-            pages[i].classList.add('flipped');
-            if (pages[i].nextElementSibling) {
-                pages[i].nextElementSibling.classList.add('flipped');
-            }
-        }
-    }
-    
-    // Add closed class to book
-    book.classList.add('closed');
-    
-    // Redirect back to profile after a short delay
-    setTimeout(function() {
-        window.location.href = "{% url 'plat:profile' %}";
-    }, 1500);
-}
-
-function addBookmark(pageNum) {
-    fetch('{% url "plat:add_bookmark" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({
-            part: "{{ part|escapejs }}",
-            type: "{{ type|escapejs }}",
-            page_number: pageNum
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.success) {
-            alert('Bookmark added successfully!');
-            updateBookmarkVisual(pageNum);
-        } else {
-            alert('Failed to add bookmark: ' + data.error);
+            isPaused = !isPaused;
         }
     });
-}
-
-function updateBookmarkVisual(pageNum) {
-    // Remove existing bookmark visual
-    document.querySelectorAll('.bookmark-indicator').forEach(el => el.remove());
     
-    // Add new bookmark visual
-    const page = document.querySelector(`.page:nth-child(${pageNum})`);
-    const bookmark = document.createElement('div');
-    bookmark.className = 'bookmark-indicator';
-    page.appendChild(bookmark);
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    stopBtn.addEventListener('click', function() {
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio = null;
+            audioPlayer.classList.add('hidden');
+        }
+    });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
+});
 </script>
+
+<style>
+.highlight-bookmark {
+    background-color: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+    border-radius: 0.5rem;
+    transition: all 0.5s ease;
+}
+</style>
 {% endblock %} 
