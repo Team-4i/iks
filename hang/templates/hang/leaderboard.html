@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
+<div class="leaderboard-container">
+    <h1>Leaderboard</h1>
+    
+    <div class="player-best">
+        <h2>Your Best Performance</h2>
+        {% if player_best_game %}
+            <p>Survival Time: <strong>{{ player_best_game.survival_time }}s</strong></p>
+            <p>Parts Revealed: {{ player_best_game.parts_revealed }}/6</p>
+            <p>Correct Answers: {{ player_best_game.correct_answers }}</p>
+            <p>Wrong Answers: {{ player_best_game.wrong_answers }}</p>
+        {% else %}
+            <p>No games played yet</p>
+        {% endif %}
+    </div>
+
+    <div class="top-players">
+        <h2>Top 10 Players</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Best Time</th>
+                    <th>Games</th>
+                    <th>Correct / Wrong</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stats in top_players %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ stats.player.username }}</td>
+                    <td>{{ stats.best_time }}s</td>
+                    <td>{{ stats.games_played }}</td>
+                    <td>{{ stats.total_correct_answers }} / {{ stats.total_wrong_answers }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No players on the leaderboard yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{% url 'hang:start_page' %}" class="play-again">Play Again</a>
+    </div>
+</div>
+{% endblock %} 
