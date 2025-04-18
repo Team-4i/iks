@@ -1,0 +1,418 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<div class="leaderboard-page">
+    <header class="leaderboard-header">
+        <div class="header-content">
+            <nav class="nav-links">
+                <a href="{% url 'spinwheel:index' %}" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Game
+                </a>
+            </nav>
+            <h1><i class="fas fa-trophy"></i> Global Leaderboard</h1>
+        </div>
+    </header>
+
+    <div class="leaderboard-content">
+        <!-- Top 3 Players Podium -->
+        <div class="top-players">
+            {% for player in top_players %}
+                <div class="podium-place place-{{ forloop.counter }}">
+                    <div class="player-avatar">
+                        {% if player.playerprofile.avatar %}
+                            <img src="{{ player.playerprofile.avatar.url }}" alt="{{ player.username }}">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                        {% if forloop.counter == 1 %}
+                            <div class="crown"><i class="fas fa-crown"></i></div>
+                        {% endif %}
+                    </div>
+                    <div class="player-name">{{ player.username }}</div>
+                    <div class="player-score">
+                        <i class="fas fa-coins"></i> {{ player.playerprofile.coins }}
+                    </div>
+                    <div class="rank-badge">{{ forloop.counter }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Full Leaderboard -->
+        <div class="leaderboard-table">
+            <div class="table-header sortable">
+                <div class="rank">Rank</div>
+                <div class="player">Player</div>
+                <div class="coins" onclick="sortTable('coins')">Coins <i class="fas fa-sort"></i></div>
+                <div class="cards" onclick="sortTable('cards')">Cards <i class="fas fa-sort"></i></div>
+            </div>
+            
+            {% for entry in leaderboard %}
+                <div class="table-row {% if entry.user == request.user %}highlighted{% endif %}" 
+                     data-coins="{{ entry.user.playerprofile.coins }}"
+                     data-cards="{{ entry.card_count }}">
+                    <div class="rank">
+                        {% if entry.rank <= 3 %}
+                            <i class="fas fa-medal rank-{{ entry.rank }}"></i>
+                        {% else %}
+                            {{ entry.rank }}
+                        {% endif %}
+                    </div>
+                    <div class="player">
+                        <div class="player-avatar">
+                            {% if entry.user.playerprofile.avatar %}
+                                <img src="{{ entry.user.playerprofile.avatar.url }}" alt="{{ entry.user.username }}">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <span class="username">{{ entry.user.username }}</span>
+                    </div>
+                    <div class="coins">
+                        <i class="fas fa-coins"></i>
+                        {{ entry.user.playerprofile.coins }}
+                    </div>
+                    <div class="cards">
+                        <i class="fas fa-scroll"></i>
+                        {{ entry.card_count }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Player's Current Position -->
+        {% if user_rank %}
+        <div class="current-player-stats">
+            <div class="stats-header">Your Position</div>
+            <div class="table-row highlighted">
+                <div class="rank">{{ user_rank.rank }}</div>
+                <div class="player">
+                    <div class="player-avatar">
+                        {% if user.playerprofile.avatar %}
+                            <img src="{{ user.playerprofile.avatar.url }}" alt="{{ user.username }}">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <span class="username">{{ user.username }}</span>
+                </div>
+                <div class="coins">
+                    <i class="fas fa-coins"></i>
+                    {{ user.playerprofile.coins }}
+                </div>
+                <div class="cards">
+                    <i class="fas fa-scroll"></i>
+                    {{ user_rank.card_count }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+let currentSort = { column: 'coins', ascending: false };
+
+function sortTable(column) {
+    const table = document.querySelector('.leaderboard-table');
+    const rows = Array.from(table.querySelectorAll('.table-row'));
+    
+    // Update sort direction
+    if (currentSort.column === column) {
+        currentSort.ascending = !currentSort.ascending;
+    } else {
+        currentSort = { column: column, ascending: false };
+    }
+    
+    // Update sort icons
+    const headers = table.querySelectorAll('.table-header div');
+    headers.forEach(header => {
+        const icon = header.querySelector('i');
+        if (icon) {
+            if (header.classList.contains(column)) {
+                icon.className = `fas fa-sort-${currentSort.ascending ? 'up' : 'down'}`;
+            } else {
+                icon.className = 'fas fa-sort';
+            }
+        }
+    });
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const aValue = parseInt(a.dataset[column]);
+        const bValue = parseInt(b.dataset[column]);
+        return currentSort.ascending ? aValue - bValue : bValue - aValue;
+    });
+    
+    // Reorder rows
+    rows.forEach(row => table.appendChild(row));
+    
+    // Update ranks
+    rows.forEach((row, index) => {
+        const rankDiv = row.querySelector('.rank');
+        if (index < 3) {
+            rankDiv.innerHTML = `<i class="fas fa-medal rank-${index + 1}"></i>`;
+        } else {
+            rankDiv.textContent = index + 1;
+        }
+    });
+}
+</script>
+
+<style>
+    .leaderboard-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a1c2c 0%, #2a2d3f 100%);
+        color: #ffffff;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        padding-bottom: 2rem;
+    }
+
+    .leaderboard-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    /* Common Back Button Style - Global */
+    .nav-links {
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
+    }
+
+    .nav-link {
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.15);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        z-index: 2001;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .nav-link i {
+        font-size: 0.9rem;
+    }
+
+    .header-content h1 {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 2rem;
+        color: #ffd700;
+    }
+
+    /* Top Players Podium */
+    .top-players {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        padding: 2rem;
+    }
+
+    .podium-place {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        position: relative;
+        transition: transform 0.3s ease;
+    }
+
+    .podium-place:hover {
+        transform: translateY(-10px);
+    }
+
+    .place-1 {
+        padding: 2rem;
+        background: linear-gradient(45deg, #ffd700, #ffa500);
+        order: 2;
+        margin-bottom: 2rem;
+    }
+
+    .place-2 {
+        background: linear-gradient(45deg, #c0c0c0, #a0a0a0);
+        order: 1;
+    }
+
+    .place-3 {
+        background: linear-gradient(45deg, #cd7f32, #a05a2c);
+        order: 3;
+    }
+
+    .player-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        position: relative;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .place-1 .player-avatar {
+        width: 100px;
+        height: 100px;
+    }
+
+    .crown {
+        position: absolute;
+        top: -25px;
+        color: #ffd700;
+        font-size: 1.5rem;
+        animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .player-name {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .player-score {
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .rank-badge {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #2a2d3f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border: 2px solid currentColor;
+    }
+
+    /* Leaderboard Table */
+    .leaderboard-table {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .table-header {
+        display: grid;
+        grid-template-columns: 80px 1fr 150px 150px;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        font-weight: bold;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table-row {
+        display: grid;
+        grid-template-columns: 80px 1fr 150px 150px;
+        padding: 1rem;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: background-color 0.3s ease;
+    }
+
+    .table-row:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .table-row.highlighted {
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .player {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .rank-1 { color: #ffd700; }
+    .rank-2 { color: #c0c0c0; }
+    .rank-3 { color: #cd7f32; }
+
+    /* Current Player Stats */
+    .current-player-stats {
+        max-width: 1000px;
+        margin: 2rem auto 0;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .stats-header {
+        padding: 1rem;
+        background: rgba(255, 215, 0, 0.1);
+        font-weight: bold;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .top-players {
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .podium-place {
+            order: unset !important;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .table-header, .table-row {
+            grid-template-columns: 60px 1fr 100px 100px;
+            font-size: 0.9rem;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %} 

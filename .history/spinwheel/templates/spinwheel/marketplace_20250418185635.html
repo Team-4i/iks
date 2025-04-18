@@ -1,0 +1,611 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<div class="marketplace-page">
+    <header class="marketplace-header">
+        <div class="header-content">
+            <nav class="nav-links">
+                <a href="{% url 'spinwheel:index' %}" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Game
+                </a>
+            </nav>
+            <div class="marketplace-title">
+                <i class="fas fa-store"></i>
+                <h1>Card Marketplace</h1>
+            </div>
+            <div class="player-balance">
+                <i class="fas fa-coins"></i>
+                <span id="coins-count">{{ profile.coins }}</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="marketplace-content">
+        <div class="filter-section">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="card-search" placeholder="Search cards...">
+            </div>
+            <div class="rarity-filters">
+                <button class="filter-btn active" data-rarity="all">
+                    <span class="filter-icon">🎴</span> All Cards
+                </button>
+                <button class="filter-btn" data-rarity="common">
+                    <span class="filter-icon">⚪</span> Common
+                </button>
+                <button class="filter-btn" data-rarity="rare">
+                    <span class="filter-icon">🔵</span> Rare
+                </button>
+                <button class="filter-btn" data-rarity="epic">
+                    <span class="filter-icon">🟣</span> Epic
+                </button>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            {% for item in marketplace_items %}
+            <div class="marketplace-card {{ item.card.rarity|lower }}" data-rarity="{{ item.card.rarity|lower }}" data-card-id="{{ item.card.id }}">
+                <div class="card-inner">
+                    <div class="card-header">
+                        <span class="rarity-badge {{ item.card.rarity|lower }}">
+                            {{ item.card.rarity }}
+                        </span>
+                        <div class="ownership-info">
+                            <i class="fas fa-layer-group"></i>
+                            <span class="quantity">×{{ item.owned_quantity }}</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">{{ item.card.title }}</h3>
+                        <p class="article-number">#{{ item.card.article_number }}</p>
+                        <p class="card-description">{{ item.card.content }}</p>
+                        <div class="card-popup">
+                            <h3>{{ item.card.title }}</h3>
+                            <p class="article-number">#{{ item.card.article_number }}</p>
+                            <p>{{ item.card.content }}</p>
+                        </div>
+                    </div>
+                    <div class="card-market-info">
+                        <div class="price-tag">
+                            <i class="fas fa-tag"></i>
+                            <span class="price-amount">{{ item.price }}</span>
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="market-actions">
+                            <button class="sell-btn {% if not item.can_sell %}disabled{% endif %}"
+                                    onclick="sellCard({{ item.card.id }})"
+                                    {% if not item.can_sell %}disabled{% endif %}>
+                                <i class="fas fa-dollar-sign"></i> Sell
+                            </button>
+                            <button class="buy-btn {% if not item.can_buy %}disabled{% endif %}"
+                                    onclick="buyCard({{ item.card.id }})"
+                                    {% if not item.can_buy %}disabled{% endif %}>
+                                <i class="fas fa-shopping-cart"></i> Buy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .marketplace-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a1c2c 0%, #2a2d3f 100%);
+        color: #ffffff;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    /* Header Styles */
+    .marketplace-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 2000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .nav-links {
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .nav-link {
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.15);
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        z-index: 2001;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .nav-link i {
+        font-size: 0.9rem;
+    }
+
+    .marketplace-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .marketplace-title i {
+        color: #ffd700;
+        font-size: 1.5rem;
+    }
+
+    .player-balance {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(45deg, #ffd700, #ffa500);
+        padding: 0.8rem 1.5rem;
+        border-radius: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        font-size: 1.2rem;
+    }
+
+    /* Filter Section */
+    .filter-section {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    .search-bar {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 1rem 3rem;
+        border-radius: 25px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1rem;
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .rarity-filters {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-btn.active {
+        background: linear-gradient(45deg, #ffd700, #ffa500);
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .marketplace-card {
+        perspective: 1000px;
+        height: 400px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .marketplace-card:hover {
+        z-index: 100;
+    }
+
+    .card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .marketplace-card:hover .card-inner {
+        transform: translateY(-10px);
+    }
+
+    /* Card Rarity Styles */
+    .marketplace-card.common .card-inner {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    }
+
+    .marketplace-card.rare .card-inner {
+        background: linear-gradient(135deg, rgba(0, 149, 255, 0.1), rgba(0, 149, 255, 0.05));
+        box-shadow: 0 0 20px rgba(0, 149, 255, 0.2);
+    }
+
+    .marketplace-card.epic .card-inner {
+        background: linear-gradient(135deg, rgba(163, 53, 238, 0.1), rgba(163, 53, 238, 0.05));
+        box-shadow: 0 0 20px rgba(163, 53, 238, 0.2);
+    }
+
+    /* Card Content */
+    .card-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .rarity-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .rarity-badge.common { background: rgba(255, 255, 255, 0.2); }
+    .rarity-badge.rare { background: rgba(0, 149, 255, 0.2); color: #0095ff; }
+    .rarity-badge.epic { background: rgba(163, 53, 238, 0.2); color: #a335ee; }
+
+    .card-content {
+        padding: 1.5rem;
+        height: calc(100% - 160px);
+        overflow: hidden;
+    }
+
+    .card-title {
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+        color: #fff;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .article-number {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .card-description {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Market Info */
+    .card-market-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .price-tag {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        color: #ffd700;
+    }
+
+    .market-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .buy-btn, .sell-btn {
+        flex: 1;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .buy-btn {
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        color: white;
+    }
+
+    .sell-btn {
+        background: linear-gradient(45deg, #f44336, #e53935);
+        color: white;
+    }
+
+    .buy-btn:not(.disabled):hover, .sell-btn:not(.disabled):hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    .buy-btn.disabled, .sell-btn.disabled {
+        background: #666;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .cards-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            padding: 1rem;
+        }
+
+        .header-content {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .filter-section {
+            padding: 0 1rem;
+        }
+    }
+
+    /* Add hover popup styles */
+    .card-inner {
+        position: relative;
+    }
+
+    .card-inner:hover .card-popup {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .card-popup {
+        position: absolute;
+        left: auto;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 300px;
+        max-height: 80vh;
+        background: rgba(0, 0, 0, 0.95);
+        border-radius: 15px;
+        padding: 1.5rem;
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-left: 1rem;
+        overflow-y: auto;
+        
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0, 0, 0, 0.2);
+    }
+
+    .card-popup::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .card-popup::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
+
+    .card-popup::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+    }
+
+    .card-popup::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
+    .card-popup h3 {
+        margin-bottom: 0.5rem;
+        color: #fff;
+        font-size: 1.2rem;
+    }
+
+    .card-popup .article-number {
+        margin-bottom: 1rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .card-popup p:last-child {
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    /* Update popup positioning logic */
+    .marketplace-card .card-popup {
+        left: calc(100% + 1rem);
+    }
+
+    .marketplace-card:nth-child(3n) .card-popup,
+    .marketplace-card:nth-child(3n-1) .card-popup {
+        right: calc(100% + 1rem);
+        left: auto;
+    }
+</style>
+
+<script>
+function updateUI(cardId, quantity, coins) {
+    const card = document.querySelector(`.marketplace-card[data-card-id="${cardId}"]`);
+    card.querySelector('.quantity').textContent = `×${quantity}`;
+    document.getElementById('coins-count').textContent = coins;
+    
+    // Update buttons based on new state
+    const sellBtn = card.querySelector('.sell-btn');
+    const buyBtn = card.querySelector('.buy-btn');
+    
+    if (quantity <= 1) {
+        sellBtn.classList.add('disabled');
+        sellBtn.disabled = true;
+    } else {
+        sellBtn.classList.remove('disabled');
+        sellBtn.disabled = false;
+    }
+
+    const price = parseInt(card.querySelector('.price-amount').textContent);
+    if (coins < price) {
+        buyBtn.classList.add('disabled');
+        buyBtn.disabled = true;
+    } else {
+        buyBtn.classList.remove('disabled');
+        buyBtn.disabled = false;
+    }
+}
+
+// Filter functionality
+document.querySelectorAll('.filter-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        // Update active state
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const rarity = button.getAttribute('data-rarity');
+        const cards = document.querySelectorAll('.marketplace-card');
+
+        cards.forEach(card => {
+            if (rarity === 'all' || card.getAttribute('data-rarity') === rarity) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Search functionality
+document.getElementById('card-search').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.marketplace-card');
+
+    cards.forEach(card => {
+        const title = card.querySelector('.card-title').textContent.toLowerCase();
+        const content = card.querySelector('.card-description').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || content.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+function sellCard(cardId) {
+    fetch(`/spinwheel/marketplace/sell/${cardId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        updateUI(cardId, data.new_quantity, data.coins);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function buyCard(cardId) {
+    fetch(`/spinwheel/marketplace/buy/${cardId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        updateUI(cardId, data.new_quantity, data.coins);
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 
