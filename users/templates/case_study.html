@@ -43,7 +43,7 @@
             overflow: hidden;
         }
 
-        /* Animated background pattern */
+        /* Enhanced animated background pattern */
         .case-studies-section::before {
             content: '';
             position: absolute;
@@ -52,6 +52,7 @@
             right: 0;
             bottom: 0;
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5a572' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%238B4513' fill-opacity='0.03' d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z'%3E%3C/path%3E%3C/svg%3E"),
                 linear-gradient(
                     45deg,
                     rgba(197, 165, 114, 0.05) 25%,
@@ -59,28 +60,53 @@
                     transparent 75%,
                     rgba(197, 165, 114, 0.05) 75%
                 );
-            background-size: 60px 60px, 40px 40px;
+            background-size: 60px 60px, 100px 100px, 40px 40px;
             animation: backgroundFloat 30s linear infinite;
-            opacity: 0.4;
+            opacity: 0.5;
         }
 
         @keyframes backgroundFloat {
-            0% { background-position: 0 0; }
-            100% { background-position: 100px 100px; }
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 100px 100px, 50px 50px, -50px -50px; }
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
+            position: relative;
+            padding: 30px 0;
+        }
+
+        .section-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .section-header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 250px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
 
         .section-header h1 {
             font-family: 'Cinzel', serif;
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: var(--ink);
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
             position: relative;
+            display: inline-block;
         }
 
         .section-header h1::after {
@@ -90,10 +116,20 @@
             bottom: -10px;
             width: 150px;
             height: 3px;
-            background: var(--ink);
+            background: linear-gradient(90deg, transparent, var(--ink), transparent);
             transform: translateX(-50%);
             box-shadow: 0 0 10px rgba(44, 24, 16, 0.3);
             animation: titleGlow 3s infinite;
+        }
+
+        .section-header p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-style: italic;
+            color: var(--ink);
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         @keyframes titleGlow {
@@ -103,97 +139,293 @@
 
         .case-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            padding: 40px 0;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 40px;
+            padding: 40px 60px;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .case-card {
             background: var(--parchment);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(44, 24, 16, 0.15);
-            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(44, 24, 16, 0.15);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             border: 2px solid var(--gold);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .case-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .case-card:hover::before {
+            opacity: 1;
         }
 
         .case-card:hover {
-            transform: translateY(-5px) rotate(1deg);
-            box-shadow: 0 8px 25px rgba(44, 24, 16, 0.2);
+            transform: translateY(-10px) rotateX(2deg);
+            box-shadow: 0 20px 40px rgba(44, 24, 16, 0.2);
         }
 
         .case-image {
             width: 100%;
-            height: 200px;
+            height: 220px;
             overflow: hidden;
             position: relative;
             border-bottom: 2px solid var(--gold);
+        }
+
+        .case-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(44, 24, 16, 0.1), rgba(44, 24, 16, 0.3));
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .case-card:hover .case-image::after {
+            opacity: 0.4;
         }
 
         .case-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
+            transition: transform 0.8s ease;
+            transform-origin: center;
         }
 
         .case-card:hover .case-image img {
-            transform: scale(1.1);
+            transform: scale(1) rotate(0deg);
         }
 
         .case-content {
-            padding: 20px;
+            padding: 25px;
             background: linear-gradient(
                 to bottom,
                 var(--parchment),
                 var(--bg-secondary)
             );
+            position: relative;
+            z-index: 2;
+        }
+
+        .case-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%238B4513' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.1;
+            z-index: -1;
         }
 
         .case-title {
             font-family: 'Cinzel', serif;
-            font-size: 1.25rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: var(--ink);
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .case-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), transparent);
         }
 
         .case-article {
-            color: var(--timeline);
+            display: inline-block;
+            color: #fff;
             font-weight: 500;
-            margin-bottom: 10px;
-            display: block;
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
+            margin-bottom: 15px;
+            font-family: 'Cinzel', serif;
+            background: var(--timeline);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 8px rgba(26, 35, 126, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover .case-article {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(26, 35, 126, 0.3);
         }
 
         .case-description {
             color: var(--ink);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 25px;
             font-family: 'Cormorant Garamond', serif;
+            min-height: 80px;
         }
 
         .read-more {
             display: inline-block;
-            padding: 8px 20px;
+            padding: 10px 25px;
             background-color: var(--gold);
             color: var(--ink);
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 50px;
             font-family: 'Cinzel', serif;
             font-weight: 700;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 1px solid var(--ink);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .read-more::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background-color: var(--ink);
+            transition: width 0.4s ease;
+            z-index: -1;
         }
 
         .read-more:hover {
-            background-color: var(--ink);
             color: var(--parchment);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(44, 24, 16, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(44, 24, 16, 0.2);
+        }
+
+        .read-more:hover::before {
+            width: 100%;
+        }
+
+        /* Document corner fold effect */
+        .case-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 30px 30px 0;
+            border-color: transparent var(--gold) transparent transparent;
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover::after {
+            border-width: 0 50px 50px 0;
+        }
+
+        /* Decorative seal */
+        .case-seal {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 60px;
+            height: 60px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--ink);
+            opacity: 0.2;
+            transition: all 0.3s ease;
+            transform: rotate(-15deg);
+        }
+
+        .case-card:hover .case-seal {
+            opacity: 0.8;
+            transform: rotate(0deg);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.7;
+            animation: fadeInOut 2s infinite;
+            z-index: 10;
+        }
+
+        .scroll-text {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .scroll-icon {
+            width: 30px;
+            height: 50px;
+            border: 2px solid var(--ink);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .scroll-icon::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: var(--ink);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            animation: scrollDown 2s infinite;
+        }
+
+        @keyframes scrollDown {
+            0% { top: 8px; opacity: 1; }
+            100% { top: 30px; opacity: 0; }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 0.3; }
+        }
+
+        @media (max-width: 1200px) {
+            .case-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                padding: 30px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -203,11 +435,346 @@
             }
 
             .section-header h1 {
-                font-size: 2rem;
+                font-size: 2.2rem;
+            }
+
+            .section-header p {
+                font-size: 1.2rem;
+                padding: 0 20px;
             }
 
             .case-card {
                 margin: 0 10px;
+            }
+            
+            .case-description {
+                min-height: auto;
+            }
+        }
+
+        /* Article slider styles */
+        .article-slider-container {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            transition: right 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+            overflow: hidden;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .article-slider-container.active {
+            right: 0;
+        }
+
+        .article-slider {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f4e4bc 0%, #e6d5ac 100%);
+            padding: 0;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            scrollbar-width: thin;
+            scrollbar-color: var(--gold) var(--parchment);
+        }
+
+        .article-slider::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .article-slider::-webkit-scrollbar-track {
+            background: var(--parchment);
+        }
+
+        .article-slider::-webkit-scrollbar-thumb {
+            background-color: var(--gold);
+            border-radius: 4px;
+            border: 2px solid var(--parchment);
+        }
+
+        .article-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 80px 40px;
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--ink);
+            position: relative;
+        }
+
+        /* Immersive header */
+        .article-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--gold);
+            position: relative;
+        }
+
+        .article-header::before,
+        .article-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--gold);
+            opacity: 0.2;
+            animation: pulseGlow 4s infinite alternate;
+        }
+
+        .article-header::before {
+            left: 0;
+            animation-delay: 0s;
+        }
+
+        .article-header::after {
+            right: 0;
+            animation-delay: 2s;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.2; }
+            50% { transform: scale(1.5); opacity: 0.4; }
+        }
+
+        .article-title {
+            font-family: 'Cinzel', serif;
+            font-size: 3.5rem;
+            color: var(--ink);
+            margin-bottom: 20px;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .article-meta {
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+
+        /* Ambient background effect */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(197, 165, 114, 0.2) 0%, rgba(44, 24, 16, 0.1) 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        .article-slider-container.active .ambient-bg {
+            opacity: 1;
+        }
+
+        /* Enhanced reading experience */
+        .article-body {
+            font-size: 1.5rem;
+            line-height: 1.8;
+            text-align: left;
+            position: relative;
+        }
+
+        .article-body p {
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+
+        .article-body p:hover {
+            opacity: 1;
+        }
+
+        .article-body h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2rem;
+            margin: 3rem 0 1.5rem;
+            color: var(--ink);
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .article-body h3::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 80%;
+            background: var(--gold);
+            border-radius: 4px;
+        }
+
+        .article-body blockquote {
+            border-left: 4px solid var(--gold);
+            padding: 20px 30px;
+            margin: 30px 0;
+            font-style: italic;
+            font-size: 1.6rem;
+            background: rgba(197, 165, 114, 0.1);
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+
+        .article-body blockquote::before {
+            content: '"';
+            position: absolute;
+            top: 0;
+            left: 10px;
+            font-size: 4rem;
+            color: var(--gold);
+            opacity: 0.3;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Interactive navigation */
+        .article-close {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050; /* Increased z-index to ensure it's above everything */
+            font-size: 28px;
+            color: var(--ink);
+            background: var(--gold);
+            border: none;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            pointer-events: none; /* Hide and disable interaction by default */
+            transform: rotate(-90deg) scale(0.8);
+        }
+        
+        .article-slider-container.active .article-close {
+            opacity: 1;
+            pointer-events: auto; /* Enable interaction when article is active */
+            transform: rotate(0) scale(1);
+            transition-delay: 0.3s; /* Delay appearance slightly for better UX */
+        }
+        
+        .article-close:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Hide menu when article is active */
+        body:has(.article-slider-container.active) nav,
+        body:has(.article-slider-container.active) header {
+            display: none !important;
+        }
+
+        /* Alternative for browsers that don't support :has */
+        .menu-hidden {
+            display: none !important;
+        }
+
+        /* Reading progress indicator */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--gold);
+            z-index: 1020;
+            transition: width 0.1s ease;
+        }
+
+        /* Navigation arrows */
+        .article-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(197, 165, 114, 0.3);
+        }
+
+        .nav-arrow {
+            display: flex;
+            align-items: center;
+            font-family: 'Cinzel', serif;
+            color: var(--ink);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            padding: 10px 20px;
+            border-radius: 30px;
+            background: rgba(197, 165, 114, 0.1);
+        }
+
+        .nav-arrow:hover {
+            background: var(--gold);
+            color: white;
+            transform: translateX(0);
+        }
+
+        .nav-arrow.prev {
+            transform: translateX(-10px);
+        }
+        
+        .nav-arrow.next {
+            transform: translateX(10px);
+        }
+
+        .nav-arrow.prev:hover {
+            transform: translateX(-5px);
+        }
+        
+        .nav-arrow.next:hover {
+            transform: translateX(5px);
+        }
+
+        .nav-arrow i {
+            margin: 0 10px;
+        }
+
+        @media (max-width: 992px) {
+            .article-content {
+                padding: 70px 30px;
+            }
+            
+            .article-title {
+                font-size: 2.8rem;
+            }
+            
+            .article-body {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .article-content {
+                padding: 60px 20px;
+            }
+            
+            .article-title {
+                font-size: 2.2rem;
+            }
+            
+            .article-body {
+                font-size: 1.2rem;
+            }
+            
+            .article-body blockquote {
+                font-size: 1.3rem;
+                padding: 15px 20px;
             }
         }
     </style>
@@ -219,7 +786,7 @@
         <div class="container">
             <div class="section-header">
                 <h1>Landmark Constitutional Cases</h1>
-                <p>Explore the cases that shaped Indian constitutional law</p>
+                <p>Explore the historic judgments that shaped India's constitutional jurisprudence</p>
             </div>
             
             <div class="case-grid">
@@ -232,7 +799,10 @@
                         <h2 class="case-title">Indra Sawhney vs Union of India (1992)</h2>
                         <span class="case-article">Article 15(4)</span>
                         <p class="case-description">This landmark case discusses the definition of the term 'State' under Article 12 of the Constitution of India.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -245,7 +815,10 @@
                         <h2 class="case-title">Shreya Singhal vs Union of India (2015)</h2>
                         <span class="case-article">Article 19(1)(a)</span>
                         <p class="case-description">A pivotal case that struck down Section 66A of the IT Act, recognizing the importance of free speech in the digital era.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-gavel"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -258,7 +831,10 @@
                         <h2 class="case-title">Kesavananda Bharati v. State of Kerala (1973)</h2>
                         <span class="case-article">Article 198</span>
                         <p class="case-description">This case is known for establishing the Basic Structure Doctrine, which limited the power of Parliament to amend the Constitution.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-landmark"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -271,7 +847,10 @@
                         <h2 class="case-title">Maneka Gandhi vs Union of India (1978)</h2>
                         <span class="case-article">Article 21</span>
                         <p class="case-description">This case emphasized the importance of personal liberty and the right to free speech under Article 19(1)(a).</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -284,7 +863,10 @@
                         <h2 class="case-title">The Flag Code of India</h2>
                         <span class="case-article">Article 51A(b)</span>
                         <p class="case-description">The Flag Code of India lays down the rules for the display and respect for the Indian national flag.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-flag"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -297,7 +879,10 @@
                         <h2 class="case-title">Indira Nehru Gandhi v. Raj Narain (1975)</h2>
                         <span class="case-article">Article 51A(c)</span>
                         <p class="case-description">This case led to the interpretation of the scope of Article 368 and the power of Parliament to amend the Constitution.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-gavel"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -310,10 +895,337 @@
                         <h2 class="case-title">Ashoka Kumar Thakur vs. Union of India</h2>
                         <span class="case-article">Article 46</span>
                         <p class="case-description">This case involved the issue of reservations in higher educational institutions and their impact on the rights of citizens.</p>
-                        <a href="#" class="read-more">Read More</a>
+                        <a href="javascript:void(0)" class="read-more">Read More</a>
+                        <div class="case-seal">
+                            <i class="fas fa-landmark"></i>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <div class="scroll-indicator">
+                <span class="scroll-text">Scroll to explore</span>
+                <div class="scroll-icon"></div>
+            </div>
+            
+            <!-- Article Sliders -->
+            <!-- Indra Sawhney Article -->
+            <div id="indra-sawhney-article" class="article-slider-container">
+                <div class="ambient-bg"></div>
+                <div class="reading-progress"></div>
+                <button class="article-close"><i class="fas fa-times"></i></button>
+                <div class="article-slider">
+                    <div class="article-content">
+                        <div class="article-header">
+                            <h2 class="article-title">Indra Sawhney vs Union of India (1992)</h2>
+                            <div class="article-meta">Supreme Court of India | November 16, 1992</div>
+                        </div>
+                        <div class="article-body">
+                            <p>The Indra Sawhney case, also known as the Mandal Commission case, is a landmark judgment in the history of India's constitutional interpretation regarding reservations and affirmative action.</p>
+                            
+                            <h3>Background</h3>
+                            <p>In 1979, the Mandal Commission was established to identify socially or educationally backward classes in India and recommend measures for their advancement. The Commission submitted its report in 1980, recommending 27% reservation for Other Backward Classes (OBCs) in government jobs.</p>
+                            
+                            <p>In 1990, Prime Minister V.P. Singh decided to implement these recommendations, which led to widespread protests across the country. The implementation was challenged in the Supreme Court.</p>
+                            
+                            <h3>Constitutional Issues</h3>
+                            <p>The case centered around several important constitutional questions:</p>
+                            <ul>
+                                <li>Whether Article 16(4) is an exception to Article 16(1)</li>
+                                <li>Whether 'backward class' in Article 16(4) is limited to socially and educationally backward classes</li>
+                                <li>Whether economic criteria can be used to identify backward classes</li>
+                                <li>Whether reservation can exceed 50%</li>
+                                <li>Whether reservations can be made in promotions</li>
+                            </ul>
+                            
+                            <h3>The Judgment</h3>
+                            <p>The nine-judge bench delivered a landmark judgment that laid down several important principles:</p>
+                            
+                            <blockquote>
+                                "A backward class cannot be determined only and exclusively with reference to economic criterion. It may be a consideration or basis along with and in addition to social backwardness, but it can never be the sole criterion."
+                            </blockquote>
+                            
+                            <p>The Court upheld the 27% reservation for OBCs but laid down the following guidelines:</p>
+                            <ul>
+                                <li>The total reservation should not exceed 50% (except in extraordinary situations)</li>
+                                <li>Reservations under Article 16(4) are limited to initial appointments and not promotions</li>
+                                <li>'Creamy layer' among the backward classes should be excluded from reservation</li>
+                                <li>Backward classes should be identified not just on economic criteria but on social and educational backwardness</li>
+                            </ul>
+                            
+                            <h3>Impact and Legacy</h3>
+                            <p>The Indra Sawhney judgment is considered a milestone in India's jurisprudence on affirmative action. It defined the scope and limits of reservation policy, introduced the concept of 'creamy layer', and established the 50% ceiling on reservations which continues to guide policy-making to date.</p>
+                            
+                            <p>The judgment also recognized that to realize true equality as envisioned in the Constitution, sometimes special measures for the underprivileged are necessary.</p>
+                        
+                            <div class="article-nav">
+                                <a href="javascript:void(0)" class="nav-arrow prev" data-target="ashoka-kumar-article">
+                                    <i class="fas fa-arrow-left"></i> Previous Case
+                                </a>
+                                <a href="javascript:void(0)" class="nav-arrow next" data-target="shreya-singhal-article">
+                                    Next Case <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shreya Singhal Article -->
+            <div id="shreya-singhal-article" class="article-slider-container">
+                <div class="article-slider">
+                    <button class="article-close"><i class="fas fa-times"></i></button>
+                    <div class="article-content">
+                        <div class="article-header">
+                            <h2 class="article-title">Shreya Singhal vs Union of India (2015)</h2>
+                            <div class="article-meta">Supreme Court of India | March 24, 2015</div>
+                        </div>
+                        <div class="article-body">
+                            <p>The Shreya Singhal case is a landmark judgment regarding free speech in the digital era in India. It dealt with the constitutionality of Section 66A of the Information Technology Act, 2000.</p>
+                            
+                            <h3>Background</h3>
+                            <p>Section 66A criminalized sending "offensive messages" through a computer or communication device. The provision was criticized for its vague terminology which gave law enforcement authorities broad powers to interpret what constituted "offensive" content.</p>
+                            
+                            <p>In 2012, two girls were arrested under Section 66A for posting and liking a Facebook status questioning the shutdown of Mumbai following the death of Shiv Sena leader Bal Thackeray. This incident, among others, sparked widespread debate on the misuse of Section 66A.</p>
+                            
+                            <h3>The Petition</h3>
+                            <p>Shreya Singhal, a law student, filed a Public Interest Litigation (PIL) in the Supreme Court challenging the constitutionality of Section 66A on the grounds that it violated the right to freedom of speech and expression guaranteed under Article 19(1)(a) of the Constitution.</p>
+                            
+                            <h3>Constitutional Issues</h3>
+                            <p>The case raised several important constitutional questions:</p>
+                            <ul>
+                                <li>Whether Section 66A violated Article 19(1)(a) of the Constitution</li>
+                                <li>Whether restrictions imposed by Section 66A were reasonable under Article 19(2)</li>
+                                <li>Whether the language of Section 66A was vague and ambiguous</li>
+                            </ul>
+                            
+                            <h3>The Judgment</h3>
+                            <p>In a unanimous decision, the Supreme Court struck down Section 66A as unconstitutional on the ground that it violated Article 19(1)(a) of the Constitution which guarantees freedom of speech and expression.</p>
+                            
+                            <blockquote>
+                                "The Section is unconstitutional also on the ground that it takes within its sweep protected speech and speech that is innocent in nature and is liable therefore to be used in such a way as to have a chilling effect on free speech and would, therefore, have to be struck down on the ground of overbreadth."
+                            </blockquote>
+                            
+                            <p>The Court held that:</p>
+                            <ul>
+                                <li>Section 66A was vague and ambiguous, creating a chilling effect on free speech</li>
+                                <li>The provision went beyond the reasonable restrictions on free speech allowed under Article 19(2)</li>
+                                <li>The provision did not establish a clear distinction between discussion, advocacy, and incitement</li>
+                            </ul>
+                            
+                            <h3>Impact and Legacy</h3>
+                            <p>The Shreya Singhal judgment is considered a watershed moment for free speech in the digital age in India. It established important principles regarding the interpretation of fundamental rights in the context of new technologies.</p>
+                            
+                            <p>The judgment emphasized that the State must not curb freedom of speech and expression on social media platforms unless it falls under the reasonable restrictions under Article 19(2) of the Constitution.</p>
+                        </div>
+                        <div class="article-references">
+                            <h4>References</h4>
+                            <ul>
+                                <li>Writ Petition (Criminal) No. 167 of 2012</li>
+                                <li>Bhatia, G. (2016). Offend, Shock, or Disturb: Free Speech under the Indian Constitution. Oxford University Press.</li>
+                                <li>Kaul, V., & Nair, S. (2015). "The Shreya Singhal judgment and the future of internet regulation in India." Journal of Indian Law and Society, 6, 95-118.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kesavananda Bharati Article -->
+            <div id="kesavananda-bharati-article" class="article-slider-container">
+                <div class="article-slider">
+                    <button class="article-close"><i class="fas fa-times"></i></button>
+                    <div class="article-content">
+                        <div class="article-header">
+                            <h2 class="article-title">Kesavananda Bharati v. State of Kerala (1973)</h2>
+                            <div class="article-meta">Supreme Court of India | April 24, 1973</div>
+                        </div>
+                        <div class="article-body">
+                            <p>The Kesavananda Bharati case is one of the most significant constitutional cases in India's legal history. It established the "Basic Structure Doctrine" which limits Parliament's power to amend the Constitution.</p>
+                            
+                            <h3>Background</h3>
+                            <p>Kesavananda Bharati was the head of a Hindu monastery in Kerala. He filed a petition challenging the Kerala government's attempts under the Kerala Land Reforms Act to impose restrictions on the management of the monastery's property.</p>
+                            
+                            <p>During the course of the litigation, the 24th, 25th, and 29th amendments to the Constitution were passed, which sought to place certain laws beyond judicial scrutiny and give Parliament unlimited power to amend the Constitution.</p>
+                            
+                            <h3>Constitutional Issues</h3>
+                            <p>The case raised fundamental questions about the extent of Parliament's power to amend the Constitution:</p>
+                            <ul>
+                                <li>Whether Parliament could amend any part of the Constitution, including fundamental rights</li>
+                                <li>Whether there were inherent or implied limitations on the amending power of Parliament</li>
+                                <li>Whether the doctrine laid down in Golak Nath case (that fundamental rights cannot be amended) was correct</li>
+                            </ul>
+                            
+                            <h3>The Judgment</h3>
+                            <p>In what became the longest hearing in the Supreme Court's history (at that time), a 13-judge bench delivered a 7:6 majority judgment that created a watershed moment in India's constitutional history.</p>
+                            
+                            <blockquote>
+                                "The power to amend the Constitution does not include the power to alter the basic structure, or framework of the Constitution so as to change its identity."
+                            </blockquote>
+                            
+                            <p>The Court held that:</p>
+                            <ul>
+                                <li>Parliament had the power to amend any part of the Constitution, including fundamental rights</li>
+                                <li>However, this power did not extend to altering the "basic structure" or "basic features" of the Constitution</li>
+                                <li>The Golak Nath judgment was partially overruled, but a new limitation on Parliament's power was established</li>
+                            </ul>
+                            
+                            <h3>The Basic Structure Doctrine</h3>
+                            <p>While the judgment did not provide an exhaustive list of what constitutes the "basic structure," various judges identified several features as part of it:</p>
+                            <ul>
+                                <li>Supremacy of the Constitution</li>
+                                <li>Republican and democratic form of government</li>
+                                <li>Secular character of the Constitution</li>
+                                <li>Separation of powers</li>
+                                <li>Federal character of the Constitution</li>
+                                <li>Sovereignty of India</li>
+                                <li>Unity and integrity of the nation</li>
+                                <li>Individual freedom</li>
+                                <li>Dignity of the individual</li>
+                                <li>Rule of law</li>
+                            </ul>
+                            
+                            <h3>Impact and Legacy</h3>
+                            <p>The Kesavananda Bharati judgment is considered the most important constitutional judgment in India's history. It established a delicate balance between parliamentary power and judicial review, and preserved the democratic character of the Indian Constitution.</p>
+                            
+                            <p>The Basic Structure Doctrine continues to serve as a check on arbitrary constitutional amendments and has been invoked in numerous cases since.</p>
+                        </div>
+                        <div class="article-references">
+                            <h4>References</h4>
+                            <ul>
+                                <li>(1973) 4 SCC 225</li>
+                                <li>Austin, G. (1999). Working a Democratic Constitution: The Indian Experience. Oxford University Press.</li>
+                                <li>Krishnaswamy, S. (2009). Democracy and Constitutionalism in India: A Study of the Basic Structure Doctrine. Oxford University Press.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Maneka Gandhi Article -->
+            <div id="maneka-gandhi-article" class="article-slider-container">
+                <div class="article-slider">
+                    <button class="article-close"><i class="fas fa-times"></i></button>
+                    <div class="article-content">
+                        <div class="article-header">
+                            <h2 class="article-title">Maneka Gandhi vs Union of India (1978)</h2>
+                            <div class="article-meta">Supreme Court of India | January 25, 1978</div>
+                        </div>
+                        <div class="article-body">
+                            <p>The Maneka Gandhi case is a landmark judgment that transformed the interpretation of Article 21 of the Indian Constitution and expanded the scope of personal liberty and the procedure established by law.</p>
+                            
+                            <h3>Background</h3>
+                            <p>Maneka Gandhi's passport was impounded by the Central Government under Section 10(3)(c) of the Passport Act, 1967. She was asked to surrender her passport within seven days but was not given any reason for this action. She filed a petition under Article 32 of the Constitution challenging this order.</p>
+                            
+                            <h3>Constitutional Issues</h3>
+                            <p>The case raised several important constitutional questions:</p>
+                            <ul>
+                                <li>Whether the right to travel abroad is a part of personal liberty under Article 21</li>
+                                <li>What is the meaning of "procedure established by law" in Article 21</li>
+                                <li>What is the relationship between Article 14, 19, and 21</li>
+                                <li>Whether natural justice principles are part of the procedure established by law</li>
+                            </ul>
+                            
+                            <h3>The Judgment</h3>
+                            <p>The seven-judge bench of the Supreme Court gave a landmark judgment that significantly expanded the interpretation of fundamental rights.</p>
+                            
+                            <blockquote>
+                                "The expression 'personal liberty' in Article 21 is of the widest amplitude and it covers a variety of rights which go to constitute the personal liberty of man and some of them have been raised to the status of distinct fundamental rights and given additional protection under Article 19."
+                            </blockquote>
+                            
+                            <p>The Court held that:</p>
+                            <ul>
+                                <li>The right to travel abroad is a part of personal liberty under Article 21</li>
+                                <li>"Procedure established by law" means a procedure that is fair, just, and reasonable, not merely a procedure prescribed by law</li>
+                                <li>Articles 14, 19, and 21 are not mutually exclusive but form a single scheme in the Constitution</li>
+                                <li>The principles of natural justice are an integral part of the procedural safeguards under Article 21</li>
+                            </ul>
+                            
+                            <h3>Impact and Legacy</h3>
+                            <p>The Maneka Gandhi judgment is considered a turning point in the constitutional jurisprudence of India. It expanded the scope of personal liberty and gave a new dimension to fundamental rights.</p>
+                            
+                            <p>The judgment moved away from the narrow interpretation of Article 21 in the A.K. Gopalan case and adopted a more liberal and holistic approach to fundamental rights. It laid the foundation for subsequent judgments that recognized several unenumerated rights as part of Article 21, such as the right to privacy, right to clean environment, right to education, etc.</p>
+                            
+                            <p>The case also established that any law affecting personal liberty should be reasonable, fair, and just, and should pass the test of Articles 14 and 19 as well.</p>
+                        </div>
+                        <div class="article-references">
+                            <h4>References</h4>
+                            <ul>
+                                <li>1978 AIR 597, 1978 SCR (2) 621</li>
+                                <li>Basu, D.D. (2008). Introduction to the Constitution of India. LexisNexis Butterworths.</li>
+                                <li>Sathe, S.P. (2002). Judicial Activism in India: Transgressing Borders and Enforcing Limits. Oxford University Press.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flag Code Article -->
+            <div id="flag-code-article" class="article-slider-container">
+                <div class="article-slider">
+                    <button class="article-close"><i class="fas fa-times"></i></button>
+                    <div class="article-content">
+                        <div class="article-header">
+                            <h2 class="article-title">The Flag Code of India</h2>
+                            <div class="article-meta">Ministry of Home Affairs | January 26, 2002</div>
+                        </div>
+                        <div class="article-body">
+                            <p>The Flag Code of India is a set of laws, practices, and conventions that govern the display of the National Flag of India.</p>
+                            
+                            <h3>Background</h3>
+                            <p>The Flag Code of India came into effect on January 26, 2002. Before this, the display of the National Flag was governed by the provisions of the Emblems and Names (Prevention of Improper Use) Act, 1950 and the Prevention of Insults to National Honour Act, 1971.</p>
+                            
+                            <p>The Flag Code of India, 2002, superseded the "Flag Code – India" as it existed before. The new code was a significant step as it allowed the general public to display the National Flag on all days and occasions, ceremonial or otherwise, consistent with the dignity and honour of the National Flag.</p>
+                            
+                            <h3>Constitutional Significance</h3>
+                            <p>The National Flag is a symbol of national pride and identity. Article 51A(a) of the Constitution makes it a fundamental duty of every citizen to respect the National Flag and the National Anthem.</p>
+                            
+                            <p>The Flag Code is not a statute in itself but a compilation of all the laws, conventions, practices, and instructions for guidance. It is based on the Prevention of Insults to National Honour Act, 1971, and various judgments of the Supreme Court.</p>
+                            
+                            <h3>Key Provisions of the Flag Code</h3>
+                            <p>The Flag Code of India, 2002, is divided into three parts:</p>
+                            <ol>
+                                <li>Part I: General Description of the National Flag</li>
+                                <li>Part II: Display of the National Flag by Members of Public, Private Organizations, Educational Institutions, etc.</li>
+                                <li>Part III: Display of the National Flag by Central and State Governments and their Organizations and Agencies</li>
+                            </ol>
+                            
+                            <p>Some key provisions include:</p>
+                            <ul>
+                                <li>The National Flag shall be rectangular in shape with a length-to-width ratio of 3:2</li>
+                                <li>The National Flag shall not be used as a drapery or covering, except in State/Military funerals</li>
+                                <li>The National Flag shall not be used as a portion of a costume or uniform</li>
+                                <li>When displayed on a motor car, the flag shall be flown from a staff fixed firmly on the chassis</li>
+                                <li>The National Flag shall not be intentionally displayed with the "saffron" down</li>
+                                <li>When the National Flag is in a damaged or soiled condition, it shall not be cast aside or disrespectfully disposed of but shall be destroyed in private, preferably by burning or any other method consistent with the dignity of the Flag</li>
+                            </ul>
+                            
+                            <h3>Union of India v. Naveen Jindal Case</h3>
+                            <p>A significant case related to the Flag Code is Union of India v. Naveen Jindal (2004). Naveen Jindal, a businessman and politician, challenged the restriction on citizens to fly the National Flag only on certain days of the year.</p>
+                            
+                            <p>The Supreme Court held that the right to fly the National Flag freely with respect and dignity is a fundamental right of a citizen under Article 19(1)(a) of the Constitution, subject to reasonable restrictions under the Flag Code.</p>
+                            
+                            <p>This judgment led to the liberalization of the Flag Code in 2002, which allowed the general public to hoist the National Flag on all days and occasions.</p>
+                            
+                            <h3>Recent Amendments</h3>
+                            <p>In 2021, the Flag Code of India was amended to allow the use of machine-made and polyester flags, which were previously prohibited. This was done to ensure the availability of flags in large numbers during national celebrations.</p>
+                            
+                            <p>In 2022, the government amended the Flag Code again as part of the "Har Ghar Tiranga" (Tricolour in Every Home) campaign, allowing citizens to display the National Flag day and night, provided the flag is made of polyester and machine-made.</p>
+                        </div>
+                        <div class="article-references">
+                            <h4>References</h4>
+                            <ul>
+                                <li>Flag Code of India, 2002</li>
+                                <li>Prevention of Insults to National Honour Act, 1971</li>
+                                <li>Union of India v. Naveen Jindal (2004) 2 SCC 510</li>
+                                <li>Ministry of Home Affairs Notifications dated 30th December 2021 and 20th July 2022</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add article sliders for the remaining cases -->
+            
         </div>
     </section>
 
@@ -335,6 +1247,241 @@
                 nav.classList.remove('hide');
             }
             lastScrollY = window.scrollY;
+        });
+        
+        // Add animation effects on scroll
+        const caseCards = document.querySelectorAll('.case-card');
+        
+        function checkScroll() {
+            caseCards.forEach(card => {
+                const cardTop = card.getBoundingClientRect().top;
+                if (cardTop < window.innerHeight - 100) {
+                    card.style.opacity = "1";
+                    card.style.transform = "translateY(0)";
+                }
+            });
+        }
+        
+        // Set initial states
+        caseCards.forEach(card => {
+            card.style.opacity = "0";
+            card.style.transform = "translateY(20px)";
+            card.style.transition = "opacity 0.6s ease-out, transform 0.6s ease-out";
+        });
+        
+        // Check on scroll
+        window.addEventListener('scroll', checkScroll);
+        
+        // Initial check
+        checkScroll();
+
+        // Immersive Article Reading Experience
+        document.addEventListener('DOMContentLoaded', function() {
+            const caseGrid = document.querySelector('.case-grid');
+            const caseStudiesSection = document.querySelector('.case-studies-section');
+            const readMoreButtons = document.querySelectorAll('.read-more');
+            const articleSliders = document.querySelectorAll('.article-slider-container');
+            const closeButtons = document.querySelectorAll('.article-close');
+            const navArrows = document.querySelectorAll('.nav-arrow');
+            
+            // Map case titles to their corresponding article IDs
+            const caseToArticleMap = {
+                'Indra Sawhney vs Union of India (1992)': 'indra-sawhney-article',
+                'Shreya Singhal vs Union of India (2015)': 'shreya-singhal-article',
+                'Kesavananda Bharati v. State of Kerala (1973)': 'kesavananda-bharati-article',
+                'Maneka Gandhi vs Union of India (1978)': 'maneka-gandhi-article',
+                'The Flag Code of India': 'flag-code-article',
+                'Indira Nehru Gandhi v. Raj Narain (1975)': 'indira-gandhi-article',
+                'Ashoka Kumar Thakur vs. Union of India': 'ashoka-kumar-article'
+            };
+
+            // Circular navigation order for the articles
+            const articleOrder = [
+                'indra-sawhney-article',
+                'shreya-singhal-article',
+                'kesavananda-bharati-article',
+                'maneka-gandhi-article',
+                'flag-code-article',
+                'indira-gandhi-article',
+                'ashoka-kumar-article'
+            ];
+
+            // Function to update reading progress
+            function updateReadingProgress(slider) {
+                const progressBar = slider.closest('.article-slider-container').querySelector('.reading-progress');
+                const articleContent = slider.querySelector('.article-body');
+                const totalHeight = articleContent.scrollHeight;
+                const viewportHeight = slider.clientHeight;
+                const scrolled = slider.scrollTop;
+                
+                // Calculate the percentage of the article that has been read
+                const scrollableHeight = totalHeight - viewportHeight;
+                const percentage = (scrolled / scrollableHeight) * 100;
+                
+                progressBar.style.width = `${Math.min(percentage, 100)}%`;
+            }
+            
+            // Open article slider when clicking "Read More"
+            readMoreButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Get the case title
+                    const caseCard = this.closest('.case-card');
+                    const caseTitle = caseCard.querySelector('.case-title').textContent;
+                    
+                    // Find corresponding article ID
+                    const articleId = caseToArticleMap[caseTitle];
+                    if (!articleId) return;
+                    
+                    openArticle(articleId);
+                });
+            });
+
+            // Function to open an article
+            function openArticle(articleId) {
+                const articleSlider = document.getElementById(articleId);
+                if (!articleSlider) return;
+                
+                // Close any open articles first
+                document.querySelectorAll('.article-slider-container.active').forEach(slider => {
+                    slider.classList.remove('active');
+                });
+                
+                // Open the article
+                setTimeout(() => {
+                    articleSlider.classList.add('active');
+                    document.body.style.overflow = 'hidden'; // Prevent body scrolling
+                    
+                    // Hide menu for browsers that don't support :has
+                    document.querySelectorAll('nav, header').forEach(el => {
+                        el.classList.add('menu-hidden');
+                    });
+                    
+                    // Reset scroll position to top
+                    const slider = articleSlider.querySelector('.article-slider');
+                    slider.scrollTop = 0;
+                    
+                    // Initialize progress bar
+                    updateReadingProgress(slider);
+                    
+                    // Add scroll event for progress tracking
+                    slider.addEventListener('scroll', function() {
+                        updateReadingProgress(this);
+                    });
+                }, 100);
+            }
+            
+            // Close article slider
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    closeActiveArticle();
+                });
+            });
+
+            // Function to close the active article
+            function closeActiveArticle() {
+                const activeArticle = document.querySelector('.article-slider-container.active');
+                if (activeArticle) {
+                    activeArticle.classList.remove('active');
+                    document.body.style.overflow = ''; // Restore body scrolling
+                    
+                    // Show menu again for browsers that don't support :has
+                    document.querySelectorAll('nav, header').forEach(el => {
+                        el.classList.remove('menu-hidden');
+                    });
+                    
+                    // Remove scroll event listeners
+                    const slider = activeArticle.querySelector('.article-slider');
+                    slider.removeEventListener('scroll', updateReadingProgress);
+                }
+            }
+            
+            // Close article on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeActiveArticle();
+                }
+            });
+
+            // Navigation between articles
+            navArrows.forEach(arrow => {
+                arrow.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetArticleId = this.getAttribute('data-target');
+                    if (targetArticleId) {
+                        openArticle(targetArticleId);
+                    }
+                });
+            });
+
+            // Add parallax effect for headings and blockquotes during scrolling
+            articleSliders.forEach(slider => {
+                const articleSlider = slider.querySelector('.article-slider');
+                
+                articleSlider.addEventListener('scroll', function() {
+                    const scrollPosition = this.scrollTop;
+                    const parallaxElements = this.querySelectorAll('h3, blockquote');
+                    
+                    parallaxElements.forEach((element, index) => {
+                        const rect = element.getBoundingClientRect();
+                        const inView = rect.top > 0 && rect.top < window.innerHeight;
+                        
+                        if (inView) {
+                            const speed = 0.1;
+                            const yPos = (rect.top * speed);
+                            element.style.transform = `translateX(${yPos}px)`;
+                            
+                            // Add a subtle opacity effect too
+                            const opacity = 0.9 + (rect.top / window.innerHeight) * 0.1;
+                            element.style.opacity = opacity.toFixed(2);
+                        }
+                    });
+                });
+            });
+
+            // Add text selection highlight effect
+            document.addEventListener('mouseup', function() {
+                const selection = window.getSelection();
+                if (selection.toString().length > 0) {
+                    // Add a slight delay to allow the selection to complete
+                    setTimeout(() => {
+                        const range = selection.getRangeAt(0);
+                        const rect = range.getBoundingClientRect();
+                        
+                        // Create a highlight effect
+                        const highlight = document.createElement('div');
+                        highlight.classList.add('selection-highlight');
+                        highlight.style.position = 'fixed';
+                        highlight.style.top = `${rect.top - 5}px`;
+                        highlight.style.left = `${rect.left - 5}px`;
+                        highlight.style.width = `${rect.width + 10}px`;
+                        highlight.style.height = `${rect.height + 10}px`;
+                        highlight.style.backgroundColor = 'rgba(197, 165, 114, 0.2)';
+                        highlight.style.borderRadius = '3px';
+                        highlight.style.pointerEvents = 'none';
+                        highlight.style.animation = 'highlightFade 2s forwards';
+                        
+                        document.body.appendChild(highlight);
+                        
+                        // Remove the highlight after animation
+                        setTimeout(() => {
+                            document.body.removeChild(highlight);
+                        }, 2000);
+                    }, 10);
+                }
+            });
+
+            // Add highlight fade animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes highlightFade {
+                    0% { opacity: 1; transform: scale(1); }
+                    100% { opacity: 0; transform: scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
         });
     </script>
 {% endblock %}

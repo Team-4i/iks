@@ -214,25 +214,31 @@ class GameRoom(models.Model):
         self.current_content_type = type
         self.save()
         
-        # Update all normal cells with content of this type
+        # Update all normal cells with content from GameFact model
         normal_cells = Cell.objects.filter(cell_type='NORMAL')
-        available_content = CellContent.objects.filter(
-            part=part,
-            type=type
-        )
+        available_facts = list(GameFact.objects.all())
         
-        print(f"[DEBUG] Found {available_content.count()} content items for Part {part} Type {type}")  # Debug log
-        
-        content_list = list(available_content)
+        print(f"[DEBUG] Found {len(available_facts)} facts for the game")  # Debug log
         
         for cell in normal_cells:
-            if content_list:
-                content = random.choice(content_list)
-                content_list.remove(content)
-                cell.current_content = content
+            if available_facts:
+                # Get a random fact
+                fact = random.choice(available_facts)
+                available_facts.remove(fact)
+                
+                # Create a temporary CellContent object for this fact
+                temp_content = CellContent.objects.create(
+                    content=fact.fact_text,
+                    topic="Constitutional Law",  # Default topic
+                    part=part,
+                    type=type
+                )
+                
+                # Assign to cell
+                cell.current_content = temp_content
                 cell.save()
             else:
-                print(f"[DEBUG] Warning: No content left for Cell {cell.number}")  # Debug log
+                print(f"[DEBUG] Warning: No facts left for Cell {cell.number}")  # Debug log
 
 class PlayerPosition(models.Model):
     room = models.ForeignKey(GameRoom, on_delete=models.CASCADE, related_name='player_positions')
@@ -298,3 +304,14 @@ class CellBookmark(models.Model):
 
     class Meta:
         unique_together = ('user',)
+
+class GameFact(models.Model):
+    """Model to store standalone facts for the Snake & Ladder game"""
+    fact_text = models.TextField(help_text="The constitutional law fact to display in the game")
+    
+    def __str__(self):
+        return self.fact_text[:50] + "..." if len(self.fact_text) > 50 else self.fact_text
+    
+    class Meta:
+        verbose_name = "Game Fact"
+        verbose_name_plural = "Game Facts"

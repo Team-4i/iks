@@ -399,7 +399,8 @@ function showCellContent(cellNumber, contentData) {
         // Create a formatted content display
         const contentHtml = `
             <div class="mb-4">
-                <h3 class="font-bold text-lg mb-2">${contentData.topic}</h3>
+                
+                <h3 class="font-bold text-lg mb-2">IKS</h3>
                 <p>${contentData.content}</p>
             </div>
         `;
@@ -540,7 +541,7 @@ function checkAnswer(selected, correct) {
             question: currentQuestionData.question,
             selected_option: selected,
             correct_option: correct,
-            topic_category: currentQuestionData.topic_category || 'Constitutional Law',
+            topic_category: currentQuestionData.topic_category ,
             all_options: allOptions
         })
     })
