@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
+<div class="start-container">
+    <h1>Hangman Survival Challenge</h1>
+    <p>Test your knowledge and see how long you can survive!</p>
+    <a href="{% url 'hang:game' %}" class="start-button">Start Game</a>
+    <a href="{% url 'hang:leaderboard' %}" class="leaderboard-link-start">View Leaderboard</a>
+</div>
+{% endblock %} 

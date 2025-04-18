@@ -1,0 +1,28 @@
+<!-- Hangman SVG Component -->
+<div class="hangman-container">
+    <svg class="hangman-svg" viewBox="0 0 300 400">
+        <!-- Base -->
+        <g class="gallows">
+            <!-- Horizontal base -->
+            <line x1="40" y1="360" x2="260" y2="360" />
+            <!-- Vertical pole -->
+            <line x1="100" y1="360" x2="100" y2="40" />
+            <!-- Top beam -->
+            <line x1="98" y1="40" x2="220" y2="40" />
+            <!-- Support beam -->
+            <line x1="100" y1="80" x2="140" y2="40" />
+            <!-- Rope -->
+            <line x1="180" y1="40" x2="180" y2="80" />
+        </g>
+
+        <!-- Hangman Figure -->
+        <g id="hangman">
+            <circle cx="180" cy="100" r="20" class="hangman-part head" id="head" />
+            <line x1="180" y1="120" x2="180" y2="220" class="hangman-part" id="body" />
+            <line x1="180" y1="150" x2="140" y2="180" class="hangman-part" id="left-arm" />
+            <line x1="180" y1="150" x2="220" y2="180" class="hangman-part" id="right-arm" />
+            <line x1="180" y1="220" x2="150" y2="280" class="hangman-part" id="left-leg" />
+            <line x1="180" y1="220" x2="210" y2="280" class="hangman-part" id="right-leg" />
+        </g>
+    </svg>
+</div> 

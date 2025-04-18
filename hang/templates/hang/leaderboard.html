@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<div class="leaderboard-screen">
+    <div class="leaderboard-container">
+        <div class="leaderboard-header">
+            <h1>🏆 Leaderboard</h1>
+            <a href="{% url 'hang:start_page' %}" class="back-button">
+                <span class="icon">←</span>
+                <span>Back to Menu</span>
+            </a>
+        </div>
+        
+        <div class="player-best">
+            <h2>Your Best Performance</h2>
+            <div class="best-stats">
+                {% if player_best_game %}
+                    <div class="stat-item">
+                        <div class="stat-value">{{ player_best_game.survival_time }}s</div>
+                        <div class="stat-label">Survival Time</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ player_best_game.parts_revealed }}/6</div>
+                        <div class="stat-label">Parts Revealed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ player_best_game.correct_answers }}</div>
+                        <div class="stat-label">Correct</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ player_best_game.wrong_answers }}</div>
+                        <div class="stat-label">Wrong</div>
+                    </div>
+                {% else %}
+                    <p class="no-games">No games played yet</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="top-players">
+            <h2>Top 10 Players</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Best Time</th>
+                            <th>Games</th>
+                            <th>Correct / Wrong</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stats in top_players %}
+                        <tr class="{% if stats.player.username == request.user.username %}highlight-row{% endif %}">
+                            <td>
+                                <div class="rank">
+                                    {% if forloop.counter == 1 %}🥇
+                                    {% elif forloop.counter == 2 %}🥈
+                                    {% elif forloop.counter == 3 %}🥉
+                                    {% else %}{{ forloop.counter }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="player-cell">
+                                    <div class="player-avatar">{{ stats.player.username|make_list|first|upper }}</div>
+                                    <span>{{ stats.player.username }}</span>
+                                </div>
+                            </td>
+                            <td>{{ stats.best_time }}s</td>
+                            <td>{{ stats.games_played }}</td>
+                            <td>{{ stats.total_correct_answers }} / {{ stats.total_wrong_answers }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">No players on the leaderboard yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="{% url 'hang:game' %}" class="play-button">
+                <span class="icon">▶</span>
+                <span>Play Again</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary-color: #34c759;
+    --primary-light: #40d666;
+    --secondary-color: #2d5ca8;
+    --background-dark: #0a1628;
+    --text-light: #ffffff;
+    --text-dim: #d1e3ff;
+    --accent-blue: #7eb6ff;
+    --border-color: rgba(150, 180, 220, 0.4);
+    --card-bg: rgba(26, 60, 110, 0.85);
+    --stat-bg: rgba(45, 92, 168, 0.5);
+}
+
+.leaderboard-screen {
+    min-height: 100vh;
+    background: var(--background-dark);
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-light);
+    padding: 40px 20px;
+    background: linear-gradient(180deg, rgba(13, 31, 61, 0.9) 0%, rgba(10, 22, 40, 0.95) 100%);
+}
+
+.leaderboard-container {
+    
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-top: 50PX;
+}
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.leaderboard-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: var(--secondary-color);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-blue);
+}
+
+.player-best {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.player-best h2 {
+    color: var(--accent-blue);
+    margin: 0 0 20px 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.best-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-item {
+    background: var(--stat-bg);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-item .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.stat-item .stat-label {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.no-games {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    padding: 20px;
+}
+
+.top-players {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.top-players h2 {
+    color: var(--accent-blue);
+    margin: 0 0 20px 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+thead {
+    background: var(--stat-bg);
+}
+
+th {
+    padding: 15px;
+    text-align: left;
+    color: var(--text-dim);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+td {
+    padding: 15px;
+    border-bottom: 1px solid rgba(150, 180, 220, 0.2);
+}
+
+tbody tr {
+    transition: all 0.3s ease;
+}
+
+tbody tr:hover {
+    background: var(--stat-bg);
+}
+
+.highlight-row {
+    background: rgba(52, 199, 89, 0.1);
+}
+
+.highlight-row:hover {
+    background: rgba(52, 199, 89, 0.2);
+}
+
+.rank {
+    font-size: 1.2rem;
+    font-weight: 700;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.player-avatar {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.play-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 35px;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 199, 89, 0.3);
+}
+
+.play-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.4);
+    background: var(--primary-light);
+}
+
+.icon {
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+
+    .leaderboard-header h1 {
+        font-size: 2rem;
+    }
+
+    .best-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-item .stat-value {
+        font-size: 1.5rem;
+    }
+
+    table {
+        font-size: 0.9rem;
+    }
+
+    th, td {
+        padding: 12px 10px;
+    }
+
+    .player-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .best-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .table-container {
+        margin: 0 -15px;
+    }
+
+    table {
+        font-size: 0.8rem;
+    }
+
+    th, td {
+        padding: 10px 8px;
+    }
+}
+</style>
+{% endblock %} 

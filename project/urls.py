@@ -40,6 +40,7 @@ urlpatterns = [
     path('custom-login/', LoginView.as_view(template_name='account/login.html'), name='custom_login'),
     path('ai/', include('aicharacter.urls')),
     path('dynamicdb/', include('dynamicDB.urls')),
+    path('hang/', include('hang.urls')),
 ]
 
 if settings.DEBUG:

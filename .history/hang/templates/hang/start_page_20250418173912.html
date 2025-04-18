@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
+<div class="start-container">
+    <h1>Hangman Survival Challenge</h1>
+    <p>Test your knowledge and see how long you can survive!</p>
+    <a href="{% url 'hang:game' %}" class="start-button">Start Game (All Questions)</a>
+    <a href="{% url 'hang:leaderboard' %}" class="leaderboard-link-start">View Leaderboard</a>
+    
+    <hr style="width: 80%; margin: 20px 0;">
+    
+    <h2>Test Specific Question Types:</h2>
+    <div class="test-links">
+        <a href="{% url 'hang:game' %}?types=MCQ" class="test-link">MCQ Only</a>
+        <a href="{% url 'hang:game' %}?types=FILL" class="test-link">Fill Blank Only</a>
+        <a href="{% url 'hang:game' %}?types=MATCH" class="test-link">Match Pairs Only</a>
+        <a href="{% url 'hang:game' %}?types=TF" class="test-link">True/False Only</a>
+        <a href="{% url 'hang:game' %}?types=ODD" class="test-link">Odd One Out Only</a>
+        <a href="{% url 'hang:game' %}?types=CAT" class="test-link">Categorize Only</a>
+        <a href="{% url 'hang:game' %}?types=SCRAMBLE" class="test-link">Unscramble Only</a>
+        <a href="{% url 'hang:game' %}?types=MCQ,TF" class="test-link">MCQ & True/False</a>
+    </div>
+</div>
+
+<style>
+    .test-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .test-link {
+        display: inline-block;
+        padding: 8px 15px;
+        font-size: 0.9em;
+        color: white;
+        background-color: #6c757d; /* Grey for test links */
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+    .test-link:hover {
+        background-color: #5a6268;
+    }
+</style>
+{% endblock %} 

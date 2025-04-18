@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Survival</title>
+    <link rel="stylesheet" href="{% static 'hang/css/style.css' %}">
+</head>
+<body>
+    {% csrf_token %} {# Add CSRF token for POST requests #}
+    <div class="main-container">
+        <div class="game-container">
+            {% include 'hang/components/timer.html' %}
+            {% include 'hang/components/hangman_svg.html' %}
+        </div>
+
+        <div class="content-section">
+            <div class="player-info">
+                <h2>Player: {{ request.user.username }}</h2>
+                <p>Best Time: <span id="bestTime">{{ player_stats.best_time }}s</span></p>
+                <p>Games Played: {{ player_stats.games_played }}</p>
+            </div>
+            
+            <div id="game-stats" class="game-stats">
+                <p>Correct Answers: 0</p>
+                <p>Wrong Answers: 0</p>
+            </div>
+            
+            <hr>
+            <div class="mcq-section">
+                <h2>Question</h2>
+                <p id="mcq-question">Loading question...</p>
+                <div id="mcq-options">
+                    <!-- Options will be loaded here -->
+                </div>
+            </div>
+            <div class="game-controls">
+                <a href="{% url 'hang:leaderboard' %}" class="leaderboard-link">View Leaderboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal Popup -->
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2>Game Over</h2>
+            <p id="game-over-message"></p>
+            <div class="modal-buttons">
+                <button id="view-leaderboard-btn" class="modal-btn primary-btn">View Leaderboard</button>
+                <button id="play-again-btn" class="modal-btn secondary-btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pass MCQs and URLs to JavaScript
+        const mcqData = {{ mcqs|safe }};
+        const gameConfig = {
+            gameId: {{ game_id }},
+            endGameUrl: "{% url 'hang:end_game' %}",
+            csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value,
+            startPageUrl: "{{ start_page_url }}",
+            leaderboardUrl: "{% url 'hang:leaderboard' %}"
+        };
+    </script>
+    <script src="{% static 'hang/js/hangman.js' %}"></script>
+    <script>
+        // Initialize game
+        window.addEventListener('load', () => {
+            const game = new HangmanGame(gameConfig, mcqData);
+            game.init();
+            
+            // Setup modal buttons
+            document.getElementById('view-leaderboard-btn').addEventListener('click', () => {
+                window.location.href = gameConfig.leaderboardUrl;
+            });
+            
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                window.location.href = gameConfig.startPageUrl;
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/game1.css' %}"> 
+<style>
+    /* Override styles to ensure scrolling works */
+    html, body {
+        height: 100% !important;
+        overflow: auto !important;
+        overflow-x: hidden !important;
+    }
+    
+    .game-library {
+        position: relative;
+        padding: 120px 5% 120px;
+        background: linear-gradient(135deg, #F4ECD8 0%, #E8DFC6 100%);
+        min-height: auto !important;
+        overflow: visible !important;
+    }
+    
+    .game-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+        width: 100%;
+        max-width: 1500px;
+        margin: 0 auto;
+        padding-bottom: 80px;
+    }
+    
+    .game-card {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 2rem;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8F4E9 100%);
+        border-radius: 20px;
+        padding: 1.5rem;
+        position: relative;
+        height: 280px;
+        border: 1px solid rgba(198, 162, 63, 0.15);
+        box-shadow: 0 10px 30px rgba(139, 69, 19, 0.08);
+    }
+    
+    .scroll-decoration {
+        position: relative;
+        height: 40px;
+    }
+    
+    @media (max-width: 1200px) {
+        .game-card {
+            height: 260px;
+            gap: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .game-grid {
+            gap: 2rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .game-grid {
+            grid-template-columns: 1fr;
+            max-width: 600px;
+        }
+        
+        .game-card {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        
+        .game-image {
+            height: 220px;
+        }
+    }
+</style>
+
+<div class="game-library">
+    <div class="scroll-decoration top"></div>
+    
+    <div class="game-grid">
+        <!-- Samvidhan Setu (Snake and Ladder) -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/snake_ladder.png' %}" alt="Samvidhan Setu Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Quiz Game</span>
+                <h3>Brain ladders</h3>
+                <div class="decorative-line"></div>
+                <p>Embark on an exciting adventure through the foundational principles of India's Constitution with this unique twist on the classic Snake and Ladder game.</p>
+            
+                <div class="game-footer">
+                    <a href="{% url 'snake_ladder:snake_ladder_intro' %}" class="play-btn">Play Now</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Hangman Survival Game -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/hangman.jpg' %}" alt="Hangman Survival Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Word Game</span>
+                <h3>Hangman Survival</h3>
+                <div class="decorative-line"></div>
+                <p>Test your knowledge against the clock in this thrilling Hangman game. Answer questions correctly to gain time and survive as long as possible!</p>
+                <div class="game-footer">
+                    <a href="{% url 'hang:start_page' %}" class="play-btn">Play Now</a>
+                    <a href="{% url 'hang:leaderboard' %}" class="play-btn">Leaderboard</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/samvidhan_setu.png' %}" alt="Samvidhan Squares">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Brain Game</span>
+                <h3>Mind Squares</h3>
+                <div class="decorative-line"></div>
+                <p>Challenge yourself with this strategic game that tests your knowledge of constitutional principles while competing to complete squares.</p>
+                <div class="game-footer">
+                    <a href="{% url 'housie_consti:housie_intro' %}" class="play-btn">Play Now</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Flip Card Game -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/memory.png' %}" alt="Flip Card Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Memory Game</span>
+                <h3>Flip Card</h3>
+                <div class="decorative-line"></div>
+                <p>Test your memory and knowledge by matching constitutional concepts, articles, and historical events in this engaging flip card challenge.</p>
+                <div class="game-footer">
+                    <a href="{% url 'flip_card:start_page' %}" class="play-btn">Play Now</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+
+        <!-- Spinwheel Game -->
+        <div class="game-card">
+            <div class="corner-flourish"></div>
+            <div class="game-image">
+                <img src="{% static 'images/spinwheel.png' %}" alt="Spinwheel Game">
+                <div class="image-overlay"></div>
+            </div>
+            <div class="game-content">
+                <span class="game-type">Strategy Game</span>
+                <h3>Spinwheel</h3>
+                <div class="decorative-line"></div>
+                <p>Spin the wheel of knowledge and answer questions about India's constitution, earning points and unlocking new categories as you progress.</p>
+                <div class="game-footer">
+                    <a href="{% url 'spinwheel:spinwheel_intro' %}" class="play-btn">Spin Now</a>
+                    <a href="{% url 'spinwheel:collection' %}" class="play-btn">View Cards</a>
+                </div>
+            </div>
+            
+            <div class="corner-flourish"></div>
+        </div>
+    </div>
+    
+    <div class="scroll-decoration bottom"></div>
+</div>
+
+<script>
+    // Ensure scrolling works by disabling any scroll restrictions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Force document to be scrollable
+        document.documentElement.style.height = 'auto';
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.height = 'auto';
+        document.body.style.overflow = 'auto';
+        
+        // Force a reflow to ensure the browser recalculates layout
+        document.body.offsetHeight;
+        
+        // Scroll to top to ensure proper rendering
+        window.scrollTo(0, 0);
+        
+        // Disable any scroll-snap behavior
+        document.documentElement.style.scrollSnapType = 'none';
+    });
+</script>
+{% endblock %} 
