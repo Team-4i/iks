@@ -1,28 +1,82 @@
+/* Base styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Layout */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.game-container {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Timer Component */
+.timer {
+    font-size: 28px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+/* Hangman SVG Component */
 .hangman-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 20px;
 }
 
 .hangman-svg {
     width: 300px;
     height: 400px;
-    border: 2px solid #333;
-    background-color: #f9f9f9;
 }
 
-.timer {
-    font-size: 24px;
-    text-align: center;
-    margin: 20px;
+.gallows {
+    stroke: #2c3e50;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
 }
 
-.game-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    text-align: center;
+.hangman-part {
+    stroke: #2c3e50;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.head {
+    fill: #2c3e50;
+}
+
+.visible {
+    opacity: 1;
+}
+
+/* Content Section */
+.content-section {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .hangman-parts {

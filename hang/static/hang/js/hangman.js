@@ -1,100 +1,122 @@
 class HangmanGame {
     constructor(config = {}) {
-        // Default configuration
+        // Default configuration that can be overridden
         this.config = {
-            initialTime: 60,
-            partRevealInterval: 10,
-            timeDecrementInterval: 1000,
-            partRevealOrder: ['head', 'body', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'],
+            initialTime: 20,
+            partRevealInterval: 3000,
+            timerInterval: 1000,
+            partOrder: ['head', 'body', 'left-arm', 'right-arm', 'left-leg', 'right-leg'],
             ...config
         };
 
         this.timeLeft = this.config.initialTime;
         this.currentPart = 0;
         this.timerInterval = null;
+        this.partInterval = null;
         this.isGameOver = false;
-        this.partTimings = new Map(); // Store custom timing for each part
     }
 
     init() {
         this.setupEventListeners();
         this.startTimer();
+        this.startPartReveal();
     }
 
     setupEventListeners() {
-        // Add any event listeners here
-        document.addEventListener('gameOver', () => this.handleGameOver());
+        // Event listeners can be added here
+        document.addEventListener('gameStateChange', this.handleGameStateChange.bind(this));
     }
 
-    setPartTiming(partId, timing) {
-        this.partTimings.set(partId, timing);
+    startTimer() {
+        this.updateTimerDisplay();
+        this.timerInterval = setInterval(() => {
+            this.updateTimer();
+        }, this.config.timerInterval);
     }
 
-    setPartRevealOrder(order) {
-        this.config.partRevealOrder = order;
+    updateTimer() {
+        this.timeLeft--;
+        this.updateTimerDisplay();
+        
+        if (this.timeLeft <= 0) {
+            this.handleGameOver();
+        }
+    }
+
+    updateTimerDisplay() {
+        const timerElement = document.getElementById('time');
+        if (timerElement) {
+            timerElement.textContent = this.timeLeft;
+        }
+    }
+
+    startPartReveal() {
+        this.partInterval = setInterval(() => {
+            this.showNextPart();
+        }, this.config.partRevealInterval);
+    }
+
+    showNextPart() {
+        if (this.currentPart < this.config.partOrder.length) {
+            const partId = this.config.partOrder[this.currentPart];
+            this.showPart(partId);
+            this.currentPart++;
+            this.triggerPartRevealEvent(partId);
+        }
     }
 
     showPart(partId) {
         const part = document.getElementById(partId);
         if (part) {
-            part.classList.remove('hidden');
-            part.classList.add('reveal');
+            part.classList.add('visible');
         }
     }
 
-    showNextPart() {
-        if (this.currentPart < this.config.partRevealOrder.length) {
-            const partId = this.config.partRevealOrder[this.currentPart];
-            this.showPart(partId);
-            this.currentPart++;
-            
-            // Trigger custom event
-            document.dispatchEvent(new CustomEvent('partRevealed', {
-                detail: { partId, partNumber: this.currentPart }
-            }));
-        }
-    }
-
-    updateTimer() {
-        this.timeLeft--;
-        document.getElementById('time').textContent = this.timeLeft;
-        
-        if (this.timeLeft <= 0) {
-            this.handleGameOver();
-        } else {
-            // Check if it's time to reveal next part based on custom timing
-            const currentPartId = this.config.partRevealOrder[this.currentPart];
-            const customTiming = this.partTimings.get(currentPartId);
-            
-            if (customTiming) {
-                if (this.timeLeft % customTiming === 0) {
-                    this.showNextPart();
-                }
-            } else if (this.timeLeft % this.config.partRevealInterval === 0) {
-                this.showNextPart();
+    triggerPartRevealEvent(partId) {
+        document.dispatchEvent(new CustomEvent('partRevealed', {
+            detail: {
+                partId,
+                partNumber: this.currentPart
             }
-        }
+        }));
     }
 
-    startTimer() {
-        this.timerInterval = setInterval(() => this.updateTimer(), this.config.timeDecrementInterval);
+    handleGameStateChange(event) {
+        // Handle game state changes
+        const { type, data } = event.detail;
+        switch(type) {
+            case 'pause':
+                this.pauseGame();
+                break;
+            case 'resume':
+                this.resumeGame();
+                break;
+            case 'reset':
+                this.resetGame();
+                break;
+        }
     }
 
     pauseGame() {
         clearInterval(this.timerInterval);
+        clearInterval(this.partInterval);
     }
 
     resumeGame() {
         if (!this.isGameOver) {
             this.startTimer();
+            this.startPartReveal();
         }
     }
 
     handleGameOver() {
         this.isGameOver = true;
-        clearInterval(this.timerInterval);
+        this.pauseGame();
         document.dispatchEvent(new CustomEvent('gameOver', {
-            detail: { finalTime: this.timeLeft }
+            detail: {
+                finalTime: this.timeLeft,
+                partsRevealed: this.currentPart
+            }
         }));
     }
 
@@ -103,16 +125,17 @@ class HangmanGame {
         this.currentPart = 0;
         this.isGameOver = false;
         
-        // Reset all parts to hidden
-        this.config.partRevealOrder.forEach(partId => {
+        // Reset UI
+        this.updateTimerDisplay();
+        this.config.partOrder.forEach(partId => {
             const part = document.getElementById(partId);
             if (part) {
-                part.classList.add('hidden');
-                part.classList.remove('reveal');
+                part.classList.remove('visible');
             }
         });
         
-        document.getElementById('time').textContent = this.timeLeft;
+        // Restart game
         this.startTimer();
+        this.startPartReveal();
     }
 } 
