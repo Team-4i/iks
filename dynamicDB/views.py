@@ -1884,8 +1884,230 @@ def integrated_workflow(request):
             messages.error(request, "Selected PDF not found.")
             return redirect('dynamicDB:integrated_workflow')
     
+    # Handle PDF upload
+    if request.method == 'POST' and step == 'upload':
+        form = PDFUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            pdf_doc = None
+            pdf_document = None
+            temp_files = []
+            temp_dir = None
+            try:
+                # Save the model without the file first
+                pdf_doc = PDFDocument(title=form.cleaned_data['title'])
+                pdf_doc.save()
+
+                # Create a temp directory specific to this upload
+                temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', f'pdf_{pdf_doc.id}')
+                os.makedirs(temp_dir, exist_ok=True)
+
+                # Now handle the file
+                uploaded_file = request.FILES['pdf_file']
+                temp_pdf_path = os.path.join(temp_dir, f'temp_{uploaded_file.name}')
+
+                # Save uploaded file to temp location
+                with open(temp_pdf_path, 'wb+') as destination:
+                    for chunk in uploaded_file.chunks():
+                        destination.write(chunk)
+
+                # Process the PDF
+                pdf_document = fitz.open(temp_pdf_path)
+                
+                # Get total pages first - important to store this before any document operations
+                total_pages = len(pdf_document)
+                print(f"Total pages in PDF: {total_pages}")
+                
+                # Calculate dimensions
+                zoom = 1.2  # Adjusted zoom level
+                mat = fitz.Matrix(zoom, zoom)
+                
+                # Create a first image for preview and text extraction
+                preview_image_path = os.path.join(temp_dir, f'preview_image.jpg')
+                
+                # Process for multi-page documents
+                if total_pages > 1:
+                    # Create a combined image of first few pages for preview
+                    num_preview_pages = min(3, total_pages)  # Use up to 3 pages for preview
+                    max_width = 0
+                    total_height = 0
+                    
+                    # Get dimensions for the preview pages
+                    preview_pages_info = []
+                    for i in range(num_preview_pages):
+                        page = pdf_document[i]
+                        rect = page.rect
+                        width = int(rect.width * zoom)
+                        height = int(rect.height * zoom)
+                        max_width = max(max_width, width)
+                        total_height += height
+                        preview_pages_info.append((width, height))
+                    
+                    # Create preview image
+                    preview_image = Image.new('RGB', (max_width, total_height), 'white')
+                    y_offset = 0
+                    
+                    for i in range(num_preview_pages):
+                        page = pdf_document[i]
+                        pix = page.get_pixmap(matrix=mat, alpha=False)
+                        img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                        img = img.convert('RGB')
+                        
+                        preview_image.paste(img, (0, y_offset))
+                        y_offset += img.height
+                        
+                        del pix
+                        del img
+                        gc.collect()
+                    
+                    # Save preview image
+                    preview_image.save(preview_image_path, format='JPEG', quality=85, optimize=True)
+                    temp_files.append(preview_image_path)
+                    
+                    # Process all pages in small groups
+                    page_images_dir = os.path.join(temp_dir, 'page_images')
+                    os.makedirs(page_images_dir, exist_ok=True)
+                    
+                    print(f"Processing all {total_pages} pages into group images...")
+                    group_count = 0
+                    
+                    for start_page in range(0, total_pages, MAX_PAGES_PER_IMAGE):
+                        current_group = []
+                        current_height = 0
+                        max_width = 0
+                        
+                        # Process a batch of pages
+                        end_page = min(start_page + MAX_PAGES_PER_IMAGE, total_pages)
+                        print(f"Processing pages {start_page+1} to {end_page} of {total_pages}")
+                        
+                        for page_num in range(start_page, end_page):
+                            try:
+                                page = pdf_document[page_num]
+                                pix = page.get_pixmap(matrix=mat, alpha=False)
+                                img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                                img = img.convert('RGB')
+                                
+                                current_group.append(img)
+                                current_height += img.height
+                                max_width = max(max_width, img.width)
+                                
+                                del pix
+                                gc.collect()
+                                
+                            except Exception as e:
+                                print(f"Error processing page {page_num + 1}: {str(e)}")
+                                continue
+                        
+                        # Save this group if we have any pages
+                        if current_group:
+                            try:
+                                # Use zero-padded group numbers for correct sorting
+                                group_count_str = f"{group_count:02d}"
+                                print(f"Saving group {group_count_str} with {len(current_group)} pages...")
+                                
+                                # Create combined image
+                                combined = Image.new('RGB', (max_width, current_height), 'white')
+                                y = 0
+                                
+                                for group_img in current_group:
+                                    combined.paste(group_img, (0, y))
+                                    y += group_img.height
+                                    del group_img  # Release memory
+                                
+                                # Save the group image with zero-padded numbering
+                                group_path = os.path.join(page_images_dir, f'group_{group_count_str}.jpg')
+                                combined.save(group_path, format='JPEG', quality=85, optimize=True)
+                                
+                                del combined
+                                gc.collect()
+                                
+                                group_count += 1
+                                
+                                # Short delay to allow memory to be properly released
+                                time.sleep(0.1)
+                                
+                            except Exception as e:
+                                print(f"Error saving group {group_count}: {str(e)}")
+                                
+                elif total_pages == 1:
+                    # Single page document
+                    page = pdf_document[0]
+                    pix = page.get_pixmap(matrix=mat, alpha=False)
+                    img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                    img = img.convert('RGB')
+                    img.save(preview_image_path, format='JPEG', quality=85, optimize=True)
+                    temp_files.append(preview_image_path)
+                    
+                    # Also save as the first group for analysis
+                    page_images_dir = os.path.join(temp_dir, 'page_images')
+                    os.makedirs(page_images_dir, exist_ok=True)
+                    img.save(os.path.join(page_images_dir, 'group_00.jpg'), format='JPEG', quality=85, optimize=True)
+                
+                # IMPORTANT: Save files to the model BEFORE closing the PDF document
+                # Save the PDF file to the model
+                with open(temp_pdf_path, 'rb') as pdf_file:
+                    pdf_doc.pdf_file.save(
+                        os.path.basename(temp_pdf_path),
+                        File(pdf_file)
+                    )
+                
+                # Save the preview image to the model
+                if os.path.exists(preview_image_path):
+                    with open(preview_image_path, 'rb') as img_file:
+                        pdf_doc.converted_image.save(
+                            f"preview_{pdf_doc.id}.jpg",
+                            File(img_file)
+                        )
+                
+                # After we've done all operations that need the PDF document, close it
+                pdf_document.close()
+                pdf_document = None  # Set to None to avoid accidental use
+                
+                # Store temp directory in session
+                request.session['pdf_temp_dir'] = temp_dir
+
+                # Redirect to the analyze step with the new PDF ID
+                messages.success(request, f"PDF '{pdf_doc.title}' successfully uploaded.")
+                return redirect(f'{request.path}?step=analyze&pdf_id={pdf_doc.id}')
+
+            except Exception as e:
+                import traceback
+                print(f"Error processing PDF: {str(e)}")
+                print(traceback.format_exc())
+                
+                # Clean up on error
+                if pdf_document:
+                    try:
+                        pdf_document.close()
+                    except:
+                        pass
+                
+                if pdf_doc and pdf_doc.pk:
+                    try:
+                        pdf_doc.delete()
+                    except:
+                        pass
+
+                # Clean up temp files
+                if temp_dir and os.path.exists(temp_dir):
+                    try:
+                        shutil.rmtree(temp_dir)
+                    except:
+                        pass
+
+                messages.error(request, f"Error processing PDF: {str(e)}")
+                return redirect('dynamicDB:integrated_workflow')
+
+            finally:
+                # Final cleanup
+                gc.collect()
+        else:
+            # Form is not valid
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
+    
     # Handle POST request for analysis step
-    if request.method == 'POST' and step == 'analyze' and selected_pdf:
+    elif request.method == 'POST' and step == 'analyze' and selected_pdf:
         try:
             # Initialize the analyzer
             from .services import TextbookAnalyzer
