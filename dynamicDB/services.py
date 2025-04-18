@@ -200,112 +200,58 @@ class TextbookAnalyzer:
         temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', f'pdf_{pdf_doc.id}')
         page_images_dir = os.path.join(temp_dir, 'page_images')
         
+        if not os.path.exists(page_images_dir):
+            print(f"No page images found in {page_images_dir}")
+            return None
+        
         all_hierarchical_data = []
         
-        if os.path.exists(page_images_dir):
-            print(f"Found page images directory: {page_images_dir}")
-            # Get all image files
-            image_files = sorted([f for f in os.listdir(page_images_dir) if f.endswith('.jpg')])
+        # Process each image in the page_images directory
+        image_files = sorted([f for f in os.listdir(page_images_dir) if f.endswith('.jpg')])
+        
+        if not image_files:
+            print("No image files found in the page_images directory")
+            return None
+        
+        print(f"Processing {len(image_files)} image files for content extraction")
+        
+        for image_file in image_files:
+            image_path = os.path.join(page_images_dir, image_file)
+            print(f"Extracting content from {image_path}")
             
-            if image_files:
-                print(f"Found {len(image_files)} image files for analysis")
+            # Extract hierarchical content from this image
+            hierarchical_data = self.extract_hierarchical_content(image_path)
+            
+            if hierarchical_data:
+                all_hierarchical_data.extend(hierarchical_data)
+        
+        # After processing all images, convert the hierarchical data to database format
+        if all_hierarchical_data:
+            result = self.convert_to_db_format(all_hierarchical_data, pdf_doc)
+            
+            # After creating topics and chapters, automatically group them
+            if result and result.get('topics'):
+                # Initialize the topic grouping service
+                from .services import TopicGroupingService
+                grouping_service = TopicGroupingService()
                 
-                # Process each image group and combine results
-                for i, img_file in enumerate(image_files):
-                    img_path = os.path.join(page_images_dir, img_file)
-                    print(f"Analyzing image {i+1}/{len(image_files)}: {img_path}")
-                    
-                    # Extract topics from this image
-                    try:
-                        topics = self.extract_hierarchical_content(img_path)
-                        if topics:
-                            for topic in topics:
-                                # Check if this topic already exists in our results (by title similarity)
-                                topic_exists = False
-                                for existing_topic in all_hierarchical_data:
-                                    # Simple string similarity check (can be improved)
-                                    if existing_topic['title'].lower() == topic['title'].lower():
-                                        # Merge chapters instead of duplicating the topic
-                                        existing_topic['chapters'].extend(topic['chapters'])
-                                        topic_exists = True
-                                        break
-                                
-                                if not topic_exists:
-                                    all_hierarchical_data.append(topic)
-                    except Exception as e:
-                        print(f"Error analyzing image {img_file}: {str(e)}")
+                # Automatically group topics after creation
+                created_groups = grouping_service.group_topics(pdf_doc)
                 
-                # Now adjust order numbers to be sequential
-                for i, topic in enumerate(all_hierarchical_data):
-                    topic['order'] = i + 1
-                    
-                    # Adjust chapter order to be sequential within each topic
-                    for j, chapter in enumerate(topic['chapters']):
-                        chapter['order'] = j + 1
+                return {
+                    'topics_count': len(result['topics']),
+                    'chapters_count': len(result['chapters']),
+                    'groups_count': len(created_groups) if created_groups else 0
+                }
             else:
-                # Fallback to the preview image
-                print(f"No image files found, using converted image: {pdf_doc.converted_image.path}")
-                all_hierarchical_data = self.extract_hierarchical_content(pdf_doc.converted_image.path)
+                return {
+                    'topics_count': 0,
+                    'chapters_count': 0,
+                    'groups_count': 0
+                }
         else:
-            # Fallback to the preview image
-            print(f"No page_images directory found, using converted image: {pdf_doc.converted_image.path}")
-            all_hierarchical_data = self.extract_hierarchical_content(pdf_doc.converted_image.path)
-        
-        # Debug print the extracted hierarchical data
-        print(f"Extracted {len(all_hierarchical_data)} topics:")
-        for i, topic in enumerate(all_hierarchical_data):
-            print(f"  Topic {i+1}: {topic['title']}")
-            print(f"    Chapters: {len(topic['chapters'])}")
-            for j, chapter in enumerate(topic['chapters']):
-                print(f"      Chapter {j+1}: {chapter.get('number', 'N/A')} - {chapter['title']}")
-        
-        # Delete existing chapters and topics for this document
-        print(f"Deleting existing topics and chapters for document {pdf_doc.id}")
-        pdf_doc.chapters.all().delete()
-        pdf_doc.main_topics.all().delete()
-        
-        # Track counts for return
-        topics_count = 0
-        chapters_count = 0
-        
-        # Save topics and chapters to database
-        print("Creating new topics and chapters...")
-        for topic_data in all_hierarchical_data:
-            # Create Topic
-            main_topic = Topic.objects.create(
-                pdf_document=pdf_doc,
-                title=topic_data['title'],
-                summary=topic_data.get('summary', f"Main topic containing {len(topic_data['chapters'])} chapters"),
-                order=topic_data['order']
-            )
-            topics_count += 1
-            print(f"Created topic: {main_topic.title} (ID: {main_topic.id})")
-            
-            # Create chapters for this topic
-            for chapter_idx, chapter_data in enumerate(topic_data['chapters']):
-                # For lecture-oriented content, we just use the title directly
-                chapter = Chapter.objects.create(
-                    pdf_document=pdf_doc,
-                    title=chapter_data['title'],
-                    content=chapter_data.get('content', f"Subheading of {topic_data['title']}"),
-                    start_page=chapter_data.get('start_page', 1),
-                    end_page=chapter_data.get('end_page', 1),
-                    confidence_score=chapter_data.get('confidence', 0.8),
-                    order=chapter_idx + 1
-                )
-                chapters_count += 1
-                print(f"  Created chapter: {chapter.title} (ID: {chapter.id})")
-                
-                # Add chapter to topic
-                main_topic.chapters.add(chapter)
-                print(f"  Associated chapter with topic")
-        
-        print(f"Created {topics_count} topics and {chapters_count} chapters")
-        
-        return {
-            'topics_count': topics_count,
-            'chapters_count': chapters_count
-        }
+            print("No hierarchical data extracted from any images")
+            return None
         
     # Legacy methods kept for backward compatibility
     
@@ -416,7 +362,7 @@ class TopicGroupingService:
         Returns:
             List of MainTopic objects
         """
-        from .models import MainTopic
+        from .models import MainTopic, SubTopic
         
         # Get all topics for this document
         topics = pdf_doc.main_topics.all().prefetch_related('chapters')
@@ -461,7 +407,16 @@ class TopicGroupingService:
             "description": "Brief description of what unifies these topics",
             "keywords": "comma,separated,keywords",
             "topic_ids": [list of topic IDs in this group],
-            "similarity_score": 0.85  // How closely related these topics are (0.0 to 1.0)
+            "similarity_score": 0.85,  // How closely related these topics are (0.0 to 1.0)
+            "sub_topics": [
+              {{
+                "title": "Sub-topic 1 title",
+                "description": "Description of this sub-topic",
+                "topic_ids": [list of topic IDs in this sub-topic, must be subset of parent group's topic_ids],
+                "relevance_score": 0.9
+              }},
+              // More sub-topics...
+            ]
           }},
           // More groups...
         ]
@@ -471,6 +426,8 @@ class TopicGroupingService:
         - Create intuitive, meaningful groups based on subject matter
         - Focus on academic/educational categorization
         - Every topic must be assigned to exactly one group
+        - For each group, create 2-3 sub-topics that further categorize the topics
+        - Topic IDs in sub-topics must be subsets of the parent group's topic IDs
         - Return valid JSON format only
         """
         
@@ -499,7 +456,7 @@ class TopicGroupingService:
             # Parse the JSON
             group_data = json.loads(json_content)
             
-            # Delete existing topic groups
+            # Delete existing topic groups and sub-topics
             pdf_doc.topic_groups.all().delete()
             
             # Create topic groups based on AI response
@@ -520,7 +477,28 @@ class TopicGroupingService:
                 topics_to_add = topics.filter(id__in=topic_ids)
                 topic_group.topics.add(*topics_to_add)
                 
+                # Create sub-topics if available in the AI response
+                if 'sub_topics' in group_info and group_info['sub_topics']:
+                    for sub_idx, sub_topic_info in enumerate(group_info['sub_topics']):
+                        # Create the sub-topic
+                        sub_topic = SubTopic.objects.create(
+                            topic_group=topic_group,
+                            title=sub_topic_info['title'],
+                            description=sub_topic_info['description'],
+                            summary=sub_topic_info.get('description', ''),  # Use description as initial summary
+                            relevance_score=float(sub_topic_info.get('relevance_score', 0.8)),
+                            order=sub_idx + 1
+                        )
+                        
+                        # Add main topics to the sub-topic
+                        sub_topic_ids = sub_topic_info.get('topic_ids', [])
+                        main_topics_to_add = topics.filter(id__in=sub_topic_ids)
+                        sub_topic.main_topics.add(*main_topics_to_add)
+                
                 created_groups.append(topic_group)
+                
+            # After creating main topics and sub-topics, automatically generate relationship data
+            self.analyze_topic_relationships(pdf_doc)
                 
             return created_groups
                 

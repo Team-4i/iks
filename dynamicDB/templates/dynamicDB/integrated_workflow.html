@@ -340,9 +340,6 @@
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="bi bi-bookmark-star-fill me-2"></i> Set as Active Topic Groups
                                 </button>
-                                <button type="submit" name="generate_summary" value="1" class="btn btn-success">
-                                    <i class="bi bi-magic me-2"></i> Generate AI Summaries
-                                </button>
                             </div>
                         </form>
                     </div>
@@ -358,6 +355,7 @@
                                         <div class="d-flex">
                                             <div class="me-3"><span class="badge bg-success me-1"></span> Document (Root)</div>
                                             <div class="me-3"><span class="badge bg-primary me-1"></span> Topic Group</div>
+                                            <div class="me-3"><span class="badge bg-info me-1"></span> Sub-Topic</div>
                                             <div class="me-3"><span class="badge bg-warning me-1"></span> Main Topic</div>
                                             <div class="me-3"><span class="badge bg-danger me-1"></span> Chapter</div>
                                         </div>
@@ -366,6 +364,7 @@
                                 <div class="vis-controls text-center mb-3">
                                     <button id="radialViewBtn" class="btn btn-sm btn-outline-primary active">Radial View</button>
                                     <button id="treeViewBtn" class="btn btn-sm btn-outline-primary">Tree View</button>
+                                    <button id="relationshipViewBtn" class="btn btn-sm btn-outline-primary">Relationship View</button>
                                     <button id="toggleGroupsBtn" class="btn btn-sm btn-outline-primary">Toggle Topic Groups</button>
                                 </div>
                                 <div id="visualization" style="height: 500px; border: 1px solid #eee; border-radius: 5px;"></div>
@@ -402,6 +401,9 @@
                                 {% if group_data %}
                                 <div id="group-data" style="display:none;">{{ group_data|safe }}</div>
                                 {% endif %}
+                                {% if relationship_data %}
+                                <div id="relationship-data" style="display:none;">{{ relationship_data|safe }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -409,7 +411,7 @@
                     <!-- Summary Topics -->
                     {% if summary_topics %}
                     <div class="summary-topics mb-4">
-                        <h5>AI-Generated Summaries</h5>
+                        <h5>Subtopic Categories</h5>
                         <div class="row">
                             {% for group_data in summary_topics %}
                             <div class="col-md-6 mb-3">
@@ -422,7 +424,13 @@
                                             {% for summary in group_data.summaries %}
                                             <div class="list-group-item">
                                                 <h6>{{ summary.title }}</h6>
-                                                <p class="small mb-0">{{ summary.description|truncatewords:50 }}</p>
+                                                <p class="small mb-2">{{ summary.description|truncatewords:50 }}</p>
+                                                <div class="topics-in-group small">
+                                                    <strong>Topics:</strong> 
+                                                    {% for topic in summary.main_topics.all %}
+                                                    <span class="badge bg-light text-dark me-1 mb-1">{{ topic.title }}</span>
+                                                    {% endfor %}
+                                                </div>
                                             </div>
                                             {% endfor %}
                                         </div>
@@ -698,6 +706,7 @@
             document.getElementById("radialViewBtn").addEventListener("click", function() {
                 this.classList.add("active");
                 document.getElementById("treeViewBtn").classList.remove("active");
+                document.getElementById("relationshipViewBtn").classList.remove("active");
                 currentView = "radial";
                 drawVisualization();
             });
@@ -705,7 +714,16 @@
             document.getElementById("treeViewBtn").addEventListener("click", function() {
                 this.classList.add("active");
                 document.getElementById("radialViewBtn").classList.remove("active");
+                document.getElementById("relationshipViewBtn").classList.remove("active");
                 currentView = "tree";
+                drawVisualization();
+            });
+            
+            document.getElementById("relationshipViewBtn").addEventListener("click", function() {
+                this.classList.add("active");
+                document.getElementById("radialViewBtn").classList.remove("active");
+                document.getElementById("treeViewBtn").classList.remove("active");
+                currentView = "relationship";
                 drawVisualization();
             });
             
@@ -736,28 +754,99 @@
                     
                     // Add group data first
                     visualizationData.children = groupData.map(group => {
-                        return {
+                        // Create the group node
+                        const groupNode = {
                             name: group.name,
                             type: "group",
                             description: group.description,
                             keywords: group.keywords,
                             similarity_score: group.similarity_score,
-                            children: (group.children || []).map(topic => {
+                            id: group.id,
+                            children: []
+                        };
+                        
+                        // Process children - first check for subtopics
+                        if (group.children && group.children.some(child => child.type === "subgroup")) {
+                            // First handle subtopics
+                            const subtopics = group.children.filter(child => child.type === "subgroup");
+                            subtopics.forEach(subtopic => {
+                                const subtopicNode = {
+                                    name: subtopic.name,
+                                    type: "subgroup",
+                                    description: subtopic.description,
+                                    summary: subtopic.summary,
+                                    relevance_score: subtopic.relevance_score,
+                                    id: subtopic.id,
+                                    children: []
+                                };
+                                
+                                // Add topics to this subtopic
+                                if (subtopic.children && subtopic.children.length > 0) {
+                                    subtopicNode.children = subtopic.children.map(topic => {
+                                        return {
+                                            name: topic.name,
+                                            type: "topic",
+                                            summary: topic.summary,
+                                            id: topic.id,
+                                            children: (topic.children || []).map(chapter => {
+                                                return {
+                                                    name: chapter.name,
+                                                    content: chapter.content,
+                                                    value: chapter.value || 1,
+                                                    type: "chapter",
+                                                    id: chapter.id
+                                                };
+                                            })
+                                        };
+                                    });
+                                }
+                                
+                                groupNode.children.push(subtopicNode);
+                            });
+                            
+                            // Then add any direct topics (not in subtopics)
+                            const directTopics = group.children.filter(child => child.type === "topic");
+                            if (directTopics.length > 0) {
+                                directTopics.forEach(topic => {
+                                    groupNode.children.push({
+                                        name: topic.name,
+                                        type: "topic",
+                                        summary: topic.summary,
+                                        id: topic.id,
+                                        children: (topic.children || []).map(chapter => {
+                                            return {
+                                                name: chapter.name,
+                                                content: chapter.content,
+                                                value: chapter.value || 1,
+                                                type: "chapter",
+                                                id: chapter.id
+                                            };
+                                        })
+                                    });
+                                });
+                            }
+                        } else {
+                            // No subtopics - add topics directly
+                            groupNode.children = (group.children || []).map(topic => {
                                 return {
                                     name: topic.name,
                                     type: "topic",
                                     summary: topic.summary,
+                                    id: topic.id,
                                     children: (topic.children || []).map(chapter => {
                                         return {
                                             name: chapter.name,
                                             content: chapter.content,
-                                            value: chapter.value,
-                                            type: "chapter"
+                                            value: chapter.value || 1,
+                                            type: "chapter",
+                                            id: chapter.id
                                         };
                                     })
                                 };
-                            })
-                        };
+                            });
+                        }
+                        
+                        return groupNode;
                     });
                     
                 } else {
@@ -783,8 +872,10 @@
                 
                 if (currentView === "radial") {
                     drawRadialView(visualizationData);
-                } else {
+                } else if (currentView === "tree") {
                     drawTreeView(visualizationData);
+                } else if (currentView === "relationship") {
+                    drawRelationshipView(visualizationData);
                 }
             }
             
@@ -881,6 +972,8 @@
                             return `Document: ${d.data.name}`;
                         } else if (d.data.type === "group") {
                             return `Group: ${d.data.name}\n${d.data.description || ""}\nSimilarity: ${d.data.similarity_score || "N/A"}`;
+                        } else if (d.data.type === "subgroup") {
+                            return `Sub-Topic: ${d.data.name}\n${d.data.description || ""}\nRelevance: ${d.data.relevance_score || "N/A"}`;
                         } else if (d.data.type === "topic") {
                             return `Topic: ${d.data.name}\n${d.data.summary || ""}`;
                         } else {
@@ -901,6 +994,11 @@
                         if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
                         if (d.data.keywords) tooltipContent += `<br/><small>Keywords: ${d.data.keywords}</small>`;
                         if (d.data.similarity_score) tooltipContent += `<br/>Similarity: ${d.data.similarity_score.toFixed(2)}`;
+                    } else if (d.data.type === "subgroup") {
+                        tooltipContent = `<strong>Sub-Topic</strong>: ${d.data.name}`;
+                        if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
+                        if (d.data.summary) tooltipContent += `<br/><small>${d.data.summary}</small>`;
+                        if (d.data.relevance_score) tooltipContent += `<br/>Relevance: ${d.data.relevance_score.toFixed(2)}`;
                     } else if (d.data.type === "topic") {
                         tooltipContent = `<strong>Topic</strong>: ${d.data.name}`;
                         if (d.data.summary) tooltipContent += `<br/><em>${d.data.summary}</em>`;
@@ -1002,6 +1100,8 @@
                             return `Document: ${d.data.name}`;
                         } else if (d.data.type === "group") {
                             return `Group: ${d.data.name}\n${d.data.description || ""}\nSimilarity: ${d.data.similarity_score || "N/A"}`;
+                        } else if (d.data.type === "subgroup") {
+                            return `Sub-Topic: ${d.data.name}\n${d.data.description || ""}\nRelevance: ${d.data.relevance_score || "N/A"}`;
                         } else if (d.data.type === "topic") {
                             return `Topic: ${d.data.name}\n${d.data.summary || ""}`;
                         } else {
@@ -1022,6 +1122,11 @@
                         if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
                         if (d.data.keywords) tooltipContent += `<br/><small>Keywords: ${d.data.keywords}</small>`;
                         if (d.data.similarity_score) tooltipContent += `<br/>Similarity: ${d.data.similarity_score.toFixed(2)}`;
+                    } else if (d.data.type === "subgroup") {
+                        tooltipContent = `<strong>Sub-Topic</strong>: ${d.data.name}`;
+                        if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
+                        if (d.data.summary) tooltipContent += `<br/><small>${d.data.summary}</small>`;
+                        if (d.data.relevance_score) tooltipContent += `<br/>Relevance: ${d.data.relevance_score.toFixed(2)}`;
                     } else if (d.data.type === "topic") {
                         tooltipContent = `<strong>Topic</strong>: ${d.data.name}`;
                         if (d.data.summary) tooltipContent += `<br/><em>${d.data.summary}</em>`;
@@ -1042,6 +1147,355 @@
                         .duration(500)
                         .style("opacity", 0);
                 });
+            }
+            
+            // Function to draw a force-directed graph showing relationships between topics
+            function drawRelationshipView(data) {
+                // Clear previous content
+                g.selectAll("*").remove();
+                
+                // Create nodes array and links array for the force layout
+                let nodes = [];
+                let links = [];
+                
+                // Helper function to recursively find all nodes and create links
+                function processNode(node, parent = null, depth = 0) {
+                    // Add current node to nodes array with its data
+                    const nodeIndex = nodes.length;
+                    
+                    // Create a shallow copy of node data with position info
+                    const nodeData = {
+                        ...node,
+                        id: nodes.length,
+                        nodeId: node.id, // Store original ID for relationship mapping
+                        depth: depth,
+                        radius: getNodeRadius(node.type)
+                    };
+                    
+                    nodes.push(nodeData);
+                    
+                    // If this node has a parent, create a link
+                    if (parent !== null) {
+                        links.push({
+                            source: parent,
+                            target: nodeIndex,
+                            value: 1,
+                            type: `${parent.type}_to_${node.type}`
+                        });
+                    }
+                    
+                    // Process children if they exist
+                    if (node.children && node.children.length > 0) {
+                        node.children.forEach(child => {
+                            processNode(child, nodeData, depth + 1);
+                        });
+                    }
+                }
+                
+                // Helper function to get radius based on node type
+                function getNodeRadius(type) {
+                    if (type === "document") return 20;
+                    if (type === "group") return 15;
+                    if (type === "subgroup") return 12;
+                    if (type === "topic") return 10;
+                    return 6; // chapter
+                }
+                
+                // Process the hierarchy to create nodes and links
+                processNode(data);
+                
+                // Check if relationship data is available
+                const relationshipDataElement = document.getElementById('relationship-data');
+                if (relationshipDataElement) {
+                    try {
+                        const relationshipData = JSON.parse(relationshipDataElement.textContent || relationshipDataElement.innerText);
+                        
+                        // Add additional links based on relationships
+                        if (relationshipData && relationshipData.relationships) {
+                            // Find nodes with specific IDs for relationships
+                            const nodeMap = {};
+                            nodes.forEach(node => {
+                                if (node.nodeId) {
+                                    nodeMap[node.nodeId] = node;
+                                }
+                            });
+                            
+                            // Add relationships as additional links
+                            relationshipData.relationships.forEach(rel => {
+                                const sourceNode = nodeMap[rel.from_id];
+                                const targetNode = nodeMap[rel.to_id];
+                                
+                                if (sourceNode && targetNode) {
+                                    links.push({
+                                        source: sourceNode.id,
+                                        target: targetNode.id,
+                                        value: rel.strength || 1,
+                                        type: rel.relationship_type || 'related',
+                                        isExplicit: true // Mark as explicit relationship
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // Add hierarchical relationships if available
+                        if (relationshipData && relationshipData.hierarchy) {
+                            relationshipData.hierarchy.forEach(item => {
+                                if (item.parent_id !== null && item.children && item.children.length > 0) {
+                                    const parentNode = nodes.find(n => n.nodeId === item.group_id);
+                                    
+                                    if (parentNode) {
+                                        item.children.forEach(childId => {
+                                            const childNode = nodes.find(n => n.nodeId === childId);
+                                            
+                                            if (childNode) {
+                                                links.push({
+                                                    source: parentNode.id,
+                                                    target: childNode.id,
+                                                    value: 2, // Stronger connection for hierarchy
+                                                    type: 'hierarchy',
+                                                    isExplicit: true
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Error parsing relationship data:", e);
+                    }
+                }
+                
+                // Create the force simulation
+                const simulation = d3.forceSimulation(nodes)
+                    .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+                        // Different distance based on relationship type
+                        if (d.isExplicit) return 120; // Explicit relationships are further apart
+                        if (d.type === "document_to_group") return 100;
+                        if (d.type === "group_to_subgroup") return 80;
+                        if (d.type === "group_to_topic" || d.type === "subgroup_to_topic") return 60;
+                        return 40; // topic_to_chapter
+                    }))
+                    .force("charge", d3.forceManyBody().strength(-200))
+                    .force("center", d3.forceCenter(0, 0))
+                    .force("collision", d3.forceCollide().radius(d => d.radius * 1.5));
+                
+                // Create links
+                const link = g.append("g")
+                    .attr("class", "links")
+                    .selectAll("line")
+                    .data(links)
+                    .join("line")
+                    .attr("stroke", d => {
+                        // Different colors based on relationship type
+                        if (d.isExplicit) {
+                            if (d.type === "prerequisite") return "#ff6b6b"; // Red for prerequisites
+                            if (d.type === "builds_upon") return "#4ecdc4"; // Teal for builds upon
+                            if (d.type === "related") return "#45b7d1"; // Blue for related
+                            if (d.type === "hierarchy") return "#8a2be2"; // Purple for hierarchy
+                            return "#ffb347"; // Orange for other explicit relationships
+                        }
+                        if (d.type === "document_to_group") return "#999";
+                        if (d.type === "group_to_subgroup") return "#aaa";
+                        if (d.type === "group_to_topic" || d.type === "subgroup_to_topic") return "#bbb";
+                        return "#ccc"; // topic_to_chapter
+                    })
+                    .attr("stroke-width", d => {
+                        // Thicker lines for explicit relationships or higher value links
+                        if (d.isExplicit) return Math.sqrt(d.value) * 2;
+                        return Math.sqrt(d.value) * 1.5;
+                    })
+                    .attr("stroke-opacity", 0.6)
+                    .attr("stroke-dasharray", d => d.isExplicit ? "5,5" : null); // Dashed lines for explicit relationships
+                
+                // Create node groups
+                const node = g.append("g")
+                    .attr("class", "nodes")
+                    .selectAll("g")
+                    .data(nodes)
+                    .join("g")
+                    .call(drag(simulation));
+                
+                // Add circles to nodes
+                node.append("circle")
+                    .attr("r", d => d.radius)
+                    .attr("fill", d => colorScale(d.type))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5);
+                
+                // Add text labels to nodes
+                node.append("text")
+                    .attr("dy", d => d.type === "document" ? 30 : d.radius + 10)
+                    .attr("text-anchor", "middle")
+                    .text(d => d.name)
+                    .style("font-size", d => {
+                        if (d.type === "document") return "14px";
+                        if (d.type === "group") return "12px";
+                        if (d.type === "subgroup") return "11px";
+                        if (d.type === "topic") return "10px";
+                        return "8px"; // chapter
+                    })
+                    .style("fill", "#333")
+                    .attr("opacity", d => {
+                        if (d.type === "chapter") return 0.7;
+                        return 1;
+                    });
+                
+                // Add a legend for relationship types
+                const legend = g.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", "translate(-300, -200)");
+                
+                const legendData = [
+                    { type: "Hierarchical", color: "#999", isDashed: false },
+                    { type: "Prerequisite", color: "#ff6b6b", isDashed: true },
+                    { type: "Builds Upon", color: "#4ecdc4", isDashed: true },
+                    { type: "Related", color: "#45b7d1", isDashed: true }
+                ];
+                
+                legendData.forEach((item, i) => {
+                    const legendRow = legend.append("g")
+                        .attr("transform", `translate(0, ${i * 20})`);
+                    
+                    legendRow.append("line")
+                        .attr("x1", 0)
+                        .attr("y1", 0)
+                        .attr("x2", 30)
+                        .attr("y2", 0)
+                        .attr("stroke", item.color)
+                        .attr("stroke-width", 2)
+                        .attr("stroke-dasharray", item.isDashed ? "5,5" : null);
+                    
+                    legendRow.append("text")
+                        .attr("x", 40)
+                        .attr("y", 4)
+                        .text(item.type)
+                        .style("font-size", "12px")
+                        .style("fill", "#333");
+                });
+                
+                // Add tooltips
+                node.append("title")
+                    .text(d => {
+                        let tooltip = `${d.type.charAt(0).toUpperCase() + d.type.slice(1)}: ${d.name}`;
+                        
+                        if (d.description) tooltip += `\nDescription: ${d.description}`;
+                        if (d.summary) tooltip += `\nSummary: ${d.summary}`;
+                        if (d.keywords) tooltip += `\nKeywords: ${d.keywords}`;
+                        if (d.similarity_score) tooltip += `\nSimilarity: ${d.similarity_score.toFixed(2)}`;
+                        if (d.relevance_score) tooltip += `\nRelevance: ${d.relevance_score.toFixed(2)}`;
+                        
+                        return tooltip;
+                    });
+                
+                // Add interactive tooltips
+                node.on("mouseover", function(event, d) {
+                    const tooltip = d3.select("#tooltip");
+                    
+                    let tooltipContent = "";
+                    
+                    if (d.type === "document") {
+                        tooltipContent = `<strong>Document</strong>: ${d.name}`;
+                    } else if (d.type === "group") {
+                        tooltipContent = `<strong>Group</strong>: ${d.name}`;
+                        if (d.description) tooltipContent += `<br/><em>${d.description}</em>`;
+                        if (d.keywords) tooltipContent += `<br/><small>Keywords: ${d.keywords}</small>`;
+                        if (d.similarity_score) tooltipContent += `<br/>Similarity: ${d.similarity_score.toFixed(2)}`;
+                    } else if (d.type === "subgroup") {
+                        tooltipContent = `<strong>Sub-Topic</strong>: ${d.name}`;
+                        if (d.description) tooltipContent += `<br/><em>${d.description}</em>`;
+                        if (d.summary) tooltipContent += `<br/><small>${d.summary}</small>`;
+                        if (d.relevance_score) tooltipContent += `<br/>Relevance: ${d.relevance_score.toFixed(2)}`;
+                    } else if (d.type === "topic") {
+                        tooltipContent = `<strong>Topic</strong>: ${d.name}`;
+                        if (d.summary) tooltipContent += `<br/><em>${d.summary}</em>`;
+                    } else {
+                        tooltipContent = `<strong>Chapter</strong>: ${d.name}`;
+                        if (d.content) tooltipContent += `<br/><em>${d.content}</em>`;
+                    }
+                    
+                    // Highlight connected nodes
+                    link
+                        .attr("stroke-opacity", l => {
+                            return l.source.id === d.id || l.target.id === d.id ? 1 : 0.2;
+                        })
+                        .attr("stroke-width", l => {
+                            return l.source.id === d.id || l.target.id === d.id ? 
+                                Math.sqrt(l.value) * 2 : Math.sqrt(l.value) * 1.5;
+                        });
+                    
+                    node.selectAll("circle")
+                        .attr("opacity", n => {
+                            // Find links connected to this node
+                            const connected = links.some(l => 
+                                (l.source.id === d.id && l.target.id === n.id) || 
+                                (l.source.id === n.id && l.target.id === d.id)
+                            );
+                            return n.id === d.id || connected ? 1 : 0.3;
+                        });
+                    
+                    tooltip.html(tooltipContent)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                })
+                .on("mouseout", function() {
+                    // Reset highlighting
+                    link
+                        .attr("stroke-opacity", 0.6)
+                        .attr("stroke-width", d => {
+                            if (d.isExplicit) return Math.sqrt(d.value) * 2;
+                            return Math.sqrt(d.value) * 1.5;
+                        });
+                    
+                    node.selectAll("circle")
+                        .attr("opacity", 1);
+                    
+                    d3.select("#tooltip").transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+                
+                // Add drag capability
+                function drag(simulation) {
+                    function dragstarted(event) {
+                        if (!event.active) simulation.alphaTarget(0.3).restart();
+                        event.subject.fx = event.subject.x;
+                        event.subject.fy = event.subject.y;
+                    }
+                    
+                    function dragged(event) {
+                        event.subject.fx = event.x;
+                        event.subject.fy = event.y;
+                    }
+                    
+                    function dragended(event) {
+                        if (!event.active) simulation.alphaTarget(0);
+                        event.subject.fx = null;
+                        event.subject.fy = null;
+                    }
+                    
+                    return d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended);
+                }
+                
+                // Update positions on each simulation tick
+                simulation.on("tick", () => {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+                    
+                    node.attr("transform", d => `translate(${d.x},${d.y})`);
+                });
+                
+                // Add zoom behavior to the visualization
+                svg.call(zoom.transform, d3.zoomIdentity);
             }
         } catch (error) {
             console.error("Error creating visualization:", error);
