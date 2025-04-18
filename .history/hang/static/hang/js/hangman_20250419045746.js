@@ -77,10 +77,6 @@ class HangmanGame {
             this.questionTextElement.textContent = question.question;
             this.questionContentElement.innerHTML = '';
 
-            // Debug question structure
-            console.log(`Question type: ${question.type}`);
-            console.log('Question data:', JSON.stringify(question));
-
             // If in presentation mode, show the answer first
             if (this.config.presentationMode) {
                 this.showPresentationAnswer(question);
@@ -140,7 +136,7 @@ class HangmanGame {
                 answerContent.textContent = `Correct answer: ${question.correct_answer ? 'TRUE' : 'FALSE'}`;
                 break;
             case 'ODD':
-                answerContent.textContent = `Odd one out: ${question.correct_answer || 'Not specified'}`;
+                answerContent.textContent = `Odd one out: ${question.odd_one}`;
                 break;
             case 'CAT':
                 answerContent.innerHTML = Object.entries(question.category_items)
@@ -148,7 +144,7 @@ class HangmanGame {
                     .join('<br>');
                 break;
             case 'SCRAMBLE':
-                answerContent.textContent = `Correct word: ${question.correct_word || 'Not specified'}`;
+                answerContent.textContent = `Correct order: ${question.correct_order.join(' → ')}`;
                 break;
             default:
                 console.error('Unknown question type:', question.type);

@@ -148,7 +148,7 @@ class HangmanGame {
                     .join('<br>');
                 break;
             case 'SCRAMBLE':
-                answerContent.textContent = `Correct word: ${question.correct_word || 'Not specified'}`;
+                answerContent.textContent = `Correct order: ${question.correct_order.join(' → ')}`;
                 break;
             default:
                 console.error('Unknown question type:', question.type);

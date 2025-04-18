@@ -865,17 +865,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('summary_id: {{ summary_id|default:"none" }}');
     console.log('from_checkpoint: {{ from_checkpoint|yesno:"yes,no" }}');
     console.log('checkpoint_name: {{ checkpoint_name|default:"none" }}');
-
-    // Set up presentation mode checkbox
-    const presentationCheckbox = document.getElementById('presentationMode');
-    
-    // Load saved setting
-    presentationCheckbox.checked = localStorage.getItem('presentationMode') === 'true';
-    
-    // Save setting when changed
-    presentationCheckbox.addEventListener('change', function() {
-        localStorage.setItem('presentationMode', this.checked);
-    });
 });
 
 // Play hover sound (silent function, would need actual sound implementation)
@@ -886,26 +875,20 @@ function playHoverSound() {
 
 // Toggle game modes panel
 function toggleGameModes() {
-    const panel = document.getElementById('gameModes');
-    if (panel.style.opacity === '1') {
-        panel.style.opacity = '0';
-        panel.style.transform = 'translate(-50%, -50%) scale(0.95)';
-        panel.style.visibility = 'hidden';
-    } else {
-        panel.style.opacity = '1';
-        panel.style.transform = 'translate(-50%, -50%) scale(1)';
-        panel.style.visibility = 'visible';
-    }
+    const modesPanel = document.getElementById('gameModes');
+    modesPanel.classList.toggle('visible');
 }
 
 // Show tutorial
 function showTutorial() {
-    document.getElementById('tutorialModal').classList.add('visible');
+    const tutorial = document.getElementById('tutorialModal');
+    tutorial.classList.add('visible');
 }
 
 // Hide tutorial
 function hideTutorial() {
-    document.getElementById('tutorialModal').classList.remove('visible');
+    const tutorial = document.getElementById('tutorialModal');
+    tutorial.classList.remove('visible');
 }
 </script>
 {% endblock %} 
