@@ -114,6 +114,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'project.context_processors.my_context_processor',
+                'dynamicDB.context_processors.active_pdf_processor',
             ],
         },
     },

@@ -1,0 +1,499 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}{{ pdf.title }} - PDF Content Manager{% endblock %}
+
+{% block page_title %}{{ pdf.title }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'dynamicDB:view_pdf' pdf.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-pdf me-2"></i> View PDF
+    </a>
+    <a href="{% url 'dynamicDB:analyze_pdf' pdf.id %}" class="btn btn-outline-primary">
+        <i class="bi bi-graph-up me-2"></i> Analyze PDF
+    </a>
+    <a href="{% url 'dynamicDB:visualize_topics' pdf.id %}" class="btn btn-outline-info">
+        <i class="bi bi-card-list me-2"></i> Visualize Topics
+    </a>
+    <button type="button" class="btn btn-outline-danger" id="delete-pdf-btn" data-pdf-id="{{ pdf.id }}" data-pdf-title="{{ pdf.title }}">
+        <i class="bi bi-trash me-2"></i> Delete
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left column - PDF information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">PDF Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Title</label>
+                    <input type="text" class="form-control" id="pdf-title" value="{{ pdf.title }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Uploaded</label>
+                    <p class="form-control-plaintext">{{ pdf.uploaded_at|date:"F d, Y, g:i a" }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Statistics</label>
+                    <div class="d-flex justify-content-between">
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-folder2 me-2"></i> {{ pdf.topic_groups.count }} Topic Groups
+                        </p>
+                        <p class="form-control-plaintext">
+                            <i class="bi bi-journal-text me-2"></i> {{ pdf.main_topics.count }} Main Topics
+                        </p>
+                    </div>
+                    <p class="form-control-plaintext">
+                        <i class="bi bi-book me-2"></i> {{ pdf.chapters.count }} Chapters
+                    </p>
+                </div>
+                
+                <button type="button" id="save-pdf-title" class="btn btn-primary w-100">Save Changes</button>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Topic Groups</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="add-topic-group-btn">
+                    <i class="bi bi-plus-lg"></i> Add
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if topic_groups %}
+                        {% for group in topic_groups %}
+                            <a href="{% url 'dynamicDB:admin_panel_topic_group_detail' group.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                {{ group.title }}
+                                <span class="badge bg-primary rounded-pill">{{ group.topics.count }}</span>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-0">No topic groups found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right column - Topics and Chapters -->
+    <div class="col-md-8">
+        <!-- Main Topics section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Main Topics</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="add-main-topic-btn">
+                    <i class="bi bi-plus-lg"></i> Add Topic
+                </button>
+            </div>
+            <div class="card-body">
+                {% if main_topics %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Title</th>
+                                    <th>Chapters</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="main-topics-table">
+                                {% for topic in main_topics %}
+                                    <tr>
+                                        <td>{{ topic.order }}</td>
+                                        <td>
+                                            <a href="{% url 'dynamicDB:admin_panel_main_topic_detail' topic.id %}">
+                                                {{ topic.title }}
+                                            </a>
+                                        </td>
+                                        <td>{{ topic.chapters.count }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'dynamicDB:admin_panel_main_topic_detail' topic.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger delete-topic" data-topic-id="{{ topic.id }}" data-topic-title="{{ topic.title }}" data-bs-toggle="tooltip" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-4">No main topics found for this PDF.</p>
+                        <button type="button" class="btn btn-primary" id="add-first-topic-btn">
+                            <i class="bi bi-plus-lg me-2"></i> Add First Topic
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Chapters section -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Chapters</h5>
+                <button type="button" class="btn btn-sm btn-primary" id="add-chapter-btn">
+                    <i class="bi bi-plus-lg"></i> Add Chapter
+                </button>
+            </div>
+            <div class="card-body">
+                {% if chapters %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Title</th>
+                                    <th>Pages</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chapters-table">
+                                {% for chapter in chapters %}
+                                    <tr>
+                                        <td>{{ chapter.order }}</td>
+                                        <td>
+                                            <a href="{% url 'dynamicDB:admin_panel_chapter_detail' chapter.id %}">
+                                                {{ chapter.title }}
+                                            </a>
+                                        </td>
+                                        <td>{{ chapter.start_page }} - {{ chapter.end_page }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'dynamicDB:admin_panel_chapter_detail' chapter.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger delete-chapter" data-chapter-id="{{ chapter.id }}" data-chapter-title="{{ chapter.title }}" data-bs-toggle="tooltip" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-4">No chapters found for this PDF.</p>
+                        <button type="button" class="btn btn-primary" id="add-first-chapter-btn">
+                            <i class="bi bi-plus-lg me-2"></i> Add First Chapter
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete PDF Confirmation Modal -->
+<div class="modal fade" id="deletePdfModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="pdf-title-placeholder"></strong>?</p>
+                <p class="text-danger">This will also delete all associated topic groups, main topics, and chapters. This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-pdf">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Topic Confirmation Modal -->
+<div class="modal fade" id="deleteTopicModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete topic <strong id="topic-title-placeholder"></strong>?</p>
+                <p class="text-danger">This will remove all associations with chapters. This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-topic">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Chapter Confirmation Modal -->
+<div class="modal fade" id="deleteChapterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete chapter <strong id="chapter-title-placeholder"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-chapter">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Topic Group Modal -->
+<div class="modal fade" id="addTopicGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Topic Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="group-title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="group-title" required>
+                </div>
+                <div class="mb-3">
+                    <label for="group-description" class="form-label">Description</label>
+                    <textarea class="form-control" id="group-description" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="group-order" class="form-label">Order</label>
+                    <input type="number" class="form-control" id="group-order" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-topic-group">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Main Topic Modal -->
+<div class="modal fade" id="addMainTopicModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Main Topic</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="topic-title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="topic-title" required>
+                </div>
+                <div class="mb-3">
+                    <label for="topic-summary" class="form-label">Summary</label>
+                    <textarea class="form-control" id="topic-summary" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="topic-order" class="form-label">Order</label>
+                    <input type="number" class="form-control" id="topic-order" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-main-topic">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Chapter Modal -->
+<div class="modal fade" id="addChapterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Chapter</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="chapter-title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="chapter-title" required>
+                </div>
+                <div class="mb-3">
+                    <label for="chapter-content" class="form-label">Content</label>
+                    <textarea class="form-control" id="chapter-content" rows="5"></textarea>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="chapter-start-page" class="form-label">Start Page</label>
+                        <input type="number" class="form-control" id="chapter-start-page" value="1" min="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="chapter-end-page" class="form-label">End Page</label>
+                        <input type="number" class="form-control" id="chapter-end-page" value="1" min="1">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="chapter-order" class="form-label">Order</label>
+                    <input type="number" class="form-control" id="chapter-order" value="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-chapter">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle PDF title update
+        $('#save-pdf-title').click(function() {
+            const title = $('#pdf-title').val();
+            
+            $.ajax({
+                url: "{% url 'dynamicDB:admin_panel_update_pdf' pdf.id %}",
+                method: 'POST',
+                data: {
+                    title: title
+                },
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                        
+                        // Update page title
+                        document.title = `${title} - PDF Content Manager`;
+                        $('h2').text(title);
+                    } else {
+                        const alertHtml = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred while updating the PDF title. Please try again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.alert-container').html(alertHtml);
+                }
+            });
+        });
+        
+        // Handle PDF delete
+        $('#delete-pdf-btn').click(function() {
+            const pdfId = $(this).data('pdf-id');
+            const pdfTitle = $(this).data('pdf-title');
+            
+            $('#pdf-title-placeholder').text(pdfTitle);
+            $('#confirm-delete-pdf').data('pdf-id', pdfId);
+            $('#deletePdfModal').modal('show');
+        });
+        
+        $('#confirm-delete-pdf').click(function() {
+            const pdfId = $(this).data('pdf-id');
+            
+            $.ajax({
+                url: "{% url 'dynamicDB:admin_panel_delete_pdf' pdf.id %}",
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = "{% url 'dynamicDB:admin_panel_pdfs' %}";
+                    } else {
+                        const alertHtml = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${response.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        $('.alert-container').html(alertHtml);
+                    }
+                },
+                error: function() {
+                    const alertHtml = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred while deleting the PDF. Please try again.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    $('.alert-container').html(alertHtml);
+                }
+            });
+        });
+        
+        // Topic Group modal
+        $('#add-topic-group-btn, #add-first-topic-group-btn').click(function() {
+            $('#addTopicGroupModal').modal('show');
+        });
+        
+        // Main Topic modal
+        $('#add-main-topic-btn, #add-first-topic-btn').click(function() {
+            $('#addMainTopicModal').modal('show');
+        });
+        
+        // Chapter modal
+        $('#add-chapter-btn, #add-first-chapter-btn').click(function() {
+            $('#addChapterModal').modal('show');
+        });
+        
+        // Handle topic delete
+        $('.delete-topic').click(function() {
+            const topicId = $(this).data('topic-id');
+            const topicTitle = $(this).data('topic-title');
+            
+            $('#topic-title-placeholder').text(topicTitle);
+            $('#confirm-delete-topic').data('topic-id', topicId);
+            $('#deleteTopicModal').modal('show');
+        });
+        
+        // Handle chapter delete
+        $('.delete-chapter').click(function() {
+            const chapterId = $(this).data('chapter-id');
+            const chapterTitle = $(this).data('chapter-title');
+            
+            $('#chapter-title-placeholder').text(chapterTitle);
+            $('#confirm-delete-chapter').data('chapter-id', chapterId);
+            $('#deleteChapterModal').modal('show');
+        });
+        
+        // Implement the AJAX calls for the remaining modals here
+        // These would be similar to the PDF title update and delete functions
+    });
+</script>
+{% endblock %} 

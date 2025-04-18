@@ -1,0 +1,275 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}Dashboard - PDF Content Manager{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Active PDF Status Card -->
+{% if active_pdf %}
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-star-fill me-2"></i> Currently Active PDF
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <h4>{{ active_pdf.title }}</h4>
+                <p class="text-muted">Selected on: {{ active_pdf_selection.selected_at|date:"F d, Y, g:i a" }}</p>
+                <p>
+                    This PDF's content structure is being used throughout the platform.
+                    It contains {{ active_pdf.topic_groups.count }} topic groups, 
+                    {{ active_pdf.main_topics.count }} main topics, and 
+                    {{ active_pdf.chapters.count }} chapters.
+                </p>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-end">
+                <div class="btn-group">
+                    <a href="{% url 'dynamicDB:pdf_selector' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-repeat me-2"></i> Change Selection
+                    </a>
+                    <a href="{% url 'dynamicDB:admin_panel_pdf_detail' active_pdf.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-eye me-2"></i> View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Topic Groups Card -->
+<div class="card mb-4 border-info">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-bookmark-star-fill me-2"></i> Active Topic Groups
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="bg-white p-4 rounded-lg shadow mb-6">
+                    <h5>Currently Active Topic Groups ({{ global_active_topic_groups|length }}/2)</h5>
+                    {% if global_active_topic_groups %}
+                    <div class="flex flex-col mt-2">
+                        {% for group in global_active_topic_groups %}
+                        <div class="border-b py-2 flex justify-between items-center">
+                            <div>
+                                <a href="{% url 'dynamicDB:admin_panel_topic_group_detail' group.topic_group.id %}" class="text-blue-500 hover:underline">
+                                    {{ group.topic_group.title }}
+                                </a>
+                                <span class="text-xs text-gray-500">({{ group.topic_group.topics.count }} topics)</span>
+                            </div>
+                            <a href="{% url 'dynamicDB:remove_active_topic_group' group.topic_group.id %}" class="text-red-500 hover:underline text-sm">Remove</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4 flex justify-between">
+                        <a href="{% url 'dynamicDB:active_topic_groups' %}" class="text-blue-500 hover:underline text-sm">Manage Active Groups</a>
+                        <a href="{% url 'dynamicDB:generate_summary_for_active_groups' %}" 
+                           class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                           onclick="return confirm('Generate summary topics for all active topic groups using Gemini AI?');">
+                            Generate Summaries with Gemini
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-gray-500 mt-2">No active topic groups. Go to <a href="{% url 'dynamicDB:active_topic_groups' %}" class="text-blue-500 hover:underline">Active Topic Groups</a> to set some.</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-end">
+                <a href="{% url 'dynamicDB:active_topic_groups' %}" class="btn btn-outline-info">
+                    <i class="bi bi-gear me-2"></i> Manage Active Topic Groups
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i> No Active PDF Selected
+        </h5>
+    </div>
+    <div class="card-body">
+        <p>
+            You haven't selected an active PDF document yet. The platform needs an active PDF to provide 
+            content for various features.
+        </p>
+        <a href="{% url 'dynamicDB:pdf_selector' %}" class="btn btn-primary">
+            <i class="bi bi-selection me-2"></i> Select Active PDF
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">PDF Documents</h5>
+                <p class="display-4">{{ pdf_count }}</p>
+                <a href="{% url 'dynamicDB:admin_panel_pdfs' %}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Topic Groups</h5>
+                <p class="display-4">{{ topic_group_count }}</p>
+                <a href="{% url 'dynamicDB:admin_panel_topic_groups' %}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Main Topics</h5>
+                <p class="display-4">{{ main_topic_count }}</p>
+                <a href="{% url 'dynamicDB:admin_panel_main_topics' %}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <h5 class="card-title">Chapters</h5>
+                <p class="display-4">{{ chapter_count }}</p>
+                <a href="{% url 'dynamicDB:admin_panel_chapters' %}" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent PDFs -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent PDF Documents</h5>
+                <a href="{% url 'dynamicDB:admin_panel_pdfs' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_pdfs %}
+                    <div class="list-group">
+                        {% for pdf in recent_pdfs %}
+                            <a href="{% url 'dynamicDB:admin_panel_pdf_detail' pdf.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ pdf.title }}</h6>
+                                    <small>{{ pdf.uploaded_at|date:"M d, Y" }}</small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ pdf.chapters.count }} chapters, {{ pdf.main_topics.count }} topics, {{ pdf.topic_groups.count }} groups
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted my-4">No PDF documents found.</p>
+                    <div class="text-center">
+                        <a href="{% url 'dynamicDB:upload_pdf' %}" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i> Upload New PDF
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Topic Groups -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Topic Groups</h5>
+                <a href="{% url 'dynamicDB:admin_panel_topic_groups' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_topic_groups %}
+                    <div class="list-group">
+                        {% for group in recent_topic_groups %}
+                            <a href="{% url 'dynamicDB:admin_panel_topic_group_detail' group.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ group.title }}</h6>
+                                    <small>{{ group.updated_at|date:"M d, Y" }}</small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ group.topics.count }} topics · PDF: {{ group.pdf_document.title|truncatechars:30 }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No topic groups found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Main Topics -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Main Topics</h5>
+                <a href="{% url 'dynamicDB:admin_panel_main_topics' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_main_topics %}
+                    <div class="list-group">
+                        {% for topic in recent_main_topics %}
+                            <a href="{% url 'dynamicDB:admin_panel_main_topic_detail' topic.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ topic.title }}</h6>
+                                    <small>Order: {{ topic.order }}</small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ topic.chapters.count }} chapters · PDF: {{ topic.pdf_document.title|truncatechars:30 }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No main topics found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Chapters -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Chapters</h5>
+                <a href="{% url 'dynamicDB:admin_panel_chapters' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_chapters %}
+                    <div class="list-group">
+                        {% for chapter in recent_chapters %}
+                            <a href="{% url 'dynamicDB:admin_panel_chapter_detail' chapter.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ chapter.title }}</h6>
+                                    <small>Pages: {{ chapter.start_page }}-{{ chapter.end_page }}</small>
+                                </div>
+                                <small class="text-muted">
+                                    PDF: {{ chapter.pdf_document.title|truncatechars:30 }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No chapters found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

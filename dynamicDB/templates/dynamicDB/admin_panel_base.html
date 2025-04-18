@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDF Content Manager{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            border-right: 1px solid #dee2e6;
+        }
+        .sidebar .nav-link {
+            color: #495057;
+            border-radius: 0;
+        }
+        .sidebar .nav-link.active {
+            background-color: #5c7cfa;
+            color: white;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+        }
+        .sidebar .nav-link.active:hover {
+            background-color: #4263eb;
+        }
+        .content-area {
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .btn-primary {
+            background-color: #5c7cfa;
+            border-color: #5c7cfa;
+        }
+        .btn-primary:hover {
+            background-color: #4263eb;
+            border-color: #4263eb;
+        }
+        .active-pdf-indicator {
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            background-color: #e9ecef;
+            border-radius: 0.25rem;
+            margin: 0.5rem 1rem;
+        }
+        .active-pdf-indicator .badge {
+            margin-left: 0.25rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar py-3">
+                <h5 class="p-3 mb-3 border-bottom">PDF Content Manager</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_dashboard' %}">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'pdfs' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_pdfs' %}">
+                            <i class="bi bi-file-earmark-pdf me-2"></i> PDF Documents
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'topic_groups' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_topic_groups' %}">
+                            <i class="bi bi-folder2 me-2"></i> Topic Groups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'main_topics' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_main_topics' %}">
+                            <i class="bi bi-journal-text me-2"></i> Main Topics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'chapters' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_chapters' %}">
+                            <i class="bi bi-book me-2"></i> Chapters
+                        </a>
+                    </li>
+                    
+                    <!-- Summary Topics -->
+                    <li class="nav-item">
+                        <a href="{% url 'dynamicDB:admin_panel_summary_topics' %}" 
+                           class="nav-link {% if active_page == 'summary_topics' %}active{% endif %}">
+                            <i class="bi bi-file-earmark-text me-2"></i> Summary Topics
+                        </a>
+                    </li>
+                    
+                    <!-- Topic Generation -->
+                    <li class="nav-item">
+                        <a href="{% url 'dynamicDB:generate_summary_for_active_groups' %}" 
+                           class="nav-link {% if active_page == 'generate_summary' %}active{% endif %}">
+                            <i class="bi bi-lightning-charge me-2"></i> Generate AI Summaries
+                        </a>
+                    </li>
+                    
+                    {% if global_active_pdf %}
+                    <li class="nav-item mt-3">
+                        <div class="active-pdf-indicator">
+                            <span class="text-muted">Active PDF:</span>
+                            <span class="badge bg-primary" data-bs-toggle="tooltip" title="{{ global_active_pdf.title }}">
+                                {{ global_active_pdf.title|truncatechars:15 }}
+                            </span>
+                            <a href="{% url 'dynamicDB:pdf_selector' %}" class="badge bg-secondary text-decoration-none">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="nav-item mt-2">
+                        <a class="nav-link {% if active_page == 'pdf_selector' %}active{% endif %}" href="{% url 'dynamicDB:pdf_selector' %}">
+                            <i class="bi bi-selection me-2"></i> Select Active PDF
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'active_topic_groups' %}active{% endif %}" href="{% url 'dynamicDB:active_topic_groups' %}">
+                            <i class="bi bi-bookmark-star me-2"></i> Manage Active Topic Groups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dynamicDB:upload_pdf' %}">
+                            <i class="bi bi-upload me-2"></i> Upload New PDF
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main content area -->
+            <div class="col-md-9 col-lg-10 content-area">
+                {% if messages %}
+                    <div class="alert-container mt-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-4 pt-3">
+                    <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+                    <div>
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+                
+                {% block content %}
+                <!-- Page content goes here -->
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script>
+        // Common JavaScript for all admin panel pages
+        $(document).ready(function() {
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+            
+            // Enable tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

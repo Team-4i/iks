@@ -2012,7 +2012,17 @@
             {% for part, types in checkpoints.items %}
             <div class="part-section">
                 <div class="part-title-container">
-                    <h3 class="part-title">Part {{ part }}</h3>
+                    {% if using_dynamic_topics %}
+                        {% if part == 5 %}
+                            <h3 class="part-title">{{ active_topic_groups.0.topic_group.title }}</h3>
+                        {% elif part == 6 %}
+                            <h3 class="part-title">{{ active_topic_groups.1.topic_group.title }}</h3>
+                        {% else %}
+                            <h3 class="part-title">Part {{ part }}</h3>
+                        {% endif %}
+                    {% else %}
+                        <h3 class="part-title">Part {{ part }}</h3>
+                    {% endif %}
                 </div>
                 
                 <div class="checkpoints-line">
@@ -2022,7 +2032,11 @@
                         <div class="checkpoint">
                             <div class="checkpoint-node judiciary {% if not types.JUD.progress.unlocked %}locked{% endif %}"
                                  data-unlocked="{{ types.JUD.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Judiciary</span>
+                                {% if using_dynamic_topics and types.JUD.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.JUD.main_topic_title }}</span>
+                                {% else %}
+                                    <span class="checkpoint-title">Judiciary</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.JUD.count }}</span>
                                 {% if not types.JUD.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2038,7 +2052,11 @@
                         <div class="checkpoint">
                             <div class="checkpoint-node legislative {% if not types.LEG.progress.unlocked %}locked{% endif %}"
                                  data-unlocked="{{ types.LEG.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Legislative</span>
+                                {% if using_dynamic_topics and types.LEG.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.LEG.main_topic_title }}</span>
+                                {% else %}
+                                    <span class="checkpoint-title">Legislative</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.LEG.count }}</span>
                                 {% if not types.LEG.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2054,7 +2072,11 @@
                         <div class="checkpoint">
                             <div class="checkpoint-node executive {% if not types.EXEC.progress.unlocked %}locked{% endif %}"
                                  data-unlocked="{{ types.EXEC.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Executive</span>
+                                {% if using_dynamic_topics and types.EXEC.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.EXEC.main_topic_title }}</span>
+                                {% else %}
+                                    <span class="checkpoint-title">Executive</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.EXEC.count }}</span>
                                 {% if not types.EXEC.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2067,8 +2089,16 @@
                     {% else %}
                         <div class="checkpoint">
                             <div class="checkpoint-node executive {% if not types.EXEC.progress.unlocked %}locked{% endif %}"
-                                 data-unlocked="{{ types.EXEC.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Executive</span>
+                                 data-unlocked="{{ types.EXEC.progress.unlocked|lower }}"
+                                 {% if types.EXEC.is_summary_topic %}data-summary-id="{{ types.EXEC.main_topic_id }}"{% endif %}>
+                                {% if using_dynamic_topics and types.EXEC.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.EXEC.main_topic_title }}</span>
+                                    {% if types.EXEC.is_summary_topic %}
+                                    <span class="summary-badge">AI Summary</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="checkpoint-title">Executive</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.EXEC.count }}</span>
                                 {% if not types.EXEC.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2083,8 +2113,16 @@
 
                         <div class="checkpoint">
                             <div class="checkpoint-node legislative {% if not types.LEG.progress.unlocked %}locked{% endif %}"
-                                 data-unlocked="{{ types.LEG.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Legislative</span>
+                                 data-unlocked="{{ types.LEG.progress.unlocked|lower }}"
+                                 {% if types.LEG.is_summary_topic %}data-summary-id="{{ types.LEG.main_topic_id }}"{% endif %}>
+                                {% if using_dynamic_topics and types.LEG.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.LEG.main_topic_title }}</span>
+                                    {% if types.LEG.is_summary_topic %}
+                                    <span class="summary-badge">AI Summary</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="checkpoint-title">Legislative</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.LEG.count }}</span>
                                 {% if not types.LEG.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2099,8 +2137,16 @@
 
                         <div class="checkpoint">
                             <div class="checkpoint-node judiciary {% if not types.JUD.progress.unlocked %}locked{% endif %}"
-                                 data-unlocked="{{ types.JUD.progress.unlocked|lower }}">
-                                <span class="checkpoint-title">Judiciary</span>
+                                 data-unlocked="{{ types.JUD.progress.unlocked|lower }}"
+                                 {% if types.JUD.is_summary_topic %}data-summary-id="{{ types.JUD.main_topic_id }}"{% endif %}>
+                                {% if using_dynamic_topics and types.JUD.main_topic_title %}
+                                    <span class="checkpoint-title">{{ types.JUD.main_topic_title }}</span>
+                                    {% if types.JUD.is_summary_topic %}
+                                    <span class="summary-badge">AI Summary</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="checkpoint-title">Judiciary</span>
+                                {% endif %}
                                 <span class="checkpoint-count">{{ types.JUD.count }}</span>
                                 {% if not types.JUD.progress.unlocked %}
                                     <div class="lock-icon">🔒</div>
@@ -2145,17 +2191,6 @@
                         <a href="{% url 'spinwheel:spinwheel_intro' %}" class="game-btn">Play Spinwheel</a>
                         <a href="{% url 'spinwheel:collection' %}" 
                            class="game-btn collection">View Collection</a>
-                    </div>
-                </div>
-
-                <!-- Flip Card -->
-                <div class="game-option">
-                    <h4 class="text-lg font-bold mb-2">Flip Card</h4>
-                    <div class="game-buttons">
-                        <a href="{% url 'flip_card:start_page' %}?part={{ part }}&type={{ type }}" 
-                           class="game-btn create">Start Game</a>
-                        <a href="{% url 'flip_card:levels_page' %}" 
-                           class="game-btn join">View Levels</a>
                     </div>
                 </div>
 
@@ -2248,8 +2283,19 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (this.classList.contains('legislative')) type = 'LEG';
             else if (this.classList.contains('executive')) type = 'EXEC';
             
+            // Check if this is a summary topic
+            const isSummaryTopic = this.dataset.summaryId ? true : false;
+            const summaryId = this.dataset.summaryId;
+            
             try {
-                const response = await fetch(`/plat/checkpoint/${part}/${type}/`);
+                let url = `/plat/checkpoint/${part}/${type}/`;
+                
+                // Include summary_id parameter if this is a summary topic
+                if (isSummaryTopic) {
+                    url += `?summary_id=${summaryId}`;
+                }
+                
+                const response = await fetch(url);
                 if (!response.ok) {
                     if (response.status === 403) {
                         alert('This checkpoint is locked! Earn more points to unlock.');
@@ -2259,33 +2305,80 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const data = await response.json();
+                console.log("Checkpoint data:", data);
                 
-                // Update modal content
-                modalTitle.textContent = `Part ${data.part} - ${data.type_display}`;
-                
-                // Update game creation links with checkpoint info
-                const createGameLink = document.querySelector('.game-btn.create');
-                if (createGameLink) {
-                    createGameLink.href = `/game/create/?checkpoint_part=${data.checkpoint_part}&checkpoint_type=${data.checkpoint_type}`;
+                // Update modal title with appropriate content
+                if (data.is_dynamic) {
+                    if (data.is_summary) {
+                        // For summary topics, show topic group and summary topic
+                        modalTitle.textContent = `${data.topic_group}: ${data.summary_topic}`;
+                        modalTitle.innerHTML += `<div class="text-sm text-gray-600 mt-2">${data.summary_description || ''}</div>`;
+                        modalTitle.innerHTML += `<div class="text-sm text-blue-600 mt-1">Contains ${data.main_topics_count} main topics</div>`;
+                    } else {
+                        // For regular dynamic content, show topic group and main topic
+                        modalTitle.textContent = `${data.topic_group}: ${data.main_topic || data.type_display}`;
+                    }
+                } else {
+                    // For traditional content, show part and type
+                    const typeName = {'JUD': 'Judiciary', 'LEG': 'Legislative', 'EXEC': 'Executive'}[data.type];
+                    modalTitle.textContent = `Part ${data.part} ${typeName}`;
                 }
                 
-                // Update modal content
-                modalTitle.textContent = `Part ${data.part} - ${data.type_display}`;
-                articlesGrid.innerHTML = data.articles.map(article => `
-                    <div class="article-card">
-                        <div class="article-title">${article.title}</div>
-                    </div>
-                `).join('');
+                // Clear existing articles
+                articlesGrid.innerHTML = '';
                 
-                // Update Learn More button href and add onclick handler
+                // Add articles to grid
+                if (data.articles && data.articles.length > 0) {
+                    data.articles.forEach(article => {
+                        const articleCard = document.createElement('div');
+                        articleCard.className = 'article-card';
+                        
+                        if (article.is_header) {
+                            // For headers (main topic titles in summary view)
+                            articleCard.className = 'article-card main-topic-header';
+                            articleCard.innerHTML = `
+                                <div class="article-title">${article.title}</div>
+                                <div class="article-explanation">${article.explanation || ''}</div>
+                            `;
+                        } else {
+                            // For regular article/chapter
+                            articleCard.innerHTML = `
+                                <div class="article-number">${article.number || ''}</div>
+                                <div class="article-title">${article.title}</div>
+                                <div class="article-explanation">${article.explanation || ''}</div>
+                            `;
+                        }
+                        
+                        articlesGrid.appendChild(articleCard);
+                    });
+                } else {
+                    articlesGrid.innerHTML = '<p class="text-center text-gray-500">No articles available for this checkpoint.</p>';
+                }
+                
+                // Update the Learn More button to include appropriate parameters
                 const learnMoreBtn = document.getElementById('learnMoreBtn');
-                learnMoreBtn.href = `/plat/articles/${data.part}/${data.type}/`;
-                learnMoreBtn.onclick = (e) => closeModalAndRedirect(e);
+                let learnMoreUrl = `/plat/articles/${part}/${type}/`;
+                
+                // Include summary_id parameter if this is a summary topic
+                if (data.is_summary) {
+                    learnMoreUrl += `?summary_id=${data.summary_topic_id || summaryId}`;
+                }
+                
+                learnMoreBtn.href = learnMoreUrl;
+                
+                // Update links for game buttons (only updated if not already set)
+                const bingoStartLink = document.getElementById('bingoStartLink');
+                if (bingoStartLink) {
+                    // Set the checkpoint info in the link
+                    const currentHref = bingoStartLink.getAttribute('href').split('?')[0];
+                    bingoStartLink.href = `${currentHref}?checkpoint_part=${part}&checkpoint_type=${type}`;
+                }
                 
                 // Show modal
                 modal.style.display = 'block';
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error fetching checkpoint data:', error);
+                alert('Error loading checkpoint data. Please try again.');
             }
         });
     });
@@ -2304,12 +2397,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.classList.contains('judiciary')) type = 'JUD';
             else if (this.classList.contains('legislative')) type = 'LEG';
             else if (this.classList.contains('executive')) type = 'EXEC';
-
-            // Update Flip Card levels link
-            const flipCardLevelsLink = document.getElementById('flipCardLevels');
-            if (flipCardLevelsLink) {
-                flipCardLevelsLink.href = `{% url 'flip_card:levels_page' %}`;
-            }
         });
     });
 });
