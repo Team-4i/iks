@@ -394,6 +394,11 @@
             <a href="{% url 'dynamicDB:visualize_topics' pdf_doc.pk %}" class="btn btn-primary">
                 View Topic Visualization
             </a>
+            {% if main_topics %}
+            <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?group_topics=true" class="btn" style="background-color: #28a745;">
+                Group Topics
+            </a>
+            {% endif %}
             {% if show_all_pages %}
             <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?cleanup=true" class="btn" style="background-color: #dc3545;">
                 Clean Up Temporary Files
@@ -657,6 +662,16 @@
         {% if main_topics %}
         <div class="topics-container">
             <h3>Main Topics and Chapters</h3>
+            
+            {% if not topic_groups %}
+            <div class="button-container" style="margin-bottom: 20px;">
+                <a href="{% url 'dynamicDB:analyze_pdf' pdf_doc.pk %}?group_topics=true" class="btn" style="background-color: #28a745;">
+                    Group These Topics
+                </a>
+                <span class="form-help">Use AI to group related topics into broader categories</span>
+            </div>
+            {% endif %}
+            
             {% for topic in main_topics %}
             <div class="topic-card">
                 <div class="topic-title">Topic {{ topic.order }}: {{ topic.title }}</div>
