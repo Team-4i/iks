@@ -721,111 +721,89 @@ class HangmanGame {
 
     handleGameOver(reason = 'unknown') {
         if (this.isGameOver) return;
-        
-        // Mark game as over
         this.isGameOver = true;
-        
-        // Stop all sounds
-        Object.values(this.sounds).forEach(sound => {
-            if (!sound.paused) {
-                sound.pause();
-                sound.currentTime = 0;
-            }
-        });
-        
-        // Play game over sound
-        this.sounds.gameOver.play().catch(e => console.log('Could not play game over sound'));
-        
-        // Clear timer interval
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
+        this.pauseGame();
+        this.sounds.background.pause();
+        if (this.isWarningSoundPlaying) {
+             this.sounds.warning.pause();
+             this.sounds.warning.currentTime = 0;
+             this.isWarningSoundPlaying = false;
         }
-        
-        // Calculate final stats
-        const endTime = Date.now();
-        const survivalTime = Math.round((endTime - this.startTime) / 1000);
-        
-        console.log(`Game over! Reason: ${reason}`);
-        console.log(`Survival time: ${survivalTime} seconds`);
-        console.log(`Correct answers: ${this.correctAnswers}`);
-        console.log(`Wrong answers: ${this.wrongAnswers}`);
-        console.log(`Parts revealed: ${this.currentPart}`);
-        console.log(`Points: ${this.points}`);
-        
-        // Send game results to server
-        const formData = new FormData();
-        formData.append('game_id', this.config.gameId);
-        formData.append('survival_time', survivalTime);
-        formData.append('parts_revealed', this.currentPart);
-        formData.append('correct_answers', this.correctAnswers);
-        formData.append('wrong_answers', this.wrongAnswers);
-        formData.append('points', this.points);
-        
-        fetch(this.config.endGameUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': this.config.csrfToken
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
+
+        // Play game over sound
+        this.sounds.gameOver.play().catch(e => console.log('Error playing game over sound:', e));
+
+        if (reason === 'hanged') {
+            this.config.partOrder.forEach((partId, index) => {
+                const part = document.getElementById(partId);
+                if (part) {
+                    part.classList.add('visible');
+                }
+            });
+            
+            setTimeout(() => {
                 this.showGameOverModal(reason);
-            } else {
-                console.error('Error ending game:', data.message);
-                this.showGameOverModal(reason);
-            }
-        })
-        .catch(error => {
-            console.error('Error ending game:', error);
+            }, 500);
+        } else {
             this.showGameOverModal(reason);
-        });
+        }
     }
     
     showGameOverModal(reason) {
+        const survivalTime = Math.max(0, Math.floor((Date.now() - this.startTime) / 1000));
+
+        let gameOverMessage = `You survived for ${survivalTime} seconds.`;
+        if (reason === 'time') {
+            gameOverMessage = `Time's up! ${gameOverMessage}`;
+        } else if (reason === 'hanged') {
+            gameOverMessage = `You were hanged! ${gameOverMessage}`;
+        } else if (reason === 'questions_finished') {
+             gameOverMessage = `Congratulations! You answered all the questions.`;
+        }
+        
+        gameOverMessage += `<br><br>Correct answers: ${this.correctAnswers}<br>Wrong answers: ${this.wrongAnswers}<br>Points: ${this.points}`;
+
         const modal = document.getElementById('game-over-modal');
         const messageEl = document.getElementById('game-over-message');
-        const finalTimeEl = document.getElementById('final-time');
-        const finalCorrectEl = document.getElementById('final-correct');
-        const finalWrongEl = document.getElementById('final-wrong');
-        const finalPointsEl = document.getElementById('final-points');
         
         if (modal && messageEl) {
-            let message = '';
-            if (reason === 'timer_expired') {
-                message = 'Time\'s up! Your survival session has ended.';
-            } else if (reason === 'questions_finished') {
-                message = 'Congratulations! You\'ve completed all the questions.';
-            } else if (reason === 'hangman_complete') {
-                message = 'The hangman is complete. Game over!';
-            } else {
-                message = 'Game over!';
-            }
+            messageEl.innerHTML = gameOverMessage;
+            modal.classList.add('show');
             
-            messageEl.textContent = message;
-            
-            if (finalTimeEl) finalTimeEl.textContent = `${this.maxTime}s`;
-            if (finalCorrectEl) finalCorrectEl.textContent = this.correctAnswers;
-            if (finalWrongEl) finalWrongEl.textContent = this.wrongAnswers;
-            if (finalPointsEl) finalPointsEl.textContent = this.points;
-            
-            modal.classList.add('visible');
-            
-            // Set up play again button to redirect to start page with checkpoint parameters if applicable
-            const playAgainBtn = document.getElementById('play-again-btn');
-            if (playAgainBtn) {
-                if (this.config.fromCheckpoint && this.config.topicGroupId && this.config.summaryId) {
-                    playAgainBtn.addEventListener('click', () => {
-                        window.location.href = `${this.config.startPageUrl}?topic_group_id=${this.config.topicGroupId}&summary_id=${this.config.summaryId}`;
-                    });
-                } else {
-                    playAgainBtn.addEventListener('click', () => {
-                        window.location.href = this.config.startPageUrl;
-                    });
+            // Update the stat cards with data
+            document.getElementById('final-time').textContent = `${survivalTime}s`;
+            document.getElementById('final-correct').textContent = this.correctAnswers;
+            document.getElementById('final-wrong').textContent = this.wrongAnswers;
+            document.getElementById('final-points').textContent = this.points;
+        }
+
+        if (this.config.gameId && this.config.endGameUrl && this.config.csrfToken) {
+            const formData = new FormData();
+            formData.append('game_id', this.config.gameId);
+            formData.append('survival_time', survivalTime);
+            formData.append('parts_revealed', this.currentPart);
+            formData.append('correct_answers', this.correctAnswers);
+            formData.append('wrong_answers', this.wrongAnswers);
+            formData.append('points', this.points);
+
+            fetch(this.config.endGameUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': this.config.csrfToken
                 }
-            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    console.error("Failed to save game:", data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error sending game data:", error);
+            });
+        } else {
+            console.warn("Game config missing. Score not saved.");
         }
     }
 

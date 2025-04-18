@@ -24,9 +24,6 @@
             <div class="tagline">CONSTITUTIONAL CHALLENGE</div>
             {% if from_checkpoint %}
             <div class="checkpoint-name">{{ checkpoint_name }}</div>
-            {% if topic_group_id and summary_id %}
-            <div class="debug-info">Topic: {{ topic_group_id }} / Summary: {{ summary_id }}</div>
-            {% endif %}
             {% endif %}
         </div>
     </div>
@@ -208,14 +205,6 @@
     opacity: 0;
     animation: taglineFade 1s ease 1.2s forwards;
     text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
-}
-
-.debug-info {
-    color: #5D9BF0;
-    font-size: 0.8rem;
-    margin-top: 5px;
-    opacity: 0;
-    animation: taglineFade 1s ease 1.5s forwards;
 }
 
 /* Video Background Effect */
@@ -798,13 +787,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         document.querySelector('.game-intro-screen').classList.add('loaded');
     }, 500);
-
-    // Output debug info to console
-    console.log('Start page loaded with params:');
-    console.log('topic_group_id: {{ topic_group_id|default:"none" }}');
-    console.log('summary_id: {{ summary_id|default:"none" }}');
-    console.log('from_checkpoint: {{ from_checkpoint|yesno:"yes,no" }}');
-    console.log('checkpoint_name: {{ checkpoint_name|default:"none" }}');
 });
 
 // Play hover sound (silent function, would need actual sound implementation)

@@ -53,63 +53,53 @@ def get_random_questions(num_questions=10, allowed_types=None, topic_group_id=No
             subtopic = SubTopic.objects.get(id=summary_id)
             print(f"Found subtopic: {subtopic.title}")
             
-            # Get all topics related to this subtopic (these are Topic objects, not MainTopic objects)
-            topics = subtopic.main_topics.all()
-            print(f"Found {topics.count()} topics")
+            # Get all main topics related to this subtopic
+            main_topics = subtopic.main_topics.all()
+            print(f"Found {main_topics.count()} main topics")
             
-            # DEBUG: Print IDs of all topics
-            topic_ids = [t.id for t in topics]
-            print(f"Topic IDs: {topic_ids}")
+            # Debug: Print IDs of all main topics
+            main_topic_ids = [mt.id for mt in main_topics]
+            print(f"Main topic IDs: {main_topic_ids}")
             
-            # Create a list to collect all questions related to this subtopic
+            # Create a list to collect all questions from these main topics
             all_questions = []
             
-            # IMPORTANT: The main issue is here - BaseQuestion.main_topic refers to MainTopic,
-            # but SubTopic.main_topics refers to Topic models (different models)
-            
-            # First, let's try to get questions that reference the subtopic directly
+            # For each type, fetch questions related to the main topics
             for q_type in types_to_fetch:
                 if q_type in all_question_types:
                     model = all_question_types[q_type]
                     
-                    # Try to find questions specifically linked to this subtopic
-                    subtopic_questions = list(model.objects.filter(
-                        is_active=True, 
-                        sub_topic_id=subtopic.id
-                    ))
-                    print(f"Found {len(subtopic_questions)} questions of type {q_type} directly linked to subtopic {subtopic.title}")
-                    all_questions.extend(subtopic_questions)
-            
-            # Next, try to get questions linked to the topics
-            for q_type in types_to_fetch:
-                if q_type in all_question_types:
-                    model = all_question_types[q_type]
+                    # DEBUG: Check how many questions exist with any main_topic set
+                    questions_with_main_topic = list(model.objects.filter(is_active=True).exclude(main_topic=None))
+                    print(f"Total {q_type} questions with any main_topic set: {len(questions_with_main_topic)}")
                     
-                    # Find questions linked to any of the topics
-                    for topic in topics:
+                    if questions_with_main_topic:
+                        # Get sample question ids and their main_topic_ids for debugging
+                        sample_question_data = [(q.id, q.main_topic_id) for q in questions_with_main_topic[:5]]
+                        print(f"Sample {q_type} questions (id, main_topic_id): {sample_question_data}")
+                    
+                    # Get questions where main_topic is in our main_topics list
+                    for main_topic in main_topics:
+                        # Use the main_topic.id to ensure we're querying with an integer
                         topic_questions = list(model.objects.filter(
-                            is_active=True,
-                            topic_id=topic.id
+                            is_active=True, 
+                            main_topic_id=main_topic.id
                         ))
-                        print(f"Found {len(topic_questions)} questions of type {q_type} linked to topic {topic.title}")
+                        print(f"Found {len(topic_questions)} questions of type {q_type} for main_topic {main_topic.title} (ID: {main_topic.id})")
                         all_questions.extend(topic_questions)
-            
-            # Finally, try to get questions linked to the parent topic group
-            for q_type in types_to_fetch:
-                if q_type in all_question_types:
-                    model = all_question_types[q_type]
-                    
-                    # Find questions linked to the parent topic group (MainTopic)
-                    topic_group_questions = list(model.objects.filter(
-                        is_active=True,
-                        main_topic_id=topic_group_id
-                    ))
-                    print(f"Found {len(topic_group_questions)} questions of type {q_type} linked to topic group {subtopic.topic_group.title}")
-                    all_questions.extend(topic_group_questions)
             
             # If we don't have enough questions, fetch some additional ones
             if len(all_questions) < num_questions:
                 print(f"Not enough questions ({len(all_questions)}), fetching additional questions")
+                
+                # DEBUG: Try alternate query using direct IN condition
+                if main_topic_ids:
+                    print("Trying alternate query with IN condition...")
+                    for q_type in types_to_fetch:
+                        if q_type in all_question_types:
+                            model = all_question_types[q_type]
+                            alternate_questions = list(model.objects.filter(is_active=True, main_topic_id__in=main_topic_ids))
+                            print(f"Alternate query found {len(alternate_questions)} questions of type {q_type}")
                 
                 # Fetch some additional questions from any category
                 for q_type in types_to_fetch:

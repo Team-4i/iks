@@ -2312,9 +2312,10 @@
                 <!-- Hangman -->
                 <div class="game-option">
                     <h4 class="text-lg font-bold mb-2">Hangman Challenge</h4>
-                    <p class="text-sm text-gray-200 mb-3">Test your knowledge with a series of questions.</p>
-                    <a href="{% url 'hang:start_page' %}" 
-                    class="game-btn create hangman-link">Play Hangman</a>
+                    <div class="game-buttons">
+                        <a href="{% url 'hang:start_page' %}" 
+                           class="game-btn create hangman-link">Play Hangman</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2364,6 +2365,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (topicGroupId && summaryId) {
                 hangmanLink.href = `{% url 'hang:start_page' %}?topic_group_id=${topicGroupId}&summary_id=${summaryId}`;
             } else {
+                // Default link if no parameters are available
                 hangmanLink.href = "{% url 'hang:start_page' %}";
             }
         }
