@@ -81,7 +81,7 @@ class Command(BaseCommand):
             return None, None
 
     def generate_content_variations(self, topic_data):
-        """Generate exactly 80 content variations for normal cells based on topic data"""
+        """Generate exactly 80 content variations for normal cells and 20 for snake/ladder cells based on topic data"""
         if not topic_data or not self.ai_available:
             return self.generate_basic_content(topic_data)
 
@@ -127,25 +127,29 @@ class Command(BaseCommand):
                 {{
                     "content": "Did you know? [Insert interesting fact about a concept from these topics]",
                     "topic": "[Related topic name]",
-                    "source_id": "[ID of a main topic this relates to]"
+                    "source_id": "[ID of a main topic this relates to]",
+                    "cell_type": "normal"
                 }},
                 {{
                     "content": "[Topic name]: [2-3 sentences explaining a concept from these topics]",
                     "topic": "[Related topic name]",
-                    "source_id": "[ID of a main topic this relates to]"
+                    "source_id": "[ID of a main topic this relates to]",
+                    "cell_type": "normal"
                 }}
             ]
         }}
         
         Rules:
-        1. Generate exactly 80 items (for 80 normal cells)
-        2. Alternate between "Did you know?" facts and concept explanations
-        3. Each content must be based on the provided topics
-        4. Keep "Did you know?" facts concise (15-20 words)
-        5. Make concept explanations 2-3 sentences long
-        6. Ensure all content is unique
-        7. Use proper JSON format with double quotes
-        8. For source_id, use one of these main topic IDs: {', '.join([str(topic['id']) for topic in main_topics_info])}
+        1. Generate exactly 80 items for normal cells and 20 items for special cells (total: 100)
+        2. For normal cells (80 items), alternate between "Did you know?" facts and concept explanations
+        3. For special cells (20 items), create more engaging and challenging content marked with "cell_type": "snake_ladder"
+        4. Each content must be based on the provided topics
+        5. Keep "Did you know?" facts concise (15-20 words)
+        6. Make concept explanations 2-3 sentences long
+        7. For snake_ladder cells, create content that feels more significant or special
+        8. Ensure all content is unique
+        9. Use proper JSON format with double quotes
+        10. For source_id, use one of these main topic IDs: {', '.join([str(topic['id']) for topic in main_topics_info])}
         """
 
         try:
@@ -197,12 +201,22 @@ class Command(BaseCommand):
             "{chapter_title}: This chapter from {main_topic} explains important details about {topic}."
         ]
         
-        # Generate content by cycling through main topics and their chapters
-        content_count = 0
-        is_fact = True  # Toggle between facts and explanations
+        # Create special cell templates for snake/ladder cells
+        special_templates = [
+            "SPECIAL: {topic} is a critical concept in {main_topic}. Understanding this can help you advance!",
+            "CHALLENGE: Can you explain how {topic} relates to {main_topic}? The answer affects your journey!",
+            "BONUS: Mastering {topic} from {main_topic} gives you an advantage in understanding the constitution!",
+            "KEY CONCEPT: {chapter_title} is fundamental to {main_topic}. This knowledge can move you forward!",
+            "IMPORTANT: {topic} represents a core principle in {main_topic}. This insight can change your path!"
+        ]
         
-        # Keep generating until we have 80 items
-        while content_count < 80:
+        # Generate content by cycling through main topics and their chapters
+        normal_content_count = 0
+        special_content_count = 0
+        is_fact = True  # Toggle between facts and explanations for normal cells
+        
+        # Keep generating until we have 80 normal items and 20 special items
+        while normal_content_count < 80 or special_content_count < 20:
             for main_topic in main_topics:
                 main_topic_id = main_topic['id']
                 main_topic_title = main_topic['title']
@@ -210,36 +224,59 @@ class Command(BaseCommand):
                 for chapter in main_topic.get('chapters', []):
                     chapter_title = chapter['title']
                     
-                    # Choose template based on current type
-                    if is_fact:
-                        template = random.choice(fact_templates)
+                    # First generate normal content until we reach 80
+                    if normal_content_count < 80:
+                        # Choose template based on current type
+                        if is_fact:
+                            template = random.choice(fact_templates)
+                            content = template.format(
+                                topic=chapter_title, 
+                                main_topic=main_topic_title,
+                                chapter_title=chapter_title
+                            )
+                        else:
+                            template = random.choice(explanation_templates)
+                            content = template.format(
+                                topic=chapter_title, 
+                                main_topic=main_topic_title,
+                                chapter_title=chapter_title
+                            )
+                        
+                        # Add to content variations
+                        content_variations.append({
+                            'content': content,
+                            'topic': main_topic_title,
+                            'source_id': main_topic_id,
+                            'cell_type': 'normal'
+                        })
+                        
+                        normal_content_count += 1
+                        is_fact = not is_fact  # Toggle for next item
+                    
+                    # Then generate special content for snake/ladder cells
+                    elif special_content_count < 20:
+                        template = random.choice(special_templates)
                         content = template.format(
                             topic=chapter_title, 
                             main_topic=main_topic_title,
                             chapter_title=chapter_title
                         )
-                    else:
-                        template = random.choice(explanation_templates)
-                        content = template.format(
-                            topic=chapter_title, 
-                            main_topic=main_topic_title,
-                            chapter_title=chapter_title
-                        )
+                        
+                        content_variations.append({
+                            'content': content,
+                            'topic': f"Special: {main_topic_title}",
+                            'source_id': main_topic_id,
+                            'cell_type': 'snake_ladder'
+                        })
+                        
+                        special_content_count += 1
                     
-                    # Add to content variations
-                    content_variations.append({
-                        'content': content,
-                        'topic': main_topic_title,
-                        'source_id': main_topic_id
-                    })
-                    
-                    content_count += 1
-                    is_fact = not is_fact  # Toggle for next item
-                    
-                    if content_count >= 80:
+                    # Check if we have enough content
+                    if normal_content_count >= 80 and special_content_count >= 20:
                         break
                 
-                if content_count >= 80:
+                # Check if we have enough content
+                if normal_content_count >= 80 and special_content_count >= 20:
                     break
         
         return content_variations
@@ -270,14 +307,53 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('No content generated. Aborting.'))
             return
 
-        if len(content_variations) < 80:
-            self.stdout.write(self.style.ERROR(f'Not enough content generated. Need 80, got {len(content_variations)}'))
+        # Check if we have enough content for both normal and special cells
+        normal_content = [c for c in content_variations if c.get('cell_type', 'normal') == 'normal']
+        special_content = [c for c in content_variations if c.get('cell_type') == 'snake_ladder']
+        
+        self.stdout.write(f'Generated {len(normal_content)} normal content items and {len(special_content)} special content items')
+        
+        # Ensure we have at least 80 normal content items
+        if len(normal_content) < 80:
+            self.stdout.write(self.style.ERROR(f'Not enough normal content. Need 80, got {len(normal_content)}'))
             # Duplicate existing content to reach 80 items
-            original_count = len(content_variations)
-            while len(content_variations) < 80:
-                index = (len(content_variations) - original_count) % original_count
-                content_variations.append(content_variations[index])
-            self.stdout.write(self.style.WARNING(f'Duplicated content to reach 80 items'))
+            original_count = len(normal_content)
+            while len(normal_content) < 80:
+                index = (len(normal_content) - original_count) % original_count
+                normal_content.append(normal_content[index])
+            self.stdout.write(self.style.WARNING(f'Duplicated normal content to reach 80 items'))
+        
+        # Ensure we have at least 20 special content items
+        if len(special_content) < 20:
+            self.stdout.write(self.style.ERROR(f'Not enough special content. Need 20, got {len(special_content)}'))
+            # Duplicate existing content or create generic content
+            if len(special_content) > 0:
+                original_count = len(special_content)
+                while len(special_content) < 20:
+                    index = (len(special_content) - original_count) % original_count
+                    special_content.append(special_content[index])
+                self.stdout.write(self.style.WARNING(f'Duplicated special content to reach 20 items'))
+            else:
+                # Create generic special content
+                special_templates = [
+                    "SPECIAL: This is an important concept in constitutional law!",
+                    "CHALLENGE: Understanding this principle can help you advance!",
+                    "BONUS: This key concept gives you an advantage in the game!",
+                    "KEY CONCEPT: This fundamental principle can move you forward!",
+                    "IMPORTANT: This core constitutional idea can change your path!"
+                ]
+                
+                while len(special_content) < 20:
+                    special_content.append({
+                        'content': random.choice(special_templates),
+                        'topic': 'Constitutional Principle',
+                        'source_id': None,
+                        'cell_type': 'snake_ladder'
+                    })
+                self.stdout.write(self.style.WARNING(f'Created generic special content to reach 20 items'))
+        
+        # Combine normal and special content
+        content_variations = normal_content + special_content
 
         # Clear existing cells and content
         self.clear_existing_content()
@@ -287,35 +363,56 @@ class Command(BaseCommand):
         for number in range(1, 101):
             Cell.objects.create(number=number)
 
-        # Create CellContent objects and map to normal cells
+        # Create CellContent objects and map to cells
         self.stdout.write('Creating and mapping content...')
         normal_cell_count = 0
-        content_index = 0
+        special_cell_count = 0
 
         for number in range(1, 101):
             cell = Cell.objects.get(number=number)
             
-            if not Cell.is_snake_ladder_cell(number):
-                # Create content for normal cell
-                content_data = content_variations[content_index]
-                
-                # Extract source_id if available
-                source_id = content_data.get('source_id', None)
-                
-                # Create cell content
-                cell_content = CellContent.objects.create(
-                    content=content_data['content'],
-                    topic=content_data['topic'],
-                    source_id=source_id  # Store source main topic ID
-                )
-                
-                # Add to cell's contents and set as current
-                cell.contents.add(cell_content)
-                cell.current_content = cell_content
-                cell.save()
-                
-                normal_cell_count += 1
-                content_index += 1
+            if Cell.is_snake_ladder_cell(number):
+                # This is a snake/ladder cell - use special content
+                if special_cell_count < len(special_content):
+                    content_data = special_content[special_cell_count]
+                    
+                    # Extract source_id if available
+                    source_id = content_data.get('source_id', None)
+                    
+                    # Create cell content
+                    cell_content = CellContent.objects.create(
+                        content=content_data['content'],
+                        topic=content_data['topic'],
+                        source_id=source_id  # Store source main topic ID
+                    )
+                    
+                    # Add to cell's contents and set as current
+                    cell.contents.add(cell_content)
+                    cell.current_content = cell_content
+                    cell.save()
+                    
+                    special_cell_count += 1
+            else:
+                # This is a normal cell - use normal content
+                if normal_cell_count < len(normal_content):
+                    content_data = normal_content[normal_cell_count]
+                    
+                    # Extract source_id if available
+                    source_id = content_data.get('source_id', None)
+                    
+                    # Create cell content
+                    cell_content = CellContent.objects.create(
+                        content=content_data['content'],
+                        topic=content_data['topic'],
+                        source_id=source_id  # Store source main topic ID
+                    )
+                    
+                    # Add to cell's contents and set as current
+                    cell.contents.add(cell_content)
+                    cell.current_content = cell_content
+                    cell.save()
+                    
+                    normal_cell_count += 1
 
         # Verify counts
         normal_cells = Cell.objects.filter(cell_type='NORMAL').count()
@@ -327,7 +424,7 @@ class Command(BaseCommand):
                 f'Successfully populated cells:\n'
                 f'- Normal cells: {normal_cells} (should be 80)\n'
                 f'- Snake/Ladder cells: {snake_ladder_cells} (should be 20)\n'
-                f'- Content pieces created: {content_count} (should be 80)\n'
-                f'All normal cells have content from summary topic: {summary_topic.title}'
+                f'- Content pieces created: {content_count} (should be 100)\n'
+                f'All cells have content from summary topic: {summary_topic.title}'
             )
         )

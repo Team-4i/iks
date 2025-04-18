@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from dbs.models import ConstitutionalArticle
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
@@ -11,63 +11,33 @@ from django.views.decorators.http import require_http_methods
 from .models import ArticleBookmark
 from gtts import gTTS
 import io
-from dynamicDB.models import ActiveTopicGroups, Topic, SubTopic
+from dynamicDB.models import ActiveTopicGroups, Topic, SubTopic, MainTopic
 
 
 @login_required
 def profile(request):
-    print("\n=== Debugging from Plat: profile view ===")
-    print(f"Loading profile for user: {request.user.username}")
-    
+    """
+    Player profile and learning journey map.
+    Shows checkpoint progress, game stats, and topic groups.
+    """
     # Get or create player's platform points
     player_points, created = PlayerPlatPoints.objects.get_or_create(
         player=request.user
     )
-    print(f"Player points {'created' if created else 'retrieved'}")
-    
-    # First sync all game data to ensure latest points
-    print("Starting data sync...")
-    sync_success = player_points.sync_all_game_data()
-    print(f"Data sync {'successful' if sync_success else 'failed'}")
-    
-    # Refresh player_points from database after sync
-    player_points.refresh_from_db()
-    
-    # Now update game statistics with synced data
-    game_stats = player_points.update_game_stats()
-    print("Game stats updated")
-    print(f"Current stats: {game_stats}")
-    
-    # Use the synced points
-    snake_ladder_points = player_points.snake_ladder_points
-    housie_points = player_points.housie_points
-    spinwheel_coins = player_points.spinwheel_coins
-    flipcard_points = player_points.flipcard_points
-    
-    # Calculate total points with synced data
-    total_points = (
-        snake_ladder_points +
-        housie_points +
-        flipcard_points
-    )
-    
-    print(f"[DEBUG] Profile points - Snake Ladder: {snake_ladder_points}, Total: {total_points}")
-    
-    # Update if total has changed
-    if total_points != player_points.total_points:
-        player_points.total_points = total_points
-        player_points.save()
     
     # Get checkpoint progress
     progress = player_points.get_checkpoint_progress()
     
-    # Debug print statements
-    print(f"Total Points: {player_points.total_points}")
-    print(f"Current Part: {player_points.current_part}")
-    print(f"Current Type: {player_points.current_type}")
-    print("Completed Checkpoints:", player_points.completed_checkpoints)
-    print("Progress:", progress)
+    # Get points from each game
+    snake_ladder_points = player_points.snake_ladder_points
+    housie_points = player_points.housie_points
+    flipcard_points = player_points.flipcard_points
+    spinwheel_coins = player_points.spinwheel_coins
+    total_points = player_points.total_points
     
+    print("Completed Checkpoints:", player_points.completed_checkpoints)
+    
+    # On profile view, check and update all checkpoints
     # Force unlock check for all checkpoints based on points
     for part in [5, 6]:
         for type_ in ['JUD', 'LEG', 'EXEC']:
@@ -80,89 +50,125 @@ def profile(request):
                     }
     player_points.save()
     
-    # Get active topic groups from dynamicDB
-    active_topic_groups = ActiveTopicGroups.get_active_groups().order_by('topic_group__id')
+    # Get game stats
+    game_stats = player_points.update_game_stats()
+    
+    # Get active topic groups
+    active_topic_groups = ActiveTopicGroups.get_active_groups()
     
     # Build a dictionary similar to checkpoints but using topic groups
     topic_group_data = {}
     
-    # Create "Parts" from active topic groups (if there are active groups)
     if active_topic_groups.exists():
-        for i, active_group in enumerate(active_topic_groups):
+        # Process active topic groups
+        for idx, active_group in enumerate(active_topic_groups):
             topic_group = active_group.topic_group
-            part_num = i + 5  # Use 5 and 6 as part numbers (for compatibility)
+            part_num = 5 if idx == 0 else 6  # Map first group to Part 5, second to Part 6
             
-            topic_group_data[part_num] = {}
+            # Get all summary topics for this group
+            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
             
-            # Get summary topics for this group instead of the top 3 main topics
-            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')[:3]
+            # Initialize this part in the topic_group_data
+            if part_num not in topic_group_data:
+                topic_group_data[part_num] = {}
             
-            # If no summary topics exist, generate them on-the-fly
-            if not summary_topics.exists():
-                # Fall back to using top 3 main topics directly
-                main_topics = topic_group.topics.all().order_by('id')[:3]
+            # Process each summary topic (map to JUD/LEG/EXEC)
+            for i, summary_topic in enumerate(summary_topics[:3]):  # Limit to 3 max
+                # Map index to checkpoint type
+                if i == 0:
+                    type_code = 'JUD'
+                elif i == 1:
+                    type_code = 'LEG'
+                else:
+                    type_code = 'EXEC'
                 
-                # Create entries for each topic (analogous to JUD/LEG/EXEC)
-                for j, topic in enumerate(main_topics):
-                    # Map to JUD/LEG/EXEC for compatibility
-                    type_code = ['JUD', 'LEG', 'EXEC'][min(j, 2)]
-                    
-                    # Get checkpoint progress if available, otherwise create default
-                    checkpoint_progress = {}
-                    if part_num in progress and type_code in progress[part_num]:
-                        checkpoint_progress = progress[part_num][type_code]
+                # Calculate required points based on position
+                if part_num == 5:
+                    # First group topics (equivalent to part 5)
+                    if i == 0:
+                        required_points = 0  # First topic always free (like 5_JUD)
+                    elif i == 1:
+                        required_points = 300  # Second topic (like 5_LEG)
                     else:
-                        checkpoint_progress = {
-                            'required_points': part_num * 100 + j * 100,  # Simple formula for points
-                            'completed': False,
-                            'unlocked': part_num == 5 and j == 0  # First topic is unlocked
-                        }
-                    
-                    topic_group_data[part_num][type_code] = {
-                        'articles': [],  # No articles yet, could fetch from appropriate source
-                        'progress': checkpoint_progress,
-                        'count': topic.chapters.count(),  # Number of chapters instead of articles
-                        'is_current': part_num == player_points.current_part and type_code == player_points.current_type,
-                        'is_part_five': part_num == 5,
-                        'main_topic_title': topic.title,  # Store the actual topic title
-                        'main_topic_id': topic.id
-                    }
-            else:
-                # Use summary topics
-                for j, summary_topic in enumerate(summary_topics):
-                    # Map to JUD/LEG/EXEC for compatibility
-                    type_code = ['JUD', 'LEG', 'EXEC'][min(j, 2)]
-                    
-                    # Get checkpoint progress if available, otherwise create default
-                    checkpoint_progress = {}
-                    if part_num in progress and type_code in progress[part_num]:
-                        checkpoint_progress = progress[part_num][type_code]
+                        required_points = 600  # Third topic (like 5_EXEC)
+                else:
+                    # Second group topics (equivalent to part 6)
+                    if i == 0:
+                        required_points = 900  # First topic (like 6_JUD)
+                    elif i == 1:
+                        required_points = 1200  # Second topic (like 6_LEG)
                     else:
-                        checkpoint_progress = {
-                            'required_points': part_num * 100 + j * 100,  # Simple formula for points
-                            'completed': False,
-                            'unlocked': part_num == 5 and j == 0  # First topic is unlocked
-                        }
-                    
-                    # Count all chapters from all main topics in this summary topic
-                    chapter_count = 0
-                    for main_topic in summary_topic.main_topics.all():
-                        chapter_count += main_topic.chapters.count()
-                    
-                    topic_group_data[part_num][type_code] = {
-                        'articles': [],  # No articles yet, could fetch from appropriate source
-                        'progress': checkpoint_progress,
-                        'count': chapter_count,  # Total number of chapters across all main topics
-                        'is_current': part_num == player_points.current_part and type_code == player_points.current_type,
-                        'is_part_five': part_num == 5,
-                        'main_topic_title': summary_topic.title,  # Use summary topic title
-                        'main_topic_id': summary_topic.id,  # Store summary topic ID
-                        'is_summary_topic': True,  # Mark as summary topic
-                        'summary_description': summary_topic.description,  # Add summary description
-                        'main_topics_count': summary_topic.main_topics.count()  # Number of main topics in this summary
+                        required_points = 1500  # Third topic (like 6_EXEC)
+                
+                # Get checkpoint progress if available, otherwise create default
+                checkpoint_progress = {}
+                try:
+                    checkpoint_progress = progress[part_num][type_code]
+                except (KeyError, TypeError):
+                    checkpoint_progress = {
+                        'required_points': required_points,
+                        'completed': player_points.total_points >= required_points,
+                        'unlocked': player_points.total_points >= required_points
                     }
-    else:
-        # Fallback to default checkpoints if no active topic groups
+                
+                # Get main topics for this summary topic
+                main_topics = summary_topic.main_topics.all()
+                
+                # Add to topic_group_data
+                topic_group_data[part_num][type_code] = {
+                    'articles': main_topics,  # Using main_topics in place of articles
+                    'progress': checkpoint_progress,
+                    'count': main_topics.count(),
+                    'is_current': player_points.total_points >= required_points,
+                    'is_part_five': part_num == 5,
+                    'summary_topic': summary_topic,
+                    'topic_group': topic_group,
+                    'is_dynamic': True
+                }
+                
+                # If this type is missing, fill it
+                if len(topic_group_data[part_num]) < 3:
+                    missing_types = set(['JUD', 'LEG', 'EXEC']) - set(topic_group_data[part_num].keys())
+                    for missing_type in missing_types:
+                        # Get checkpoint progress if available, otherwise create default
+                        checkpoint_progress = {}
+                        try:
+                            checkpoint_progress = progress[part_num][missing_type]
+                        except (KeyError, TypeError):
+                            # Determine required points based on type
+                            if part_num == 5:
+                                if missing_type == 'JUD':
+                                    required_pts = 0
+                                elif missing_type == 'LEG':
+                                    required_pts = 300
+                                else:
+                                    required_pts = 600
+                            else:
+                                if missing_type == 'JUD':
+                                    required_pts = 900
+                                elif missing_type == 'LEG':
+                                    required_pts = 1200
+                                else:
+                                    required_pts = 1500
+                                    
+                            checkpoint_progress = {
+                                'required_points': required_pts,
+                                'completed': player_points.total_points >= required_pts,
+                                'unlocked': player_points.total_points >= required_pts
+                            }
+                        
+                        # Add placeholder entry
+                        topic_group_data[part_num][missing_type] = {
+                            'articles': [],
+                            'progress': checkpoint_progress,
+                            'count': 0,
+                            'is_current': False,
+                            'is_part_five': part_num == 5,
+                            'is_dynamic': False
+                        }
+    
+    # Fallback to default checkpoints if no active topic groups
+    if not topic_group_data:
         topic_group_data = {
             5: {
                 'JUD': {
@@ -185,7 +191,7 @@ def profile(request):
                     'count': ConstitutionalArticle.objects.filter(part=5, type='EXEC').count(),
                     'is_current': player_points.current_part == 5 and player_points.current_type == 'EXEC',
                     'is_part_five': True
-                },
+                }
             },
             6: {
                 'EXEC': {
@@ -725,4 +731,139 @@ def get_speech(request):
         return response
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def topic_checkpoint(request, topic_group_id, summary_id):
+    """
+    New view to handle dynamic topic-based checkpoints
+    Using MainTopic and SubTopic models from dynamicDB
+    """
+    # Get or create player's platform points
+    player_points, created = PlayerPlatPoints.objects.get_or_create(
+        player=request.user
+    )
+    
+    # Get the topic group and summary topic
+    try:
+        topic_group = MainTopic.objects.get(id=topic_group_id)
+        summary_topic = SubTopic.objects.get(id=summary_id, topic_group=topic_group)
+    except (MainTopic.DoesNotExist, SubTopic.DoesNotExist):
+        return HttpResponseForbidden("Invalid topic or summary topic")
+    
+    # Check if user has enough points to access this topic
+    # Each topic requires incremental points similar to part/type checkpoints
+    # Calculate required points based on position in active topic groups
+    required_points = 0
+    try:
+        active_groups = ActiveTopicGroups.get_active_groups()
+        active_group_ids = [group.topic_group.id for group in active_groups]
+        
+        if topic_group_id in active_group_ids:
+            # Find position in active groups
+            group_index = active_group_ids.index(topic_group_id)
+            
+            # Get all summary topics for this group
+            summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
+            if summary_id in [topic.id for topic in summary_topics]:
+                topic_index = [topic.id for topic in summary_topics].index(summary_id)
+                
+                # Calculate required points based on position (similar to checkpoint requirements)
+                if group_index == 0:
+                    # First group topics (equivalent to part 5)
+                    if topic_index == 0:
+                        required_points = 0  # First topic always free (like 5_JUD)
+                    elif topic_index == 1:
+                        required_points = 300  # Second topic (like 5_LEG)
+                    else:
+                        required_points = 600  # Third+ topic (like 5_EXEC)
+                else:
+                    # Second group topics (equivalent to part 6)
+                    if topic_index == 0:
+                        required_points = 900  # First topic (like 6_JUD)
+                    elif topic_index == 1:
+                        required_points = 1200  # Second topic (like 6_LEG)
+                    else:
+                        required_points = 1500  # Third+ topic (like 6_EXEC)
+    except Exception as e:
+        print(f"Error calculating required points: {e}")
+        # Default to requiring some points
+        required_points = 300
+    
+    # Check if user has enough points
+    if player_points.total_points < required_points:
+        return HttpResponseForbidden(f"This topic requires {required_points} points to unlock!")
+    
+    # Get all main topics from this summary topic
+    main_topics = summary_topic.main_topics.all().order_by('id')
+    
+    # Prepare all chapters from all these main topics
+    all_chapters_data = []
+    
+    for main_topic in main_topics:
+        chapters = main_topic.chapters.all().order_by('order')
+        
+        # Add a header for each main topic
+        all_chapters_data.append({
+            'number': 0,  # Use 0 to identify as header
+            'title': f"--- {main_topic.title} ---",
+            'explanation': main_topic.summary,
+            'is_header': True
+        })
+        
+        # Add all chapters for this main topic
+        for chapter in chapters:
+            all_chapters_data.append({
+                'number': chapter.order,
+                'title': chapter.title,
+                'explanation': chapter.content,
+                'is_header': False
+            })
+    
+    # Map topic group and summary topic to equivalent part/type for compatibility
+    # This helps existing game systems that rely on part/type
+    part = 5  # Default to part 5
+    type_code = 'JUD'  # Default to JUD
+    
+    # Try to determine equivalent part/type based on position
+    try:
+        active_groups = ActiveTopicGroups.get_active_groups()
+        active_group_ids = [group.topic_group.id for group in active_groups]
+        
+        if topic_group_id in active_group_ids:
+            # Find position in active groups (0 = Part 5, 1 = Part 6)
+            group_index = active_group_ids.index(topic_group_id)
+            part = 5 if group_index == 0 else 6
+            
+            # Get all summary topics for this group
+            summary_topics = list(SubTopic.objects.filter(topic_group=topic_group).order_by('order'))
+            if summary_id in [topic.id for topic in summary_topics]:
+                topic_index = [topic.id for topic in summary_topics].index(summary_id)
+                # Map index to type (0 = JUD, 1 = LEG, 2+ = EXEC)
+                if topic_index == 0:
+                    type_code = 'JUD'
+                elif topic_index == 1:
+                    type_code = 'LEG'
+                else:
+                    type_code = 'EXEC'
+    except Exception as e:
+        print(f"Error mapping to part/type: {e}")
+    
+    # Return JSON response with topic checkpoint info
+    return JsonResponse({
+        'part': part,
+        'type': type_code,
+        'type_display': summary_topic.title,
+        'articles': all_chapters_data,
+        'checkpoint_part': part,
+        'checkpoint_type': type_code,
+        'is_dynamic': True,
+        'is_summary': True,
+        'topic_group': topic_group.title,
+        'summary_topic': summary_topic.title,
+        'summary_description': summary_topic.description,
+        'main_topics_count': main_topics.count(),
+        'topic_group_id': topic_group_id,
+        'summary_id': summary_id,
+        'required_points': required_points
+    })
 
