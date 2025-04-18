@@ -151,7 +151,6 @@ def end_game(request):
             stats.total_correct_answers += correct_answers
             stats.total_wrong_answers += wrong_answers
             stats.total_points += points
-            stats.best_points = max(stats.best_points, points)
             stats.save()
             
             return JsonResponse({'status': 'success'})

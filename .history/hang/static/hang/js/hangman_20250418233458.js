@@ -573,7 +573,6 @@ class HangmanGame {
         // Update the stats in the top bar
         const correctElement = document.querySelector('.correct-answers');
         const wrongElement = document.querySelector('.wrong-answers');
-        const pointsElement = document.querySelector('.points-display');
         
         if (correctElement) {
             correctElement.textContent = this.correctAnswers;
@@ -581,10 +580,6 @@ class HangmanGame {
         
         if (wrongElement) {
             wrongElement.textContent = this.wrongAnswers;
-        }
-        
-        if (pointsElement) {
-            pointsElement.textContent = this.points;
         }
     }
 
@@ -753,7 +748,6 @@ class HangmanGame {
             document.getElementById('final-time').textContent = `${survivalTime}s`;
             document.getElementById('final-correct').textContent = this.correctAnswers;
             document.getElementById('final-wrong').textContent = this.wrongAnswers;
-            document.getElementById('final-points').textContent = this.points;
         }
 
         if (this.config.gameId && this.config.endGameUrl && this.config.csrfToken) {
