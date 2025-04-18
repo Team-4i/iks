@@ -25,6 +25,26 @@ class HangmanGame {
         this.questionTextElement = document.getElementById('question-text');
         this.questionContentElement = document.getElementById('question-content');
         this.statsElement = document.getElementById('game-stats');
+
+        // Initialize audio
+        this.sounds = {
+            correct: new Audio('/static/hang/right_ans.mp3'),
+            wrong: new Audio('/static/hang/wrong_ans.mp3'),
+            gameOver: new Audio('/static/hang/game_over.mp3'),
+            background: new Audio('/static/hang/game_sound_2.wav'),
+            warning: new Audio('/static/hang/game_sound.wav')
+        };
+
+        // Set volume & loop for background
+        this.sounds.background.loop = true;
+        this.sounds.background.volume = 1.0;
+        this.sounds.warning.loop = true;
+        this.sounds.warning.volume = 1.0;
+        this.sounds.correct.volume = 1.0;
+        this.sounds.wrong.volume = 1.0;
+        this.sounds.gameOver.volume = 1.0;
+        
+        this.isWarningSoundPlaying = false;
     }
 
     init() {
@@ -33,6 +53,8 @@ class HangmanGame {
         this.displayCurrentQuestion();
         this.updateStatsDisplay();
         this.hideAllParts();
+        this.sounds.background.play().catch(e => console.log('Background music waiting for interaction.'));
+        this.isWarningSoundPlaying = false;
     }
 
     hideAllParts() {
@@ -382,12 +404,16 @@ class HangmanGame {
             
             feedbackElement.textContent = `Correct! +${this.config.correctAnswerBonus}s`;
             feedbackElement.classList.add('correct-answer');
+            this.sounds.correct.currentTime = 0;
+            this.sounds.correct.play().catch(e => console.log('Error playing correct sound:', e));
         } else {
             this.timeLeft -= this.config.wrongAnswerPenalty;
             this.wrongAnswers++;
             
             feedbackElement.textContent = `Incorrect! -${this.config.wrongAnswerPenalty}s`;
             feedbackElement.classList.add('wrong-answer');
+            this.sounds.wrong.currentTime = 0;
+            this.sounds.wrong.play().catch(e => console.log('Error playing wrong sound:', e));
         }
         
         this.questionContentElement.innerHTML = '';
@@ -440,6 +466,14 @@ class HangmanGame {
         this.timeLeft--;
         this.updateTimerDisplay();
         this.updateHangmanParts();
+        
+        if (this.timeLeft <= 10 && !this.isWarningSoundPlaying) {
+            this.sounds.warning.play().catch(e => console.log('Warning sound waiting for interaction.'));
+            this.isWarningSoundPlaying = true;
+        } else if (this.timeLeft > 10 && this.isWarningSoundPlaying) {
+            this.sounds.warning.pause();
+            this.isWarningSoundPlaying = false;
+        }
         
         if (this.timeLeft <= 0) {
             this.handleGameOver('time');
@@ -510,11 +544,19 @@ class HangmanGame {
 
     pauseGame() {
         clearInterval(this.timerInterval);
+        this.sounds.background.pause();
+        if (this.isWarningSoundPlaying) {
+             this.sounds.warning.pause();
+        }
     }
 
     resumeGame() {
         if (!this.isGameOver) {
             this.startTimer();
+            this.sounds.background.play().catch(e => {});
+            if (this.timeLeft <= 10 && this.isWarningSoundPlaying) {
+                this.sounds.warning.play().catch(e => {}); 
+            }
         }
     }
 
@@ -522,6 +564,15 @@ class HangmanGame {
         if (this.isGameOver) return;
         this.isGameOver = true;
         this.pauseGame();
+        this.sounds.background.pause();
+        if (this.isWarningSoundPlaying) {
+             this.sounds.warning.pause();
+             this.sounds.warning.currentTime = 0;
+             this.isWarningSoundPlaying = false;
+        }
+
+        // Play game over sound
+        this.sounds.gameOver.play().catch(e => console.log('Error playing game over sound:', e));
 
         if (reason === 'hanged') {
             this.config.partOrder.forEach((partId, index) => {
