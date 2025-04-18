@@ -1,3 +1,5 @@
+{% load dynamicdb_filters %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -292,6 +294,95 @@
         .page-groups.active {
             display: block; /* Show only the active group */
         }
+        
+        /* Topic Grouping styles */
+        .topic-groups-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f0f7ff;
+            border-radius: 10px;
+        }
+        
+        .topic-group-card {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid #3498db;
+        }
+        
+        .topic-group-title {
+            color: #2c3e50;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .topic-group-description {
+            color: #34495e;
+            font-style: italic;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .topic-group-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .keyword-tag {
+            background-color: #e8f4f8;
+            color: #2980b9;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .topic-list {
+            margin-top: 15px;
+            padding-left: 0;
+        }
+        
+        .topic-item {
+            background-color: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #27ae60;
+        }
+        
+        .child-group {
+            margin-left: 40px;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #9b59b6;
+        }
+        
+        .child-group-title {
+            color: #2c3e50;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .relationship-indicator {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .arrow-icon {
+            margin: 0 5px;
+            color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -472,6 +563,95 @@
                 }
             });
         </script>
+        {% endif %}
+        
+        {% if topic_groups %}
+        <div class="topic-groups-container">
+            <h3>Topic Groups</h3>
+            <p class="form-help">Topics have been automatically grouped into related categories using AI analysis.</p>
+            
+            {% if grouped_data %}
+                {% for group, data in grouped_data.items %}
+                    {% if data.level == 0 %}
+                    <div class="topic-group-card">
+                        <div class="topic-group-title">{{ group.title }}</div>
+                        <div class="topic-group-description">{{ group.description }}</div>
+                        
+                        {% if group.keywords %}
+                        <div class="topic-group-keywords">
+                            {% with keywords=group.keywords|stringformat:'s'|cut:' ' %}
+                                {% for keyword in keywords|split:',' %}
+                                    <span class="keyword-tag">{{ keyword }}</span>
+                                {% endfor %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="topic-list">
+                            <h4>Topics in this group:</h4>
+                            {% for topic in data.topics %}
+                            <div class="topic-item">
+                                <strong>{{ topic.title }}</strong>
+                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if data.children %}
+                        <div class="child-groups">
+                            <h4>Related Sub-Groups:</h4>
+                            {% for child in data.children %}
+                            <div class="child-group">
+                                <div class="relationship-indicator">
+                                    <span>{{ group.title }}</span>
+                                    <span class="arrow-icon">→</span>
+                                    <span>{{ child.title }}</span>
+                                </div>
+                                <div class="child-group-title">{{ child.title }}</div>
+                                <div class="topic-group-description">{{ child.description }}</div>
+                                
+                                <div class="topic-list">
+                                    {% with child_data=grouped_data|get_item:child %}
+                                        {% if child_data %}
+                                            {% for topic in child_data.topics %}
+                                            <div class="topic-item">
+                                                <strong>{{ topic.title }}</strong>
+                                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="form-container">
+                    <p>Topic groups have been created but no hierarchical structure is available.</p>
+                    
+                    {% for group in topic_groups %}
+                    <div class="topic-group-card">
+                        <div class="topic-group-title">{{ group.title }}</div>
+                        <div class="topic-group-description">{{ group.description }}</div>
+                        
+                        <div class="topic-list">
+                            <h4>Topics in this group:</h4>
+                            {% for topic in group.topics.all %}
+                            <div class="topic-item">
+                                <strong>{{ topic.title }}</strong>
+                                <div class="chapter-count">Contains {{ topic.chapters.count }} chapters</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
         {% endif %}
         
         {% if main_topics %}

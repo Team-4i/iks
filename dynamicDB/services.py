@@ -4,6 +4,7 @@ import os
 import random
 from collections import defaultdict
 import re
+import json
 
 class TextbookAnalyzer:
     def __init__(self):
@@ -341,3 +342,254 @@ class TextbookAnalyzer:
     def _fallback_topic_grouping(self, chapters, desired_topic_count):
         """Legacy helper method kept for backward compatibility"""
         return self.group_chapters_into_topics(chapters, desired_topic_count)
+
+class TopicGroupingService:
+    """Service to analyze and group related topics using AI"""
+    
+    def __init__(self):
+        # Configure Gemini AI with direct API key
+        genai.configure(api_key="AIzaSyA3CUAY0wSBFA_hOztQh19-QUy2QpA6VDQ")
+        # Use gemini-2.0-flash model
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
+    
+    def group_topics(self, pdf_doc):
+        """
+        Analyze topics in the PDF document and group them hierarchically
+        
+        Args:
+            pdf_doc: PDFDocument instance with extracted topics
+            
+        Returns:
+            List of TopicGroup objects
+        """
+        from .models import TopicGroup
+        
+        # Get all topics for this document
+        topics = pdf_doc.main_topics.all().prefetch_related('chapters')
+        
+        if not topics:
+            print("No topics found to group")
+            return []
+            
+        # Format topics and their chapters for the AI model
+        topics_data = []
+        for topic in topics:
+            chapters_list = [ch.title for ch in topic.chapters.all()]
+            topics_data.append({
+                'id': topic.id,
+                'title': topic.title,
+                'chapters': chapters_list
+            })
+            
+        print(f"Analyzing {len(topics_data)} topics for grouping")
+        
+        # Create the prompt for Gemini
+        topics_json = json.dumps(topics_data, indent=2)
+        prompt = f"""
+        You are given a list of educational topics extracted from a textbook or lecture.
+        Your task is to analyze these topics and group them into broader categories or themes.
+
+        The topics data is provided in JSON format:
+        {topics_json}
+
+        Each topic has:
+        - id: A unique identifier
+        - title: The topic title
+        - chapters: A list of chapter titles under this topic
+
+        Based on semantic similarity and thematic relationships, group these topics into 3-5 meaningful categories.
+
+        Return your response in the following JSON format:
+        ```
+        [
+          {{
+            "group_title": "Name of Group 1",
+            "description": "Brief description of what unifies these topics",
+            "keywords": "comma,separated,keywords",
+            "topic_ids": [list of topic IDs in this group],
+            "similarity_score": 0.85  // How closely related these topics are (0.0 to 1.0)
+          }},
+          // More groups...
+        ]
+        ```
+
+        IMPORTANT:
+        - Create intuitive, meaningful groups based on subject matter
+        - Focus on academic/educational categorization
+        - Every topic must be assigned to exactly one group
+        - Return valid JSON format only
+        """
+        
+        try:
+            # Generate response from Gemini
+            response = self.model.generate_content(
+                prompt,
+                generation_config={
+                    'temperature': 0.2,
+                    'candidate_count': 1,
+                    'max_output_tokens': 4096,
+                }
+            )
+            
+            content = response.text
+            print("Gemini Response for Topic Grouping:", content)
+            
+            # Extract JSON from response
+            if '```' in content:
+                json_content = content.split('```')[1]
+                if json_content.startswith('json'):
+                    json_content = json_content[4:].strip()
+            else:
+                json_content = content.strip()
+                
+            # Parse the JSON
+            group_data = json.loads(json_content)
+            
+            # Delete existing topic groups
+            pdf_doc.topic_groups.all().delete()
+            
+            # Create topic groups based on AI response
+            created_groups = []
+            for idx, group_info in enumerate(group_data):
+                # Create the topic group
+                topic_group = TopicGroup.objects.create(
+                    pdf_document=pdf_doc,
+                    title=group_info['group_title'],
+                    description=group_info['description'],
+                    keywords=group_info.get('keywords', ''),
+                    similarity_score=float(group_info.get('similarity_score', 0.7)),
+                    order=idx + 1
+                )
+                
+                # Add topics to the group
+                topic_ids = group_info['topic_ids']
+                topics_to_add = topics.filter(id__in=topic_ids)
+                topic_group.topics.add(*topics_to_add)
+                
+                created_groups.append(topic_group)
+                
+            return created_groups
+                
+        except Exception as e:
+            print(f"Error in topic grouping: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+            
+    def analyze_topic_relationships(self, pdf_doc):
+        """
+        Analyze relationships between topics and create a hierarchical structure
+        
+        Args:
+            pdf_doc: PDFDocument instance with extracted topics
+            
+        Returns:
+            Dictionary with relationship data
+        """
+        topic_groups = pdf_doc.topic_groups.all().prefetch_related('topics')
+        
+        if not topic_groups:
+            print("No topic groups found for relationship analysis")
+            return {}
+            
+        # Format topic groups for the AI model
+        groups_data = []
+        for group in topic_groups:
+            topics_list = [{"id": t.id, "title": t.title} for t in group.topics.all()]
+            groups_data.append({
+                'id': group.id,
+                'title': group.title,
+                'description': group.description,
+                'topics': topics_list
+            })
+            
+        # Create the prompt for relationship analysis
+        groups_json = json.dumps(groups_data, indent=2)
+        prompt = f"""
+        You are analyzing educational content that has been organized into topic groups.
+        Your task is to identify the relationships and hierarchical structure between these groups.
+
+        The topic groups data is provided in JSON format:
+        {groups_json}
+
+        Based on the content and relationships, please:
+        1. Identify any hierarchical relationships (parent-child) between the groups
+        2. Identify any prerequisites or sequential learning order
+        3. Create a knowledge graph showing how these topics interconnect
+
+        Return your analysis in the following JSON format:
+        ```json
+        {{
+          "hierarchy": [
+            {{
+              "parent_id": null,  // null means top-level group
+              "group_id": 1,
+              "children": [2, 3]  // IDs of child groups, if any
+            }},
+            // More groups...
+          ],
+          "learning_sequence": [1, 2, 3],  // Suggested learning order by group ID
+          "relationships": [
+            {{
+              "from_id": 1,
+              "to_id": 2,
+              "relationship_type": "prerequisite", // or "related", "builds_upon", etc.
+              "strength": 0.8  // How strong the relationship is (0.0 to 1.0)
+            }},
+            // More relationships...
+          ]
+        }}
+        ```
+
+        IMPORTANT:
+        - Focus on creating a meaningful structure for learning
+        - Return valid JSON format only
+        """
+        
+        try:
+            # Generate response from Gemini
+            response = self.model.generate_content(
+                prompt,
+                generation_config={
+                    'temperature': 0.2,
+                    'candidate_count': 1,
+                    'max_output_tokens': 4096,
+                }
+            )
+            
+            content = response.text
+            print("Gemini Response for Relationship Analysis:", content)
+            
+            # Extract JSON from response
+            if '```' in content:
+                json_content = content.split('```')[1]
+                if json_content.startswith('json'):
+                    json_content = json_content[4:].strip()
+            else:
+                json_content = content.strip()
+                
+            # Parse the JSON
+            relationship_data = json.loads(json_content)
+            
+            # Update parent-child relationships
+            hierarchy = relationship_data.get('hierarchy', [])
+            for item in hierarchy:
+                if item['parent_id'] is None:
+                    continue  # Skip top-level groups
+                    
+                try:
+                    # Set parent relationship
+                    child_group = TopicGroup.objects.get(id=item['group_id'], pdf_document=pdf_doc)
+                    parent_group = TopicGroup.objects.get(id=item['parent_id'], pdf_document=pdf_doc)
+                    child_group.parent = parent_group
+                    child_group.save()
+                except Exception as e:
+                    print(f"Error setting parent-child relationship: {str(e)}")
+            
+            return relationship_data
+                
+        except Exception as e:
+            print(f"Error in relationship analysis: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {}

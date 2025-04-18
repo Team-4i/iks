@@ -50,3 +50,31 @@ class MainTopic(models.Model):
     
     class Meta:
         ordering = ['order']
+
+class TopicGroup(models.Model):
+    """Model to group related topics under a broader category"""
+    pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='topic_groups')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    topics = models.ManyToManyField(MainTopic, related_name='topic_groups')
+    order = models.IntegerField(default=0)
+    
+    # Optional parent-child relationship for hierarchical grouping
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    
+    # Semantic similarity score between topics in this group
+    similarity_score = models.FloatField(default=0.0)
+    
+    # Keywords or tags associated with this topic group
+    keywords = models.CharField(max_length=500, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.title} ({self.pdf_document.title})"
+    
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Topic Group'
+        verbose_name_plural = 'Topic Groups'

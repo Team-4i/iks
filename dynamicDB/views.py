@@ -1,6 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from .models import PDFDocument, Chapter, MainTopic
+from .models import PDFDocument, Chapter, MainTopic, TopicGroup
 from .forms import PDFUploadForm, TopicExtractionForm
 import fitz  # PyMuPDF
 from PIL import Image
@@ -13,9 +13,17 @@ from .services import TextbookAnalyzer
 import json
 import shutil  # For directory operations
 import time  # For cache busting and delays
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
+import uuid
 
 MAX_IMAGE_HEIGHT = 4000  # Further reduced to avoid any issues
 MAX_PAGES_PER_IMAGE = 3  # Reduced for better processing of large PDFs
+
+def index(request):
+    documents = PDFDocument.objects.all().order_by('-upload_date')
+    return render(request, 'dynamicDB/index.html', {'documents': documents})
 
 def upload_pdf(request):
     if request.method == 'POST':
@@ -245,11 +253,41 @@ def view_pdf(request, pk):
     pdf_doc = PDFDocument.objects.get(pk=pk)
     main_topics = pdf_doc.main_topics.all().prefetch_related('chapters')
     chapters = pdf_doc.chapters.all()
+    topic_groups = pdf_doc.topic_groups.all().prefetch_related('topics', 'children')
     
     # Add debugging information about the query results
     print(f"PDF Document: {pdf_doc.title}")
     print(f"Main Topics Count: {main_topics.count()}")
     print(f"Chapters Count: {chapters.count()}")
+    print(f"Topic Groups Count: {topic_groups.count()}")
+    
+    # Get relationship data if it exists
+    topic_relationships = request.session.get('topic_relationships', {})
+    
+    # Structure topic groups hierarchically
+    grouped_data = {}
+    if topic_groups:
+        # Group topics by their parent-child relationships
+        root_groups = [g for g in topic_groups if g.parent is None]
+        
+        # Build the hierarchical structure
+        for root in root_groups:
+            children = [g for g in topic_groups if g.parent_id == root.id]
+            grouped_data[root] = {
+                'children': children,
+                'topics': root.topics.all(),
+                'level': 0
+            }
+            
+            # Add second-level children
+            for child in children:
+                grandchildren = [g for g in topic_groups if g.parent_id == child.id]
+                grouped_data[child] = {
+                    'children': grandchildren,
+                    'topics': child.topics.all(),
+                    'parent': root,
+                    'level': 1
+                }
     
     # Check if we should show all pages
     show_all_pages = request.GET.get('show_all_pages') == 'true'
@@ -343,6 +381,9 @@ def view_pdf(request, pk):
         'topic_form': topic_form,
         'show_all_pages': show_all_pages,
         'page_images': page_images,
+        'topic_groups': topic_groups,
+        'grouped_data': grouped_data,
+        'topic_relationships': topic_relationships,
     })
 
 def analyze_pdf(request, pk):
@@ -372,6 +413,45 @@ def analyze_pdf(request, pk):
                 messages.success(request, "Temporary files have been cleaned up.")
             except Exception as e:
                 print(f"Error cleaning up temp directory: {str(e)}")
+        return redirect('dynamicDB:view_pdf', pk=pk)
+    
+    # Check if we need to perform topic grouping
+    perform_grouping = request.GET.get('group_topics') == 'true'
+    if perform_grouping:
+        try:
+            from .services import TopicGroupingService
+            
+            # Initialize the grouping service
+            grouping_service = TopicGroupingService()
+            
+            # Perform topic grouping
+            print("Starting topic grouping...")
+            created_groups = grouping_service.group_topics(pdf_doc)
+            
+            if created_groups:
+                # Analyze relationships between groups
+                print("Analyzing topic relationships...")
+                relationship_data = grouping_service.analyze_topic_relationships(pdf_doc)
+                
+                # Store relationship data in session for visualization
+                if relationship_data:
+                    request.session['topic_relationships'] = relationship_data
+                
+                messages.success(
+                    request, 
+                    f"Successfully grouped topics into {len(created_groups)} categories."
+                )
+            else:
+                messages.warning(
+                    request,
+                    "No topic groups could be created. Please ensure topics have been extracted first."
+                )
+        except Exception as e:
+            import traceback
+            print(f"Error during topic grouping: {str(e)}")
+            print(traceback.format_exc())
+            messages.error(request, f"Error grouping topics: {str(e)}")
+        
         return redirect('dynamicDB:view_pdf', pk=pk)
     
     try:
@@ -406,11 +486,11 @@ def analyze_pdf(request, pk):
                 # Initialize analyzer
                 analyzer = TextbookAnalyzer()
                 
-                # Process each image group and combine results
-                all_topics = []
-                
                 # Show a progress message to the user
                 messages.info(request, f"Processing {len(image_files)} page groups. This may take some time for large documents.")
+                
+                # Process each image group and combine results
+                all_topics = []
                 
                 for i, img_file in enumerate(image_files):
                     img_path = os.path.join(page_images_dir, img_file)
@@ -496,7 +576,7 @@ def analyze_pdf(request, pk):
                     
                     messages.success(
                         request, 
-                        f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters."
+                        f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters. <a href='?group_topics=true'>Group Related Topics</a>"
                     )
                 else:
                     # Fallback to single image analysis
@@ -504,7 +584,7 @@ def analyze_pdf(request, pk):
                     result = analyzer.process_document(pdf_doc)
                     messages.success(
                         request, 
-                        f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters."
+                        f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters. <a href='?group_topics=true'>Group Related Topics</a>"
                     )
             else:
                 # No image files found, use the converted image
@@ -513,7 +593,7 @@ def analyze_pdf(request, pk):
                 result = analyzer.process_document(pdf_doc)
                 messages.success(
                     request, 
-                    f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters."
+                    f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters. <a href='?group_topics=true'>Group Related Topics</a>"
                 )
         else:
             # No page_images directory, use the converted image
@@ -522,7 +602,7 @@ def analyze_pdf(request, pk):
             result = analyzer.process_document(pdf_doc)
             messages.success(
                 request, 
-                f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters."
+                f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters. <a href='?group_topics=true'>Group Related Topics</a>"
             )
         
     except Exception as e:
@@ -539,6 +619,7 @@ def analyze_pdf(request, pk):
 def visualize_topics(request, pk):
     pdf_doc = PDFDocument.objects.get(pk=pk)
     main_topics = pdf_doc.main_topics.all().prefetch_related('chapters')
+    topic_groups = pdf_doc.topic_groups.all().prefetch_related('topics', 'children')
     
     # Prepare data for D3.js - hierarchical structure with main topics and chapters
     topic_data = {
@@ -562,7 +643,161 @@ def visualize_topics(request, pk):
         
         topic_data["children"].append(topic_node)
     
+    # Prepare topic group data if available
+    group_data = None
+    if topic_groups.exists():
+        group_data = []
+        
+        # First get top-level groups (no parent)
+        root_groups = topic_groups.filter(parent__isnull=True)
+        
+        for group in root_groups:
+            group_node = {
+                "name": group.title,
+                "description": group.description,
+                "keywords": group.keywords,
+                "similarity_score": group.similarity_score,
+                "type": "group",
+                "children": []
+            }
+            
+            # Add topics that belong to this group
+            for topic in group.topics.all():
+                topic_node = {
+                    "name": topic.title,
+                    "summary": topic.summary,
+                    "type": "topic",
+                    "children": []
+                }
+                
+                # Add chapters for this topic
+                for chapter in topic.chapters.all():
+                    topic_node["children"].append({
+                        "name": chapter.title,
+                        "value": chapter.confidence_score,
+                        "content": chapter.content,
+                        "type": "chapter"
+                    })
+                
+                group_node["children"].append(topic_node)
+            
+            # Add child groups if any
+            child_groups = topic_groups.filter(parent=group)
+            if child_groups.exists():
+                for child_group in child_groups:
+                    child_node = {
+                        "name": child_group.title,
+                        "description": child_group.description,
+                        "keywords": child_group.keywords,
+                        "similarity_score": child_group.similarity_score,
+                        "type": "subgroup",
+                        "children": []
+                    }
+                    
+                    # Add topics that belong to this child group
+                    for topic in child_group.topics.all():
+                        topic_node = {
+                            "name": topic.title,
+                            "summary": topic.summary,
+                            "type": "topic",
+                            "children": []
+                        }
+                        
+                        # Add chapters for this topic
+                        for chapter in topic.chapters.all():
+                            topic_node["children"].append({
+                                "name": chapter.title,
+                                "value": chapter.confidence_score,
+                                "content": chapter.content,
+                                "type": "chapter"
+                            })
+                        
+                        child_node["children"].append(topic_node)
+                    
+                    group_node["children"].append(child_node)
+            
+            group_data.append(group_node)
+    
+    # Use ensure_ascii=False to properly handle special characters
+    topic_data_json = json.dumps(topic_data, ensure_ascii=False)
+    group_data_json = json.dumps(group_data, ensure_ascii=False) if group_data else None
+    
     return render(request, 'dynamicDB/visualize.html', {
         'pdf_doc': pdf_doc,
-        'topic_data': json.dumps(topic_data)
+        'topic_data': topic_data_json,
+        'group_data': group_data_json
     })
+
+def visualize_data(request, document_id=None):
+    if document_id:
+        document = get_object_or_404(PDFDocument, id=document_id)
+        topics = MainTopic.objects.filter(document=document)
+        groups = TopicGroup.objects.filter(document=document)
+        
+        # Prepare data for D3.js visualization
+        topic_data = []
+        for topic in topics:
+            topic_item = {
+                'id': str(topic.id),
+                'name': topic.title,
+                'document_id': str(topic.pdf_document.id),
+                'children': []
+            }
+            
+            for chapter in topic.chapters.all():
+                chapter_item = {
+                    'id': str(chapter.id),
+                    'name': chapter.title,
+                    'content': chapter.content[:100] + '...' if len(chapter.content) > 100 else chapter.content
+                }
+                topic_item['children'].append(chapter_item)
+            
+            topic_data.append(topic_item)
+        
+        # Prepare group data
+        group_data = []
+        for group in groups:
+            group_item = {
+                'id': str(group.id),
+                'name': group.title,  # Changed from name to title to match the model field
+                'document_id': str(group.pdf_document.id),
+                'description': group.description,
+                'keywords': group.keywords,
+                'similarity_score': group.similarity_score,
+                'children': []
+            }
+            
+            # Add topics that belong to this group
+            for topic in group.topics.all():
+                topic_item = {
+                    'id': str(topic.id),
+                    'name': topic.title,
+                    'summary': topic.summary,
+                    'type': 'topic',
+                    'group_id': str(group.id),
+                    'children': []
+                }
+                
+                for chapter in topic.chapters.all():
+                    chapter_item = {
+                        'id': str(chapter.id),
+                        'name': chapter.title,
+                        'content': chapter.content[:100] + '...' if len(chapter.content) > 100 else chapter.content,
+                        'value': chapter.confidence_score,
+                        'type': 'chapter'
+                    }
+                    topic_item['children'].append(chapter_item)
+                
+                group_item['children'].append(topic_item)
+            
+            group_data.append(group_item)
+        
+        return render(request, 'dynamicDB/visualize.html', {
+            'pdf_doc': document,
+            'topic_data': json.dumps(topic_data),
+            'group_data': json.dumps(group_data),
+        })
+    else:
+        # If no document_id is provided, show a list of documents to choose from
+        documents = PDFDocument.objects.all().order_by('-upload_date')
+        return render(request, 'dynamicDB/choose_document.html', {'documents': documents})
