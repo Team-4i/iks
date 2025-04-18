@@ -70,6 +70,14 @@
                             <i class="bi bi-speedometer2 me-2"></i> Dashboard
                         </a>
                     </li>
+                    
+                    <!-- Integrated Workflow -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'integrated_workflow' %}active{% endif %}" href="{% url 'dynamicDB:integrated_workflow' %}">
+                            <i class="bi bi-gear-wide-connected me-2"></i> Integrated Workflow
+                        </a>
+                    </li>
+                    
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'pdfs' %}active{% endif %}" href="{% url 'dynamicDB:admin_panel_pdfs' %}">
                             <i class="bi bi-file-earmark-pdf me-2"></i> PDF Documents

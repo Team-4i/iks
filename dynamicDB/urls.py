@@ -26,6 +26,9 @@ urlpatterns = [
     path('admin-panel/generate-summary-topics/<int:topic_group_id>/', views.generate_summary_topics, name='generate_summary_topics'),
     path('admin-panel/generate-summary-for-active-groups/', views.generate_summary_for_active_groups, name='generate_summary_for_active_groups'),
     
+    # Integrated workflow URL
+    path('admin-panel/workflow/', views.integrated_workflow, name='integrated_workflow'),
+    
     # PDF selector URLs
     path('select-pdf/', views.pdf_selector, name='pdf_selector'),
     path('set-active-pdf/', views.set_active_pdf, name='set_active_pdf'),

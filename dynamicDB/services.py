@@ -193,14 +193,67 @@ class TextbookAnalyzer:
         """Process a PDF document by extracting hierarchical content and saving to database."""
         # Import models
         from .models import Topic, Chapter
+        from django.conf import settings
+        import os
         
-        # Extract hierarchical content (topics and chapters)
-        print(f"Extracting hierarchical content from: {pdf_doc.converted_image.path}")
-        hierarchical_data = self.extract_hierarchical_content(pdf_doc.converted_image.path)
+        # Check if there are page_images in the temp directory
+        temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', f'pdf_{pdf_doc.id}')
+        page_images_dir = os.path.join(temp_dir, 'page_images')
+        
+        all_hierarchical_data = []
+        
+        if os.path.exists(page_images_dir):
+            print(f"Found page images directory: {page_images_dir}")
+            # Get all image files
+            image_files = sorted([f for f in os.listdir(page_images_dir) if f.endswith('.jpg')])
+            
+            if image_files:
+                print(f"Found {len(image_files)} image files for analysis")
+                
+                # Process each image group and combine results
+                for i, img_file in enumerate(image_files):
+                    img_path = os.path.join(page_images_dir, img_file)
+                    print(f"Analyzing image {i+1}/{len(image_files)}: {img_path}")
+                    
+                    # Extract topics from this image
+                    try:
+                        topics = self.extract_hierarchical_content(img_path)
+                        if topics:
+                            for topic in topics:
+                                # Check if this topic already exists in our results (by title similarity)
+                                topic_exists = False
+                                for existing_topic in all_hierarchical_data:
+                                    # Simple string similarity check (can be improved)
+                                    if existing_topic['title'].lower() == topic['title'].lower():
+                                        # Merge chapters instead of duplicating the topic
+                                        existing_topic['chapters'].extend(topic['chapters'])
+                                        topic_exists = True
+                                        break
+                                
+                                if not topic_exists:
+                                    all_hierarchical_data.append(topic)
+                    except Exception as e:
+                        print(f"Error analyzing image {img_file}: {str(e)}")
+                
+                # Now adjust order numbers to be sequential
+                for i, topic in enumerate(all_hierarchical_data):
+                    topic['order'] = i + 1
+                    
+                    # Adjust chapter order to be sequential within each topic
+                    for j, chapter in enumerate(topic['chapters']):
+                        chapter['order'] = j + 1
+            else:
+                # Fallback to the preview image
+                print(f"No image files found, using converted image: {pdf_doc.converted_image.path}")
+                all_hierarchical_data = self.extract_hierarchical_content(pdf_doc.converted_image.path)
+        else:
+            # Fallback to the preview image
+            print(f"No page_images directory found, using converted image: {pdf_doc.converted_image.path}")
+            all_hierarchical_data = self.extract_hierarchical_content(pdf_doc.converted_image.path)
         
         # Debug print the extracted hierarchical data
-        print(f"Extracted {len(hierarchical_data)} topics:")
-        for i, topic in enumerate(hierarchical_data):
+        print(f"Extracted {len(all_hierarchical_data)} topics:")
+        for i, topic in enumerate(all_hierarchical_data):
             print(f"  Topic {i+1}: {topic['title']}")
             print(f"    Chapters: {len(topic['chapters'])}")
             for j, chapter in enumerate(topic['chapters']):
@@ -217,7 +270,7 @@ class TextbookAnalyzer:
         
         # Save topics and chapters to database
         print("Creating new topics and chapters...")
-        for topic_data in hierarchical_data:
+        for topic_data in all_hierarchical_data:
             # Create Topic
             main_topic = Topic.objects.create(
                 pdf_document=pdf_doc,
@@ -248,6 +301,7 @@ class TextbookAnalyzer:
                 print(f"  Associated chapter with topic")
         
         print(f"Created {topics_count} topics and {chapters_count} chapters")
+        
         return {
             'topics_count': topics_count,
             'chapters_count': chapters_count

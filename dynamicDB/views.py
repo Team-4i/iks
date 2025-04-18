@@ -33,7 +33,7 @@ MAX_IMAGE_HEIGHT = 4000  # Further reduced to avoid any issues
 MAX_PAGES_PER_IMAGE = 3  # Reduced for better processing of large PDFs
 
 def index(request):
-    documents = PDFDocument.objects.all().order_by('-upload_date')
+    documents = PDFDocument.objects.all().order_by('-uploaded_at')
     return render(request, 'dynamicDB/index.html', {'documents': documents})
 
 def upload_pdf(request):
@@ -65,13 +65,13 @@ def upload_pdf(request):
                 # Process the PDF
                 pdf_document = fitz.open(temp_pdf_path)
                 
+                # Get total pages first - important to store this before any document operations
+                total_pages = len(pdf_document)
+                print(f"Total pages in PDF: {total_pages}")
+                
                 # Calculate dimensions
                 zoom = 1.2  # Adjusted zoom level
                 mat = fitz.Matrix(zoom, zoom)
-                
-                # Get total number of pages
-                total_pages = len(pdf_document)
-                print(f"Total pages in PDF: {total_pages}")
                 
                 # Create a first image for preview and text extraction
                 preview_image_path = os.path.join(temp_dir, f'preview_image.jpg')
@@ -115,16 +115,13 @@ def upload_pdf(request):
                     preview_image.save(preview_image_path, format='JPEG', quality=85, optimize=True)
                     temp_files.append(preview_image_path)
                     
-                    # Now process all pages and save them as separate images or small groups
+                    # Process all pages in small groups
                     page_images_dir = os.path.join(temp_dir, 'page_images')
                     os.makedirs(page_images_dir, exist_ok=True)
                     
                     print(f"Processing all {total_pages} pages into group images...")
-                    
-                    # Process pages in small groups
                     group_count = 0
                     
-                    # Process pages in batches with explicit memory management
                     for start_page in range(0, total_pages, MAX_PAGES_PER_IMAGE):
                         current_group = []
                         current_height = 0
@@ -155,7 +152,7 @@ def upload_pdf(request):
                         # Save this group if we have any pages
                         if current_group:
                             try:
-                                # Use zero-padded group numbers for correct sorting (group_01.jpg, group_02.jpg, etc.)
+                                # Use zero-padded group numbers for correct sorting
                                 group_count_str = f"{group_count:02d}"
                                 print(f"Saving group {group_count_str} with {len(current_group)} pages...")
                                 
@@ -182,43 +179,42 @@ def upload_pdf(request):
                                 
                             except Exception as e:
                                 print(f"Error saving group {group_count}: {str(e)}")
-                    
-                    # Verify all images were created
-                    image_files = [f for f in os.listdir(page_images_dir) if f.endswith('.jpg')]
-                    print(f"Created {len(image_files)} group images from {total_pages} pages")
-                    
-                    if len(image_files) == 0:
-                        raise Exception("Failed to create any page group images")
-                
-                # Single page document
-                else:
+                                
+                elif total_pages == 1:
+                    # Single page document
                     page = pdf_document[0]
                     pix = page.get_pixmap(matrix=mat, alpha=False)
                     img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
                     img = img.convert('RGB')
-                    
-                    # Save as preview
                     img.save(preview_image_path, format='JPEG', quality=85, optimize=True)
                     temp_files.append(preview_image_path)
                     
-                    del pix
-                    del img
-                    gc.collect()
-
-                # Close the PDF document
-                pdf_document.close()
-                del pdf_document
-                gc.collect()
-
-                # Save PDF file to model
-                with open(temp_pdf_path, 'rb') as pdf_file:
-                    pdf_doc.pdf_file.save(uploaded_file.name, File(pdf_file), save=False)
-
-                # Save the preview image as the main converted image
-                with open(preview_image_path, 'rb') as img_file:
-                    pdf_doc.converted_image.save(f"{pdf_doc.title}_preview.jpg", File(img_file), save=True)
+                    # Also save as the first group for analysis
+                    page_images_dir = os.path.join(temp_dir, 'page_images')
+                    os.makedirs(page_images_dir, exist_ok=True)
+                    img.save(os.path.join(page_images_dir, 'group_00.jpg'), format='JPEG', quality=85, optimize=True)
                 
-                # Store the temp directory path in the session for later use
+                # IMPORTANT: Save files to the model BEFORE closing the PDF document
+                # Save the PDF file to the model
+                with open(temp_pdf_path, 'rb') as pdf_file:
+                    pdf_doc.pdf_file.save(
+                        os.path.basename(temp_pdf_path),
+                        File(pdf_file)
+                    )
+                
+                # Save the preview image to the model
+                if os.path.exists(preview_image_path):
+                    with open(preview_image_path, 'rb') as img_file:
+                        pdf_doc.converted_image.save(
+                            f"preview_{pdf_doc.id}.jpg",
+                            File(img_file)
+                        )
+                
+                # After we've done all operations that need the PDF document, close it
+                pdf_document.close()
+                pdf_document = None  # Set to None to avoid accidental use
+                
+                # Store temp directory in session
                 request.session['pdf_temp_dir'] = temp_dir
 
                 return redirect('dynamicDB:view_pdf', pk=pdf_doc.pk)
@@ -740,6 +736,7 @@ def visualize_topics(request, pk):
     })
 
 def visualize_data(request, document_id=None):
+    """View for admin panel visualization dashboard"""
     if document_id:
         document = get_object_or_404(PDFDocument, id=document_id)
         topics = Topic.objects.filter(document=document)
@@ -810,7 +807,7 @@ def visualize_data(request, document_id=None):
         })
     else:
         # If no document_id is provided, show a list of documents to choose from
-        documents = PDFDocument.objects.all().order_by('-upload_date')
+        documents = PDFDocument.objects.all().order_by('-uploaded_at')
         return render(request, 'dynamicDB/choose_document.html', {'documents': documents})
 
 # Admin Panel Views
@@ -1864,3 +1861,614 @@ def generate_summary_for_active_groups(request):
         messages.warning(request, f"Failed to generate summary topics for {error_count} topic groups.")
     
     return redirect('dynamicDB:admin_panel_dashboard')
+
+def integrated_workflow(request):
+    """
+    Integrated workflow view that combines PDF upload, analysis, topic generation, and visualization
+    in a streamlined interface.
+    """
+    # Import models
+    from .models import PDFDocument, Topic, Chapter, MainTopic, ActivePDFSelection, ActiveTopicGroups, SubTopic
+    
+    # Get all PDFs for selection
+    pdfs = PDFDocument.objects.all().order_by('-uploaded_at')
+    selected_pdf = None
+    step = request.GET.get('step', 'upload')
+    
+    # Get the selected PDF if an ID is provided
+    pdf_id = request.GET.get('pdf_id')
+    if pdf_id:
+        try:
+            selected_pdf = PDFDocument.objects.get(pk=pdf_id)
+        except PDFDocument.DoesNotExist:
+            messages.error(request, "Selected PDF not found.")
+            return redirect('dynamicDB:integrated_workflow')
+    
+    # Handle POST request for analysis step
+    if request.method == 'POST' and step == 'analyze' and selected_pdf:
+        try:
+            # Initialize the analyzer
+            from .services import TextbookAnalyzer
+            analyzer = TextbookAnalyzer()
+            
+            # Process the document
+            result = analyzer.process_document(selected_pdf)
+            
+            if result and result.get('topics_count', 0) > 0:
+                messages.success(
+                    request, 
+                    f"PDF analysis completed! Extracted {result['topics_count']} topics with {result['chapters_count']} chapters."
+                )
+                # Redirect to the group step
+                return redirect(f'{request.path}?step=group&pdf_id={selected_pdf.id}')
+            else:
+                messages.warning(request, "Analysis completed but no topics were found. Please try again.")
+        except Exception as e:
+            import traceback
+            print(f"Error during analysis: {str(e)}")
+            print(traceback.format_exc())
+            messages.error(request, f"Error analyzing PDF: {str(e)}")
+    
+    # Handle POST request for group step
+    elif request.method == 'POST' and step == 'group' and selected_pdf:
+        try:
+            # Initialize the topic grouping service
+            from .services import TopicGroupingService
+            grouping_service = TopicGroupingService()
+            
+            # Perform topic grouping
+            print("Starting topic grouping...")
+            created_groups = grouping_service.group_topics(selected_pdf)
+            
+            if created_groups:
+                # Analyze relationships between groups
+                print("Analyzing topic relationships...")
+                relationship_data = grouping_service.analyze_topic_relationships(selected_pdf)
+                
+                # Store relationship data in session for visualization
+                if relationship_data:
+                    request.session['topic_relationships'] = relationship_data
+                
+                messages.success(
+                    request, 
+                    f"Successfully grouped topics into {len(created_groups)} categories."
+                )
+                # Redirect to the visualize step
+                return redirect(f'{request.path}?step=visualize&pdf_id={selected_pdf.id}')
+            else:
+                messages.warning(
+                    request,
+                    "No topic groups could be created. Please ensure topics have been extracted first."
+                )
+        except Exception as e:
+            import traceback
+            print(f"Error during topic grouping: {str(e)}")
+            print(traceback.format_exc())
+            messages.error(request, f"Error grouping topics: {str(e)}")
+    
+    # Handle POST request for visualize step
+    elif request.method == 'POST' and step == 'visualize' and selected_pdf:
+        try:
+            from .models import ActivePDFSelection, ActiveTopicGroups, MainTopic, SubTopic
+            
+            # Set the PDF as active
+            ActivePDFSelection.objects.update(is_active=False)  # Deactivate all
+            active_pdf, created = ActivePDFSelection.objects.get_or_create(
+                pdf=selected_pdf,
+                defaults={'is_active': True}
+            )
+            if not created:
+                active_pdf.is_active = True
+                active_pdf.save()
+            
+            # Check if we should generate summaries
+            generate_summary = request.POST.get('generate_summary') == '1'
+            
+            # Get selected topic groups
+            selected_group_ids = request.POST.getlist('topic_groups')
+            
+            if selected_group_ids:
+                # Clear existing active groups
+                ActiveTopicGroups.objects.all().delete()
+                
+                # Set new active groups
+                for group_id in selected_group_ids:
+                    try:
+                        topic_group = MainTopic.objects.get(id=group_id)
+                        ActiveTopicGroups.objects.create(topic_group=topic_group)
+                    except MainTopic.DoesNotExist:
+                        continue
+                
+                # Generate summaries if requested
+                if generate_summary:
+                    for group_id in selected_group_ids:
+                        try:
+                            topic_group = MainTopic.objects.get(id=group_id)
+                            
+                            # Check if the group has enough topics
+                            if topic_group.topics.count() < 3:
+                                messages.warning(request, f"Group '{topic_group.title}' has fewer than 3 topics and was skipped.")
+                                continue
+                            
+                            # Delete existing summary topics for this group
+                            SubTopic.objects.filter(topic_group=topic_group).delete()
+                            
+                            # Generate summaries (similar to generate_summary_topics function)
+                            from .services import TopicGroupingService
+                            
+                            # Configure Gemini API
+                            import google.generativeai as genai
+                            from django.conf import settings
+                            
+                            # Check if GOOGLE_API_KEY is available
+                            if not settings.GOOGLE_API_KEY:
+                                messages.error(request, "Google API key is missing. Please set GOOGLE_API_KEY in your environment variables.")
+                                continue
+                            
+                            # Configure the Gemini API
+                            genai.configure(api_key=settings.GOOGLE_API_KEY)
+                            
+                            # Create a model instance
+                            model = genai.GenerativeModel('gemini-1.5-pro')
+                            
+                            # Prepare data for Gemini API
+                            topic_data = []
+                            
+                            for topic in topic_group.topics.all():
+                                topic_data.append({
+                                    'id': topic.id,
+                                    'title': topic.title,
+                                    'summary': topic.summary
+                                })
+                            
+                            # Construct the prompt for Gemini
+                            prompt = f"""
+                            Please analyze the following list of topics and group them into exactly 3 clusters based on semantic similarity:
+                            
+                            {json.dumps(topic_data, indent=2)}
+                            
+                            For each cluster:
+                            1. Create a title that captures the essence of the topics in that cluster (based on common words or themes)
+                            2. Generate a brief description of what these topics have in common
+                            3. Create a summary that combines the key points from all topics in the cluster
+                            
+                            Return your response as a valid JSON array with 3 items in this exact format:
+                            [
+                              {{
+                                "title": "Generated Title for Cluster 1",
+                                "description": "Description for Cluster 1",
+                                "summary": "Summary text for Cluster 1",
+                                "topic_ids": [list of topic IDs in this cluster]
+                              }},
+                              {{
+                                "title": "Generated Title for Cluster 2",
+                                "description": "Description for Cluster 2",
+                                "summary": "Summary text for Cluster 2",
+                                "topic_ids": [list of topic IDs in this cluster]
+                              }},
+                              {{
+                                "title": "Generated Title for Cluster 3",
+                                "description": "Description for Cluster 3",
+                                "summary": "Summary text for Cluster 3",
+                                "topic_ids": [list of topic IDs in this cluster]
+                              }}
+                            ]
+                            
+                            Ensure all topic IDs are assigned to one of the clusters, with no duplicates.
+                            """
+                            
+                            try:
+                                # Get response from Gemini
+                                response = model.generate_content(prompt)
+                                response_text = response.text
+                                
+                                # Extract the JSON part from the response
+                                json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response_text)
+                                if json_match:
+                                    response_json = json_match.group(1)
+                                else:
+                                    response_json = response_text
+                                
+                                # Parse the JSON
+                                clusters = json.loads(response_json)
+                                
+                                # Ensure we have exactly 3 clusters
+                                if len(clusters) != 3:
+                                    raise ValueError(f"Expected 3 clusters, but got {len(clusters)}")
+                                
+                                # Create summary topics for each cluster
+                                for i, cluster in enumerate(clusters):
+                                    # Get the topics in this cluster
+                                    topic_ids_in_cluster = cluster.get('topic_ids', [])
+                                    topics_in_cluster = topic_group.topics.filter(id__in=topic_ids_in_cluster)
+                                    
+                                    # Create the summary topic
+                                    summary_topic = SubTopic.objects.create(
+                                        topic_group=topic_group,
+                                        title=cluster.get('title', f"Summary Group {i+1}"),
+                                        description=cluster.get('description', f"Automatically generated group of {len(topics_in_cluster)} related topics"),
+                                        summary=cluster.get('summary', ''),
+                                        order=i,
+                                        relevance_score=1.0  # Default score
+                                    )
+                                    
+                                    # Add the main topics to this summary topic
+                                    summary_topic.main_topics.set(topics_in_cluster)
+                                
+                                messages.success(request, f"Successfully created summary topics for '{topic_group.title}'")
+                                
+                            except Exception as e:
+                                messages.error(request, f"Error creating summaries for '{topic_group.title}': {str(e)}")
+                                # Use fallback method
+                                fallback_to_basic_grouping(topic_group, topic_group.topics.all())
+                        except Exception as e:
+                            messages.error(request, f"Error processing group {group_id}: {str(e)}")
+                
+                messages.success(request, "Selected topic groups have been set as active.")
+            else:
+                messages.warning(request, "No topic groups were selected.")
+                
+        except Exception as e:
+            import traceback
+            print(f"Error in visualize step: {str(e)}")
+            print(traceback.format_exc())
+            messages.error(request, f"Error: {str(e)}")
+    
+    # Handle the upload step
+    if step == 'upload' and request.method == 'POST':
+        form = PDFUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            pdf_doc = None
+            pdf_document = None
+            temp_files = []
+            temp_dir = None
+            file_handlers = []  # Store file handlers to ensure proper closure
+            
+            try:
+                # Save the model without the file first
+                pdf_doc = PDFDocument(title=form.cleaned_data['title'])
+                pdf_doc.save()
+
+                # Create a temp directory specific to this upload
+                temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp', f'pdf_{pdf_doc.id}')
+                os.makedirs(temp_dir, exist_ok=True)
+
+                # Now handle the file
+                uploaded_file = request.FILES['pdf_file']
+                temp_pdf_path = os.path.join(temp_dir, f'temp_{uploaded_file.name}')
+
+                # Save uploaded file to temp location
+                with open(temp_pdf_path, 'wb+') as destination:
+                    for chunk in uploaded_file.chunks():
+                        destination.write(chunk)
+
+                # Process the PDF
+                pdf_document = fitz.open(temp_pdf_path)
+                
+                # Get total pages first so we don't need to access this after closing
+                total_pages = len(pdf_document)
+                print(f"Total pages in PDF: {total_pages}")
+                
+                # Calculate dimensions
+                zoom = 1.2  # Adjusted zoom level
+                mat = fitz.Matrix(zoom, zoom)
+                
+                # Create a first image for preview and text extraction
+                preview_image_path = os.path.join(temp_dir, f'preview_image.jpg')
+                
+                # Process for multi-page documents
+                if total_pages > 1:
+                    # Create a combined image of first few pages for preview
+                    num_preview_pages = min(3, total_pages)  # Use up to 3 pages for preview
+                    max_width = 0
+                    total_height = 0
+                    
+                    # Get dimensions for the preview pages
+                    preview_pages_info = []
+                    for i in range(num_preview_pages):
+                        page = pdf_document[i]
+                        rect = page.rect
+                        width = int(rect.width * zoom)
+                        height = int(rect.height * zoom)
+                        max_width = max(max_width, width)
+                        total_height += height
+                        preview_pages_info.append((width, height))
+                    
+                    # Create preview image
+                    preview_image = Image.new('RGB', (max_width, total_height), 'white')
+                    y_offset = 0
+                    
+                    for i in range(num_preview_pages):
+                        page = pdf_document[i]
+                        pix = page.get_pixmap(matrix=mat, alpha=False)
+                        img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                        img = img.convert('RGB')
+                        
+                        preview_image.paste(img, (0, y_offset))
+                        y_offset += img.height
+                        
+                        del pix
+                        del img
+                        gc.collect()
+                    
+                    # Save preview image
+                    preview_image.save(preview_image_path, format='JPEG', quality=85, optimize=True)
+                    temp_files.append(preview_image_path)
+                    
+                    # Process all pages in small groups
+                    page_images_dir = os.path.join(temp_dir, 'page_images')
+                    os.makedirs(page_images_dir, exist_ok=True)
+                    
+                    print(f"Processing all {total_pages} pages into group images...")
+                    group_count = 0
+                    
+                    for start_page in range(0, total_pages, MAX_PAGES_PER_IMAGE):
+                        current_group = []
+                        current_height = 0
+                        max_width = 0
+                        
+                        # Process a batch of pages
+                        end_page = min(start_page + MAX_PAGES_PER_IMAGE, total_pages)
+                        print(f"Processing pages {start_page+1} to {end_page} of {total_pages}")
+                        
+                        for page_num in range(start_page, end_page):
+                            try:
+                                page = pdf_document[page_num]
+                                pix = page.get_pixmap(matrix=mat, alpha=False)
+                                img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                                img = img.convert('RGB')
+                                
+                                current_group.append(img)
+                                current_height += img.height
+                                max_width = max(max_width, img.width)
+                                
+                                del pix
+                                gc.collect()
+                                
+                            except Exception as e:
+                                print(f"Error processing page {page_num + 1}: {str(e)}")
+                                continue
+                        
+                        # Save this group if we have any pages
+                        if current_group:
+                            try:
+                                # Use zero-padded group numbers for correct sorting
+                                group_count_str = f"{group_count:02d}"
+                                print(f"Saving group {group_count_str} with {len(current_group)} pages...")
+                                
+                                # Create combined image
+                                combined = Image.new('RGB', (max_width, current_height), 'white')
+                                y = 0
+                                
+                                for group_img in current_group:
+                                    combined.paste(group_img, (0, y))
+                                    y += group_img.height
+                                    del group_img  # Release memory
+                                
+                                # Save the group image with zero-padded numbering
+                                group_path = os.path.join(page_images_dir, f'group_{group_count_str}.jpg')
+                                combined.save(group_path, format='JPEG', quality=85, optimize=True)
+                                
+                                del combined
+                                gc.collect()
+                                
+                                group_count += 1
+                                
+                                # Short delay to allow memory to be properly released
+                                time.sleep(0.1)
+                                
+                            except Exception as e:
+                                print(f"Error saving group {group_count}: {str(e)}")
+                                
+                elif total_pages == 1:
+                    # Single page document
+                    page = pdf_document[0]
+                    pix = page.get_pixmap(matrix=mat, alpha=False)
+                    img = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
+                    img = img.convert('RGB')
+                    img.save(preview_image_path, format='JPEG', quality=85, optimize=True)
+                    temp_files.append(preview_image_path)
+                    
+                    # Also save as the first group for analysis
+                    page_images_dir = os.path.join(temp_dir, 'page_images')
+                    os.makedirs(page_images_dir, exist_ok=True)
+                    img.save(os.path.join(page_images_dir, 'group_00.jpg'), format='JPEG', quality=85, optimize=True)
+                
+                # Save the PDF file to the model BEFORE closing the document
+                with open(temp_pdf_path, 'rb') as pdf_file:
+                    pdf_doc.pdf_file.save(
+                        os.path.basename(temp_pdf_path),
+                        File(pdf_file)
+                    )
+                
+                # Save the preview image to the model
+                if os.path.exists(preview_image_path):
+                    with open(preview_image_path, 'rb') as img_file:
+                        pdf_doc.converted_image.save(
+                            f"preview_{pdf_doc.id}.jpg",
+                            File(img_file)
+                        )
+                
+                # NOW close the PDF document after we're done with it
+                if pdf_document:
+                    pdf_document.close()
+                    pdf_document = None
+                
+                # Store temp directory in session
+                request.session['pdf_temp_dir'] = temp_dir
+                
+                # Redirect to the analyze step
+                messages.success(request, "PDF successfully uploaded. You can now analyze it.")
+                return redirect(f'{request.path}?step=analyze&pdf_id={pdf_doc.id}')
+                
+            except Exception as e:
+                import traceback
+                error_message = f"Error processing PDF: {str(e)}"
+                print(error_message)
+                print(traceback.format_exc())
+                
+                # Clean up on error
+                if pdf_document:
+                    try:
+                        # Safely close the PDF document
+                        pdf_document.close()
+                    except Exception as close_error:
+                        print(f"Warning: Could not close PDF document: {str(close_error)}")
+                    pdf_document = None
+                
+                if pdf_doc:
+                    try:
+                        pdf_doc.delete()
+                    except Exception as delete_error:
+                        print(f"Warning: Could not delete PDF document: {str(delete_error)}")
+                
+                # Close any open file handlers
+                for handler in file_handlers:
+                    if not handler.closed:
+                        try:
+                            handler.close()
+                        except Exception as close_error:
+                            print(f"Warning: Could not close file handler: {str(close_error)}")
+                
+                # Wait a moment before trying to delete files
+                time.sleep(0.5)
+                
+                # Clean up temp files
+                for temp_file in temp_files:
+                    if os.path.exists(temp_file):
+                        try:
+                            os.remove(temp_file)
+                        except Exception as file_error:
+                            print(f"Warning: Could not remove temp file {temp_file}: {str(file_error)}")
+                
+                # Try to clean up temp directory
+                if temp_dir and os.path.exists(temp_dir):
+                    try:
+                        # On Windows, sometimes we need to wait a bit before attempting to remove
+                        time.sleep(0.5)
+                        shutil.rmtree(temp_dir)
+                    except Exception as dir_error:
+                        print(f"Warning: Could not remove temp directory {temp_dir}: {str(dir_error)}")
+                        # If we can't remove the entire directory, try to at least remove the temp PDF
+                        if os.path.exists(temp_pdf_path):
+                            try:
+                                # Wait a bit longer and try again
+                                time.sleep(1)
+                                os.remove(temp_pdf_path)
+                            except Exception as pdf_error:
+                                print(f"Warning: Could not remove temp PDF {temp_pdf_path}: {str(pdf_error)}")
+                
+                # Force garbage collection
+                gc.collect()
+                
+                messages.error(request, error_message)
+                        
+        else:
+            # Form is not valid
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
+    
+    # Rest of the function remains unchanged
+    # ...
+    
+    # Define the context before returning
+    context = {
+        'active_page': 'integrated_workflow',
+        'step': step,
+        'pdfs': pdfs,
+        'selected_pdf': selected_pdf,
+        'form': PDFUploadForm() if step == 'upload' else None
+    }
+    
+    # Add step-specific context
+    if step == 'analyze' and selected_pdf:
+        context['topics'] = Topic.objects.filter(pdf_document=selected_pdf).order_by('order')
+        context['chapters'] = Chapter.objects.filter(pdf_document=selected_pdf).order_by('order')
+    elif step == 'group' and selected_pdf:
+        context['topics'] = Topic.objects.filter(pdf_document=selected_pdf).order_by('order')
+        context['topic_groups'] = MainTopic.objects.filter(pdf_document=selected_pdf).order_by('order')
+    elif step == 'visualize' and selected_pdf:
+        # Prepare visualization data
+        topic_groups = MainTopic.objects.filter(pdf_document=selected_pdf).order_by('order')
+        active_groups = ActiveTopicGroups.objects.all().values_list('topic_group_id', flat=True)
+        
+        # Get topic data for visualization
+        topic_data = []
+        for topic in Topic.objects.filter(pdf_document=selected_pdf).order_by('order'):
+            topic_item = {
+                'id': topic.id,
+                'name': topic.title,
+                'summary': topic.summary,
+                'children': []
+            }
+            
+            # Add chapters
+            for chapter in topic.chapters.all():
+                topic_item['children'].append({
+                    'id': chapter.id,
+                    'name': chapter.title,
+                    'content': chapter.content[:100] + '...' if len(chapter.content) > 100 else chapter.content,
+                    'value': float(chapter.confidence_score)  # Ensure this is a float
+                })
+            
+            topic_data.append(topic_item)
+        
+        # Format as a hierarchical structure for D3.js
+        topic_data_hierarchy = {
+            'name': selected_pdf.title,
+            'children': topic_data
+        }
+        
+        # Get group data for visualization
+        group_data = []
+        for group in topic_groups:
+            group_item = {
+                'id': str(group.id),
+                'name': group.title,
+                'description': group.description,
+                'keywords': group.keywords,
+                'similarity_score': float(group.similarity_score),  # Ensure this is a float
+                'children': []
+            }
+            
+            for topic in group.topics.all():
+                topic_item = {
+                    'id': str(topic.id),
+                    'name': topic.title,
+                    'summary': topic.summary,
+                    'children': []
+                }
+                
+                for chapter in topic.chapters.all():
+                    chapter_item = {
+                        'id': str(chapter.id),
+                        'name': chapter.title,
+                        'content': chapter.content[:100] + '...' if len(chapter.content) > 100 else chapter.content,
+                        'value': float(chapter.confidence_score),  # Ensure this is a float
+                        'type': 'chapter'
+                    }
+                    topic_item['children'].append(chapter_item)
+                
+                group_item['children'].append(topic_item)
+            
+            group_data.append(group_item)
+        
+        context['topic_groups'] = topic_groups
+        context['active_groups'] = active_groups
+        context['topic_data'] = json.dumps(topic_data_hierarchy)
+        context['group_data'] = json.dumps(group_data)
+        
+        # Get summary topics
+        summary_topics = []
+        for group in topic_groups:
+            summaries = SubTopic.objects.filter(topic_group=group).order_by('order')
+            if summaries.exists():
+                summary_topics.append({
+                    'group': group,
+                    'summaries': summaries
+                })
+        
+        context['summary_topics'] = summary_topics
+    
+    return render(request, 'dynamicDB/integrated_workflow.html', context)

@@ -1,0 +1,1246 @@
+{% extends 'dynamicDB/admin_panel_base.html' %}
+
+{% block title %}Integrated Workflow - PDF Content Analysis{% endblock %}
+
+{% block page_title %}PDF Content Workflow{% endblock %}
+
+{% block page_actions %}
+{% if step != 'upload' and selected_pdf %}
+<div class="btn-group">
+    <a href="?step=upload" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left-circle me-2"></i> Start Over
+    </a>
+    {% if step == 'analyze' %}
+    <a href="?step=group&pdf_id={{ selected_pdf.id }}" class="btn btn-outline-primary">
+        <i class="bi bi-skip-forward me-2"></i> Skip to Grouping
+    </a>
+    {% elif step == 'group' %}
+    <a href="?step=visualize&pdf_id={{ selected_pdf.id }}" class="btn btn-outline-primary">
+        <i class="bi bi-skip-forward me-2"></i> Skip to Visualization
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="workflow-container">
+    <!-- Progress Steps -->
+    <div class="workflow-steps mb-4">
+        <div class="row">
+            <div class="col">
+                <div class="step {% if step == 'upload' %}active{% endif %} {% if step != 'upload' %}completed{% endif %}">
+                    <div class="step-icon">
+                        <i class="bi bi-upload"></i>
+                    </div>
+                    <div class="step-title">Upload PDF</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="step {% if step == 'analyze' %}active{% endif %} {% if step == 'group' or step == 'visualize' %}completed{% endif %}">
+                    <div class="step-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <div class="step-title">Analyze Content</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="step {% if step == 'group' %}active{% endif %} {% if step == 'visualize' %}completed{% endif %}">
+                    <div class="step-icon">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <div class="step-title">Group Topics</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="step {% if step == 'visualize' %}active{% endif %}">
+                    <div class="step-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div class="step-title">Visualize & Summarize</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step Content -->
+    <div class="workflow-content">
+        {% if step == 'upload' %}
+            <!-- Upload Step -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Upload a PDF Document</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="id_title" class="form-label">Document Title</label>
+                                    {{ form.title }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_pdf_file" class="form-label">PDF File</label>
+                                    {{ form.pdf_file }}
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-upload me-2"></i> Upload & Continue
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Recent Documents</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if pdfs %}
+                                        <div class="list-group">
+                                            {% for pdf in pdfs|slice:":5" %}
+                                                <a href="?step=analyze&pdf_id={{ pdf.id }}" class="list-group-item list-group-item-action">
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <h6 class="mb-1">{{ pdf.title }}</h6>
+                                                        <small>{{ pdf.uploaded_at|date:"M d, Y" }}</small>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        {{ pdf.chapters.count }} chapters, {{ pdf.main_topics.count }} topics
+                                                    </small>
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted text-center my-4">No documents uploaded yet.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% elif step == 'analyze' and selected_pdf %}
+            <!-- Analyze Step -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Analyze PDF: {{ selected_pdf.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="pdf-preview mb-3">
+                                {% if selected_pdf.converted_image %}
+                                    <img src="{{ selected_pdf.converted_image.url }}" alt="PDF Preview" class="img-fluid rounded shadow-sm border">
+                                {% else %}
+                                    <div class="no-preview text-center p-5 bg-light rounded">
+                                        <i class="bi bi-file-earmark-pdf display-1 text-muted"></i>
+                                        <p class="mt-3">No preview available</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="pdf-info">
+                                <h5>Document Information</h5>
+                                <ul class="list-group mb-4">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Uploaded Date</span>
+                                        <span>{{ selected_pdf.uploaded_at|date:"F d, Y, g:i a" }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Existing Topics</span>
+                                        <span class="badge bg-primary rounded-pill">{{ selected_pdf.main_topics.count }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Existing Chapters</span>
+                                        <span class="badge bg-primary rounded-pill">{{ selected_pdf.chapters.count }}</span>
+                                    </li>
+                                </ul>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    The analysis will extract topics and chapters from your PDF document using Google's Gemini AI model.
+                                    This process may take some time depending on the document size.
+                                </div>
+                                
+                                <form method="post" class="text-center">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-search me-2"></i> Start Analysis
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if topics.exists %}
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Existing Topics</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        This document already has topics extracted. You can proceed to the next step or re-analyze the document.
+                    </p>
+                    <div class="row">
+                        {% for topic in topics %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">{{ topic.title }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">{{ topic.chapters.count }} chapters</p>
+                                    <ul class="list-group list-group-flush small">
+                                        {% for chapter in topic.chapters.all|slice:":3" %}
+                                        <li class="list-group-item px-0">{{ chapter.title }}</li>
+                                        {% endfor %}
+                                        {% if topic.chapters.count > 3 %}
+                                        <li class="list-group-item px-0 text-muted">...and {{ topic.chapters.count|add:"-3" }} more</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="?step=group&pdf_id={{ selected_pdf.id }}" class="btn btn-success">
+                            <i class="bi bi-arrow-right-circle me-2"></i> Continue to Topic Grouping
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+        {% elif step == 'group' and selected_pdf %}
+            <!-- Group Step -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Group Topics: {{ selected_pdf.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="topics-list">
+                                <h5>Available Topics</h5>
+                                <p class="text-muted mb-3">
+                                    The AI will group related topics together based on semantic similarity.
+                                </p>
+                                
+                                <div class="list-group mb-4">
+                                    {% for topic in topics %}
+                                    <div class="list-group-item">
+                                        <h6>{{ topic.title }}</h6>
+                                        <p class="text-muted small mb-0">{{ topic.chapters.count }} chapters</p>
+                                    </div>
+                                    {% empty %}
+                                    <div class="list-group-item text-center text-muted">
+                                        No topics found. Please go back to the analysis step.
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if topics.exists %}
+                                <form method="post" class="text-center">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-diagram-3 me-2"></i> Group Topics with AI
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="existing-groups">
+                                <h5>Existing Topic Groups</h5>
+                                {% if topic_groups.exists %}
+                                    <div class="list-group">
+                                        {% for group in topic_groups %}
+                                        <div class="list-group-item">
+                                            <h6>{{ group.title }}</h6>
+                                            <p class="text-muted small mb-1">{{ group.topics.count }} topics</p>
+                                            <div class="topics-in-group small">
+                                                {% for topic in group.topics.all %}
+                                                <span class="badge bg-light text-dark me-1 mb-1">{{ topic.title }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="text-center mt-3">
+                                        <a href="?step=visualize&pdf_id={{ selected_pdf.id }}" class="btn btn-success">
+                                            <i class="bi bi-arrow-right-circle me-2"></i> Continue to Visualization
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        No topic groups have been created yet. Use the button on the left to group topics.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% elif step == 'visualize' and selected_pdf %}
+            <!-- Visualize Step -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Visualize & Summarize: {{ selected_pdf.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Set as active PDF notice -->
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        This document has been set as the active PDF for the platform.
+                    </div>
+                    
+                    <!-- Topic Groups Selection -->
+                    <div class="topic-groups-selection mb-4">
+                        <h5>Select Topic Groups for Summary</h5>
+                        <p class="text-muted">
+                            Select up to 2 topic groups to set as active and generate AI summaries.
+                        </p>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                {% for group in topic_groups %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 {% if group.id in active_groups %}border-primary{% endif %}">
+                                        <div class="card-header d-flex align-items-center">
+                                            <div class="form-check form-switch me-2">
+                                                <input class="form-check-input" type="checkbox" name="topic_groups" value="{{ group.id }}" 
+                                                       id="group-{{ group.id }}" {% if group.id in active_groups %}checked{% endif %}>
+                                                <label class="form-check-label" for="group-{{ group.id }}"></label>
+                                            </div>
+                                            <h6 class="mb-0">{{ group.title }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted small mb-2">{{ group.topics.count }} topics</p>
+                                            <div class="topics-in-group small">
+                                                {% for topic in group.topics.all %}
+                                                <span class="badge bg-light text-dark me-1 mb-1">{{ topic.title }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="bi bi-bookmark-star-fill me-2"></i> Set as Active Topic Groups
+                                </button>
+                                <button type="submit" name="generate_summary" value="1" class="btn btn-success">
+                                    <i class="bi bi-magic me-2"></i> Generate AI Summaries
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Visualization -->
+                    <div class="visualization-container mb-4">
+                        <h5>Topic Visualization</h5>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="legend">
+                                        <h6>Legend</h6>
+                                        <div class="d-flex">
+                                            <div class="me-3"><span class="badge bg-success me-1"></span> Document (Root)</div>
+                                            <div class="me-3"><span class="badge bg-primary me-1"></span> Topic Group</div>
+                                            <div class="me-3"><span class="badge bg-warning me-1"></span> Main Topic</div>
+                                            <div class="me-3"><span class="badge bg-danger me-1"></span> Chapter</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="vis-controls text-center mb-3">
+                                    <button id="radialViewBtn" class="btn btn-sm btn-outline-primary active">Radial View</button>
+                                    <button id="treeViewBtn" class="btn btn-sm btn-outline-primary">Tree View</button>
+                                    <button id="toggleGroupsBtn" class="btn btn-sm btn-outline-primary">Toggle Topic Groups</button>
+                                </div>
+                                <div id="visualization" style="height: 500px; border: 1px solid #eee; border-radius: 5px;"></div>
+                                <div id="tooltip" class="tooltip" style="opacity: 0; position: absolute;"></div>
+                                <!-- Hidden data containers -->
+                                <div id="topic-data" style="display:none;">
+                                {% if topic_data %}
+                                    {{ topic_data|safe }}
+                                {% else %}
+                                    <!-- Fallback data if topic_data is missing -->
+                                    {
+                                        "name": "Document (No Data)",
+                                        "children": [
+                                            {
+                                                "name": "Sample Topic 1",
+                                                "type": "topic",
+                                                "children": [
+                                                    {"name": "Chapter 1.1", "type": "chapter", "value": 1},
+                                                    {"name": "Chapter 1.2", "type": "chapter", "value": 1}
+                                                ]
+                                            },
+                                            {
+                                                "name": "Sample Topic 2",
+                                                "type": "topic",
+                                                "children": [
+                                                    {"name": "Chapter 2.1", "type": "chapter", "value": 1},
+                                                    {"name": "Chapter 2.2", "type": "chapter", "value": 1}
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                {% endif %}
+                                </div>
+                                {% if group_data %}
+                                <div id="group-data" style="display:none;">{{ group_data|safe }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Topics -->
+                    {% if summary_topics %}
+                    <div class="summary-topics mb-4">
+                        <h5>AI-Generated Summaries</h5>
+                        <div class="row">
+                            {% for group_data in summary_topics %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">{{ group_data.group.title }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="list-group">
+                                            {% for summary in group_data.summaries %}
+                                            <div class="list-group-item">
+                                                <h6>{{ summary.title }}</h6>
+                                                <p class="small mb-0">{{ summary.description|truncatewords:50 }}</p>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Complete Workflow -->
+                    <div class="text-center mt-4">
+                        <a href="{% url 'dynamicDB:admin_panel_dashboard' %}" class="btn btn-lg btn-outline-success">
+                            <i class="bi bi-check-circle me-2"></i> Complete Workflow
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Custom CSS for workflow steps -->
+<style>
+    .workflow-steps {
+        margin-bottom: 30px;
+    }
+    .workflow-steps .step {
+        text-align: center;
+        padding: 15px;
+        position: relative;
+    }
+    .workflow-steps .step:not(:last-child):after {
+        content: "";
+        position: absolute;
+        top: 35px;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background-color: #e9ecef;
+        z-index: 0;
+    }
+    .workflow-steps .step.completed:not(:last-child):after {
+        background-color: #5c7cfa;
+    }
+    .workflow-steps .step-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        border: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        position: relative;
+        z-index: 1;
+    }
+    .workflow-steps .step-icon i {
+        font-size: 28px;
+        color: #6c757d;
+    }
+    .workflow-steps .step.active .step-icon {
+        background-color: #e7f5ff;
+        border-color: #5c7cfa;
+    }
+    .workflow-steps .step.active .step-icon i {
+        color: #5c7cfa;
+    }
+    .workflow-steps .step.completed .step-icon {
+        background-color: #5c7cfa;
+        border-color: #4263eb;
+    }
+    .workflow-steps .step.completed .step-icon i {
+        color: white;
+    }
+    .workflow-steps .step-title {
+        font-weight: 500;
+    }
+    .workflow-steps .step.active .step-title {
+        color: #5c7cfa;
+    }
+    .topics-in-group {
+        max-height: 100px;
+        overflow-y: auto;
+    }
+</style>
+
+{% block extra_css %}
+<style>
+    /* Visualization styles */
+    .tooltip {
+        position: absolute;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        pointer-events: none;
+        max-width: 300px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        z-index: 10;
+        transition: opacity 0.3s;
+    }
+    
+    .tooltip h4 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+    
+    .tooltip p {
+        margin: 5px 0;
+        color: #555;
+        font-size: 14px;
+    }
+    
+    .vis-controls button {
+        margin-right: 5px;
+    }
+    
+    .vis-controls button.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    svg {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .node circle {
+        fill: #fff;
+        stroke-width: 3px;
+    }
+    
+    .node text {
+        font: 14px sans-serif;
+    }
+    
+    .link {
+        fill: none;
+        stroke: #ccc;
+        stroke-width: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Document loaded");
+        
+        // Check URL for step parameter 
+        const urlParams = new URLSearchParams(window.location.search);
+        const stepParam = urlParams.get('step');
+        
+        console.log("URL step parameter:", stepParam);
+        
+        // Check if visualization container exists regardless of step
+        const visualizationContainer = document.getElementById('visualization');
+        
+        if (visualizationContainer) {
+            console.log("Visualization container found, initializing...");
+            // Small delay to ensure DOM is fully loaded
+            setTimeout(function() {
+                initVisualization();
+            }, 200);
+        } else {
+            console.log("Visualization container not found, skipping initialization");
+        }
+    });
+
+    function initVisualization() {
+        // Clear any existing content in the visualization container first
+        d3.select("#visualization").selectAll("svg").remove();
+        d3.select("#visualization").selectAll(".debug-message").remove();
+        
+        // Parse the data from hidden divs
+        let topicData;
+        let groupData = null;
+        let showGroups = false;
+        
+        try {
+            // Get data from hidden divs
+            const topicDataElement = document.getElementById('topic-data');
+            topicData = JSON.parse(topicDataElement.textContent || topicDataElement.innerText);
+            
+            const groupDataElement = document.getElementById('group-data');
+            if (groupDataElement) {
+                groupData = JSON.parse(groupDataElement.textContent || groupDataElement.innerText);
+                showGroups = true;
+            }
+            
+            console.log("Topic data loaded successfully:", topicData);
+            if (groupData) console.log("Group data loaded successfully:", groupData);
+            
+            // Check if data is valid
+            if (!topicData || (typeof topicData === 'object' && Object.keys(topicData).length === 0)) {
+                console.error("Topic data is empty or invalid");
+                // Create placeholder data for visualization
+                topicData = {
+                    "name": "Document (No Data)",
+                    "children": [
+                        {
+                            "name": "Sample Topic 1",
+                            "type": "topic",
+                            "children": [
+                                {"name": "Chapter 1.1", "type": "chapter", "value": 1},
+                                {"name": "Chapter 1.2", "type": "chapter", "value": 1}
+                            ]
+                        },
+                        {
+                            "name": "Sample Topic 2",
+                            "type": "topic",
+                            "children": [
+                                {"name": "Chapter 2.1", "type": "chapter", "value": 1},
+                                {"name": "Chapter 2.2", "type": "chapter", "value": 1}
+                            ]
+                        }
+                    ]
+                };
+            }
+        } catch (error) {
+            console.error("Error parsing JSON data:", error);
+            createFallbackVisualization();
+            return; // Exit function after creating fallback
+        }
+        
+        try {
+            // Create a debug message to show in the visualization area if needed
+            const debugArea = d3.select("#visualization").append("div")
+                .attr("class", "debug-message")
+                .style("padding", "10px")
+                .style("color", "#666")
+                .style("display", "none");
+            
+            // Set up the SVG container
+            const width = document.getElementById('visualization').clientWidth;
+            const height = 500;
+            const svg = d3.select("#visualization")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+            
+            // Clear any existing content
+            svg.selectAll("*").remove();
+            
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 10])
+                .on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                });
+            
+            svg.call(zoom);
+            
+            // Main container group with initial transform
+            const g = svg.append("g")
+                .attr("transform", `translate(${width/2},${height/2})`);
+            
+            // Color scale for different types of nodes
+            const colorScale = d3.scaleOrdinal()
+                .domain(["document", "group", "subgroup", "topic", "chapter"])
+                .range(["#4CAF50", "#2196F3", "#03A9F4", "#FF9800", "#E91E63"]);
+            
+            // Initialize visualizations
+            let currentView = "radial";
+            
+            drawVisualization();
+            
+            // Toggle between different visualization types
+            document.getElementById("radialViewBtn").addEventListener("click", function() {
+                this.classList.add("active");
+                document.getElementById("treeViewBtn").classList.remove("active");
+                currentView = "radial";
+                drawVisualization();
+            });
+            
+            document.getElementById("treeViewBtn").addEventListener("click", function() {
+                this.classList.add("active");
+                document.getElementById("radialViewBtn").classList.remove("active");
+                currentView = "tree";
+                drawVisualization();
+            });
+            
+            if (groupData) {
+                document.getElementById("toggleGroupsBtn").addEventListener("click", function() {
+                    showGroups = !showGroups;
+                    this.textContent = showGroups ? "Hide Topic Groups" : "Show Topic Groups";
+                    drawVisualization();
+                });
+            } else {
+                document.getElementById("toggleGroupsBtn").style.display = "none";
+            }
+            
+            function drawVisualization() {
+                // Clear existing visualization
+                g.selectAll("*").remove();
+                
+                let visualizationData;
+                
+                // Create the combined data structure depending on whether to show groups
+                if (showGroups && groupData) {
+                    // Combine document with group structure
+                    visualizationData = {
+                        name: "Document",
+                        type: "document",
+                        children: []
+                    };
+                    
+                    // Add group data first
+                    visualizationData.children = groupData.map(group => {
+                        return {
+                            name: group.name,
+                            type: "group",
+                            description: group.description,
+                            keywords: group.keywords,
+                            similarity_score: group.similarity_score,
+                            children: (group.children || []).map(topic => {
+                                return {
+                                    name: topic.name,
+                                    type: "topic",
+                                    summary: topic.summary,
+                                    children: (topic.children || []).map(chapter => {
+                                        return {
+                                            name: chapter.name,
+                                            content: chapter.content,
+                                            value: chapter.value,
+                                            type: "chapter"
+                                        };
+                                    })
+                                };
+                            })
+                        };
+                    });
+                    
+                } else {
+                    // Use regular topic data structure, but add type information
+                    visualizationData = {
+                        name: topicData.name || "Document",
+                        type: "document",
+                        children: (topicData.children || []).map(topic => {
+                            return {
+                                name: topic.name,
+                                type: "topic",
+                                summary: topic.summary,
+                                children: (topic.children || []).map(chapter => ({
+                                    name: chapter.name,
+                                    content: chapter.content,
+                                    value: chapter.value,
+                                    type: "chapter"
+                                }))
+                            };
+                        })
+                    };
+                }
+                
+                if (currentView === "radial") {
+                    drawRadialView(visualizationData);
+                } else {
+                    drawTreeView(visualizationData);
+                }
+            }
+            
+            function drawRadialView(data) {
+                const radius = Math.min(width, height) / 2 - 70;
+                
+                const cluster = d3.cluster()
+                    .size([360, radius]);
+                
+                const root = d3.hierarchy(data);
+                cluster(root);
+                
+                // Draw links
+                const links = g.append("g")
+                    .attr("class", "links")
+                    .selectAll("path")
+                    .data(root.links())
+                    .join("path")
+                    .attr("d", d => {
+                        const startAngle = d.source.x * Math.PI / 180;
+                        const startRadius = d.source.y;
+                        const endAngle = d.target.x * Math.PI / 180;
+                        const endRadius = d.target.y;
+                        
+                        const x1 = Math.sin(startAngle) * startRadius;
+                        const y1 = -Math.cos(startAngle) * startRadius;
+                        const x2 = Math.sin(endAngle) * endRadius;
+                        const y2 = -Math.cos(endAngle) * endRadius;
+                        
+                        return `M${x1},${y1}C${x1},${y1} ${x2},${y2} ${x2},${y2}`;
+                    })
+                    .attr("fill", "none")
+                    .attr("stroke", "#999")
+                    .attr("stroke-width", 1);
+                
+                // Draw nodes
+                const nodes = g.append("g")
+                    .attr("class", "nodes")
+                    .selectAll("g")
+                    .data(root.descendants())
+                    .join("g")
+                    .attr("transform", d => {
+                        const angle = d.x * Math.PI / 180;
+                        const r = d.y;
+                        return `translate(${Math.sin(angle) * r},${-Math.cos(angle) * r})`;
+                    });
+                
+                // Node circles with different sizes based on type
+                nodes.append("circle")
+                    .attr("r", d => {
+                        if (d.data.type === "document") return 15;
+                        if (d.data.type === "group") return 12;
+                        if (d.data.type === "topic") return 8;
+                        return 4;
+                    })
+                    .attr("fill", d => colorScale(d.data.type))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5);
+                
+                // Add text labels with offset based on angle
+                nodes.append("text")
+                    .attr("dy", d => {
+                        // Position text above or below based on angle
+                        const angle = (d.x - 90) / 180 * Math.PI;
+                        return (Math.cos(angle) < 0) ? "-0.5em" : "1.5em";
+                    })
+                    .attr("dx", d => {
+                        // Position text left or right based on angle
+                        const angle = (d.x - 90) / 180 * Math.PI;
+                        return (Math.sin(angle) < 0) ? "-1em" : "1em";
+                    })
+                    .attr("text-anchor", d => {
+                        // Text anchor based on angle
+                        const angle = (d.x - 90) / 180 * Math.PI;
+                        return (Math.sin(angle) < 0) ? "end" : "start";
+                    })
+                    .text(d => d.data.name)
+                    .style("font-size", d => {
+                        if (d.data.type === "document") return "12px";
+                        if (d.data.type === "group") return "10px";
+                        if (d.data.type === "topic") return "8px";
+                        return "6px";
+                    })
+                    .style("fill", "#333")
+                    .attr("opacity", d => {
+                        if (d.data.type === "chapter") return 0.7;
+                        return 1;
+                    });
+                
+                // Add tooltips
+                nodes.append("title")
+                    .text(d => {
+                        if (d.data.type === "document") {
+                            return `Document: ${d.data.name}`;
+                        } else if (d.data.type === "group") {
+                            return `Group: ${d.data.name}\n${d.data.description || ""}\nSimilarity: ${d.data.similarity_score || "N/A"}`;
+                        } else if (d.data.type === "topic") {
+                            return `Topic: ${d.data.name}\n${d.data.summary || ""}`;
+                        } else {
+                            return `Chapter: ${d.data.name}\n${d.data.content || ""}`;
+                        }
+                    });
+                
+                // Add interactive tooltips
+                nodes.on("mouseover", function(event, d) {
+                    const tooltip = d3.select("#tooltip");
+                    
+                    let tooltipContent = "";
+                    
+                    if (d.data.type === "document") {
+                        tooltipContent = `<strong>Document</strong>: ${d.data.name}`;
+                    } else if (d.data.type === "group") {
+                        tooltipContent = `<strong>Group</strong>: ${d.data.name}`;
+                        if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
+                        if (d.data.keywords) tooltipContent += `<br/><small>Keywords: ${d.data.keywords}</small>`;
+                        if (d.data.similarity_score) tooltipContent += `<br/>Similarity: ${d.data.similarity_score.toFixed(2)}`;
+                    } else if (d.data.type === "topic") {
+                        tooltipContent = `<strong>Topic</strong>: ${d.data.name}`;
+                        if (d.data.summary) tooltipContent += `<br/><em>${d.data.summary}</em>`;
+                    } else {
+                        tooltipContent = `<strong>Chapter</strong>: ${d.data.name}`;
+                        if (d.data.content) tooltipContent += `<br/><em>${d.data.content}</em>`;
+                    }
+                    
+                    tooltip.html(tooltipContent)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                })
+                .on("mouseout", function() {
+                    d3.select("#tooltip").transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+            }
+            
+            function drawTreeView(data) {
+                const treeLayout = d3.tree()
+                    .size([height - 40, width - 160]);
+                
+                const root = d3.hierarchy(data);
+                treeLayout(root);
+                
+                // Swap x and y coordinates for horizontal layout
+                root.descendants().forEach(d => {
+                    const temp = d.x;
+                    d.x = d.y - width / 2 + 80;
+                    d.y = temp - height / 2 + 20;
+                });
+                
+                // Draw links
+                g.append("g")
+                    .attr("class", "links")
+                    .selectAll("path")
+                    .data(root.links())
+                    .enter()
+                    .append("path")
+                    .attr("d", d => {
+                        return `M${d.source.x},${d.source.y}
+                                C${(d.source.x + d.target.x) / 2},${d.source.y}
+                                 ${(d.source.x + d.target.x) / 2},${d.target.y}
+                                 ${d.target.x},${d.target.y}`;
+                    })
+                    .attr("fill", "none")
+                    .attr("stroke", "#999")
+                    .attr("stroke-width", 1);
+                
+                // Draw nodes
+                const nodes = g.append("g")
+                    .attr("class", "nodes")
+                    .selectAll("g")
+                    .data(root.descendants())
+                    .enter()
+                    .append("g")
+                    .attr("transform", d => `translate(${d.x},${d.y})`);
+                
+                // Node circles with different sizes based on type
+                nodes.append("circle")
+                    .attr("r", d => {
+                        if (d.data.type === "document") return 15;
+                        if (d.data.type === "group") return 12;
+                        if (d.data.type === "topic") return 8;
+                        return 4;
+                    })
+                    .attr("fill", d => colorScale(d.data.type))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5);
+                
+                // Add text labels
+                nodes.append("text")
+                    .attr("dy", 3)
+                    .attr("x", d => {
+                        if (d.depth === 0) return -18;
+                        return d.children ? -12 : 8;
+                    })
+                    .attr("text-anchor", d => {
+                        if (d.depth === 0) return "end";
+                        return d.children ? "end" : "start";
+                    })
+                    .text(d => d.data.name)
+                    .style("font-size", d => {
+                        if (d.data.type === "document") return "12px";
+                        if (d.data.type === "group") return "10px";
+                        if (d.data.type === "topic") return "8px";
+                        return "6px";
+                    })
+                    .style("fill", "#333");
+                
+                // Add tooltips
+                nodes.append("title")
+                    .text(d => {
+                        if (d.data.type === "document") {
+                            return `Document: ${d.data.name}`;
+                        } else if (d.data.type === "group") {
+                            return `Group: ${d.data.name}\n${d.data.description || ""}\nSimilarity: ${d.data.similarity_score || "N/A"}`;
+                        } else if (d.data.type === "topic") {
+                            return `Topic: ${d.data.name}\n${d.data.summary || ""}`;
+                        } else {
+                            return `Chapter: ${d.data.name}\n${d.data.content || ""}`;
+                        }
+                    });
+                
+                // Add interactive tooltips
+                nodes.on("mouseover", function(event, d) {
+                    const tooltip = d3.select("#tooltip");
+                    
+                    let tooltipContent = "";
+                    
+                    if (d.data.type === "document") {
+                        tooltipContent = `<strong>Document</strong>: ${d.data.name}`;
+                    } else if (d.data.type === "group") {
+                        tooltipContent = `<strong>Group</strong>: ${d.data.name}`;
+                        if (d.data.description) tooltipContent += `<br/><em>${d.data.description}</em>`;
+                        if (d.data.keywords) tooltipContent += `<br/><small>Keywords: ${d.data.keywords}</small>`;
+                        if (d.data.similarity_score) tooltipContent += `<br/>Similarity: ${d.data.similarity_score.toFixed(2)}`;
+                    } else if (d.data.type === "topic") {
+                        tooltipContent = `<strong>Topic</strong>: ${d.data.name}`;
+                        if (d.data.summary) tooltipContent += `<br/><em>${d.data.summary}</em>`;
+                    } else {
+                        tooltipContent = `<strong>Chapter</strong>: ${d.data.name}`;
+                        if (d.data.content) tooltipContent += `<br/><em>${d.data.content}</em>`;
+                    }
+                    
+                    tooltip.html(tooltipContent)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                })
+                .on("mouseout", function() {
+                    d3.select("#tooltip").transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+            }
+        } catch (error) {
+            console.error("Error creating visualization:", error);
+            createFallbackVisualization();
+        }
+    }
+    
+    // Function to create a simple fallback visualization
+    function createFallbackVisualization() {
+        console.log("Creating fallback visualization...");
+        
+        // Clear any existing content first
+        d3.select("#visualization").selectAll("svg").remove();
+        d3.select("#visualization").selectAll(".debug-message").remove();
+        
+        // Create a debug message to show in the visualization area
+        const debugArea = d3.select("#visualization")
+            .append("div")
+            .attr("class", "debug-message")
+            .style("padding", "10px")
+            .style("color", "#666")
+            .style("display", "block")
+            .html("<p>Unable to create the main visualization. Showing a simplified fallback visualization instead.</p>");
+        
+        // Set up the SVG container for the fallback visualization
+        const width = document.getElementById('visualization').clientWidth;
+        const height = 500;
+        
+        // Remove any existing SVG
+        d3.select("#visualization").selectAll("svg").remove();
+        
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 10])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        // Main container group with initial transform
+        const g = svg.append("g")
+            .attr("transform", `translate(${width/2},${height/2})`);
+        
+        // Color scale for different types of nodes
+        const colorScale = d3.scaleOrdinal()
+            .domain(["document", "group", "topic", "chapter"])
+            .range(["#4CAF50", "#2196F3", "#FF9800", "#E91E63"]);
+        
+        // Create placeholder data for fallback visualization
+        const fallbackData = {
+            "name": "Document",
+            "type": "document",
+            "children": [
+                {
+                    "name": "Sample Group A",
+                    "type": "group",
+                    "description": "Example group with sample topics",
+                    "children": [
+                        {
+                            "name": "Sample Topic 1",
+                            "type": "topic",
+                            "summary": "This is a placeholder topic for the fallback visualization",
+                            "children": [
+                                {"name": "Chapter 1.1", "type": "chapter", "content": "Example content", "value": 1},
+                                {"name": "Chapter 1.2", "type": "chapter", "content": "More example content", "value": 1}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "Sample Group B",
+                    "type": "group",
+                    "description": "Another example group",
+                    "children": [
+                        {
+                            "name": "Sample Topic 2",
+                            "type": "topic",
+                            "summary": "Another placeholder topic",
+                            "children": [
+                                {"name": "Chapter 2.1", "type": "chapter", "content": "Example chapter content", "value": 1},
+                                {"name": "Chapter 2.2", "type": "chapter", "content": "More example chapter content", "value": 1}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        
+        // Draw a simple radial visualization with the fallback data
+        const radius = Math.min(width, height) / 2 - 70;
+        
+        const cluster = d3.cluster()
+            .size([360, radius]);
+        
+        const root = d3.hierarchy(fallbackData);
+        cluster(root);
+        
+        // Draw links
+        g.append("g")
+            .attr("class", "links")
+            .selectAll("path")
+            .data(root.links())
+            .join("path")
+            .attr("d", d => {
+                const startAngle = d.source.x * Math.PI / 180;
+                const startRadius = d.source.y;
+                const endAngle = d.target.x * Math.PI / 180;
+                const endRadius = d.target.y;
+                
+                const x1 = Math.sin(startAngle) * startRadius;
+                const y1 = -Math.cos(startAngle) * startRadius;
+                const x2 = Math.sin(endAngle) * endRadius;
+                const y2 = -Math.cos(endAngle) * endRadius;
+                
+                return `M${x1},${y1}C${x1},${y1} ${x2},${y2} ${x2},${y2}`;
+            })
+            .attr("fill", "none")
+            .attr("stroke", "#ccc")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "3,3");
+        
+        // Draw nodes with fixed colors
+        const nodes = g.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(root.descendants())
+            .join("g")
+            .attr("transform", d => {
+                const angle = d.x * Math.PI / 180;
+                const r = d.y;
+                return `translate(${Math.sin(angle) * r},${-Math.cos(angle) * r})`;
+            });
+        
+        // Node circles
+        nodes.append("circle")
+            .attr("r", d => {
+                if (d.data.type === "document") return 15;
+                if (d.data.type === "group") return 12;
+                if (d.data.type === "topic") return 8;
+                return 4;
+            })
+            .attr("fill", d => colorScale(d.data.type))
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1.5)
+            .attr("opacity", 0.8);
+        
+        // Add text labels
+        nodes.append("text")
+            .attr("dy", d => {
+                const angle = (d.x - 90) / 180 * Math.PI;
+                return (Math.cos(angle) < 0) ? "-0.5em" : "1.5em";
+            })
+            .attr("dx", d => {
+                const angle = (d.x - 90) / 180 * Math.PI;
+                return (Math.sin(angle) < 0) ? "-1em" : "1em";
+            })
+            .attr("text-anchor", d => {
+                const angle = (d.x - 90) / 180 * Math.PI;
+                return (Math.sin(angle) < 0) ? "end" : "start";
+            })
+            .text(d => d.data.name)
+            .style("font-size", d => {
+                if (d.data.type === "document") return "12px";
+                if (d.data.type === "group") return "10px";
+                if (d.data.type === "topic") return "8px";
+                return "6px";
+            })
+            .style("fill", "#333")
+            .style("font-style", "italic");
+        
+        // Add a note about the fallback visualization to the debug area
+        debugArea.append("p")
+            .html("<em>This is a sample visualization with placeholder data. " +
+                  "Please check the console for error details and refresh to try again.</em>");
+        
+        // Add tooltip for more information
+        nodes.append("title")
+            .text(d => {
+                let tooltipText = `Name: ${d.data.name}\nType: ${d.data.type}`;
+                
+                if (d.data.description) {
+                    tooltipText += `\nDescription: ${d.data.description}`;
+                }
+                if (d.data.summary) {
+                    tooltipText += `\nSummary: ${d.data.summary}`;
+                }
+                if (d.data.content) {
+                    tooltipText += `\nContent: ${d.data.content.substring(0, 50)}...`;
+                }
+                
+                return tooltipText;
+            });
+    }
+</script>
+{% endblock %}
+{% endblock %} 

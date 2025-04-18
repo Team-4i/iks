@@ -5,6 +5,35 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+<!-- Integrated Workflow Promotion -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-stars me-2"></i> New Streamlined Workflow Available
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <h4>Integrated PDF Analysis Workflow</h4>
+                <p>Use our new streamlined workflow to process PDFs in a single cohesive interface:</p>
+                <ol>
+                    <li><strong>Upload</strong> - Upload your PDF document</li>
+                    <li><strong>Analyze</strong> - Extract topics and chapters with AI</li>
+                    <li><strong>Group</strong> - Automatically group related topics</li>
+                    <li><strong>Visualize</strong> - See topic relationships and generate summaries</li>
+                </ol>
+                <p>This guided process makes it easier to manage your document's content structure.</p>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-center">
+                <a href="{% url 'dynamicDB:integrated_workflow' %}" class="btn btn-lg btn-primary">
+                    <i class="bi bi-gear-wide-connected me-2"></i> Start Integrated Workflow
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Active PDF Status Card -->
 {% if active_pdf %}
 <div class="card mb-4 border-primary">
@@ -98,9 +127,14 @@
             You haven't selected an active PDF document yet. The platform needs an active PDF to provide 
             content for various features.
         </p>
-        <a href="{% url 'dynamicDB:pdf_selector' %}" class="btn btn-primary">
-            <i class="bi bi-selection me-2"></i> Select Active PDF
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'dynamicDB:pdf_selector' %}" class="btn btn-primary">
+                <i class="bi bi-selection me-2"></i> Select Active PDF
+            </a>
+            <a href="{% url 'dynamicDB:integrated_workflow' %}" class="btn btn-success">
+                <i class="bi bi-gear-wide-connected me-2"></i> Upload & Process New PDF
+            </a>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -174,7 +208,7 @@
                 {% else %}
                     <p class="text-center text-muted my-4">No PDF documents found.</p>
                     <div class="text-center">
-                        <a href="{% url 'dynamicDB:upload_pdf' %}" class="btn btn-primary">
+                        <a href="{% url 'dynamicDB:integrated_workflow' %}" class="btn btn-primary">
                             <i class="bi bi-upload me-2"></i> Upload New PDF
                         </a>
                     </div>
@@ -257,10 +291,10 @@
                             <a href="{% url 'dynamicDB:admin_panel_chapter_detail' chapter.id %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">{{ chapter.title }}</h6>
-                                    <small>Pages: {{ chapter.start_page }}-{{ chapter.end_page }}</small>
+                                    <small>Order: {{ chapter.order }}</small>
                                 </div>
                                 <small class="text-muted">
-                                    PDF: {{ chapter.pdf_document.title|truncatechars:30 }}
+                                    Topic: {{ chapter.main_topics.first.title|default:"None" }} · PDF: {{ chapter.pdf_document.title|truncatechars:30 }}
                                 </small>
                             </a>
                         {% endfor %}
