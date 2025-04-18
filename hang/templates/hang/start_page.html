@@ -25,8 +25,11 @@
         </div>
     </div>
     
-    <!-- Real Hangman Image -->
-    <div class="hangman-image-container">
+    <!-- Real Hangman Images -->
+    <div class="hangman-image-container left">
+        <img src="https://www.nicepng.com/png/full/277-2770971_hangman-png.png" alt="Hangman" class="hangman-image mirrored">
+    </div>
+    <div class="hangman-image-container right">
         <img src="https://www.nicepng.com/png/full/277-2770971_hangman-png.png" alt="Hangman" class="hangman-image">
     </div>
     
@@ -253,7 +256,6 @@
 /* Real Hangman Image */
 .hangman-image-container {
     position: absolute;
-    right: 10%;
     top: 50%;
     transform: translateY(-50%);
     z-index: 5;
@@ -261,7 +263,22 @@
     opacity: 0;
 }
 
-@keyframes imageFadeIn {
+.hangman-image-container.left {
+    left: 10%;
+    animation: imageFadeInLeft 1.5s ease-out forwards;
+}
+
+.hangman-image-container.right {
+    right: 10%;
+    animation: imageFadeInRight 1.5s ease-out forwards;
+}
+
+@keyframes imageFadeInLeft {
+    0% { opacity: 0; transform: translateY(-50%) translateX(-50px); }
+    100% { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+@keyframes imageFadeInRight {
     0% { opacity: 0; transform: translateY(-50%) translateX(50px); }
     100% { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
@@ -272,10 +289,8 @@
     animation: imageFloat 6s ease-in-out infinite;
 }
 
-@keyframes imageFloat {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-    100% { transform: translateY(0); }
+.hangman-image.mirrored {
+    transform: scaleX(-1);
 }
 
 /* Game Menu */
@@ -608,7 +623,11 @@
         height: 250px;
     }
     
-    .hangman-image-container {
+    .hangman-image-container.left {
+        left: 5%;
+    }
+    
+    .hangman-image-container.right {
         right: 5%;
     }
     
@@ -638,17 +657,30 @@
         font-size: 3rem;
     }
     
-    .hangman-image-container {
+    .hangman-image-container.left,
+    .hangman-image-container.right {
         position: relative;
-        right: auto;
         top: auto;
+        right: auto;
+        left: auto;
         transform: none;
         margin: 0 50px;
-        animation: imageFadeInLandscape 1.5s ease-out forwards;
-        opacity: 0;
     }
     
-    @keyframes imageFadeInLandscape {
+    .hangman-image-container.left {
+        animation: imageFadeInLandscapeLeft 1.5s ease-out forwards;
+    }
+    
+    .hangman-image-container.right {
+        animation: imageFadeInLandscapeRight 1.5s ease-out forwards;
+    }
+    
+    @keyframes imageFadeInLandscapeLeft {
+        0% { opacity: 0; transform: translateX(-50px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes imageFadeInLandscapeRight {
         0% { opacity: 0; transform: translateX(50px); }
         100% { opacity: 1; transform: translateX(0); }
     }
@@ -668,7 +700,7 @@
     .button-text {
         font-size: 0.9rem;
     }
-    }
+}
 </style>
 
 <script>
