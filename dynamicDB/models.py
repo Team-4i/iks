@@ -23,13 +23,30 @@ class PDFDocument(models.Model):
                 os.remove(self.converted_image.path)
         super().delete(*args, **kwargs)
 
-class Topic(models.Model):
-    pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='topics')
+class Chapter(models.Model):
+    pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='chapters')
     title = models.CharField(max_length=255)
     content = models.TextField()
     start_page = models.IntegerField()
     end_page = models.IntegerField()
     confidence_score = models.FloatField(default=0.0)
+    order = models.IntegerField(default=0)  # To maintain the order of chapters in the document
 
     def __str__(self):
         return f"{self.title} ({self.pdf_document.title})"
+    
+    class Meta:
+        ordering = ['order']
+
+class MainTopic(models.Model):
+    pdf_document = models.ForeignKey(PDFDocument, on_delete=models.CASCADE, related_name='main_topics')
+    title = models.CharField(max_length=255)
+    summary = models.TextField(blank=True)
+    chapters = models.ManyToManyField(Chapter, related_name='main_topics')
+    order = models.IntegerField(default=0)  # To maintain the order of topics
+    
+    def __str__(self):
+        return f"{self.title} ({self.pdf_document.title})"
+    
+    class Meta:
+        ordering = ['order']

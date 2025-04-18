@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     'dbs',
     'aicharacter',
     'dynamicDB',
-    'flip_card',
+    # 'flip_card',
     # 'ChatAssis',
 ]
 
