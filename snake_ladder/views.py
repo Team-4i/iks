@@ -21,8 +21,6 @@ import math
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.contrib import messages
-from django.db import transaction
 
 def generate_dice_roll():
     """
@@ -46,9 +44,6 @@ def game_board(request, room_id):
     6. Updating game state after each move
     """
     room = get_object_or_404(GameRoom, room_id=room_id)
-    
-    # Ensure cells exist
-    initialize_cells()
     
     # If game is over, sync points with platform
     if room.winner:
@@ -290,246 +285,55 @@ def game_board(request, room_id):
 
 @login_required
 def create_room(request):
-    """Creates a new game room with dynamic content support"""
-    # Get parameters for content selection
-    topic_group_id = request.GET.get('topic_group_id')
-    summary_id = request.GET.get('summary_id')
-    checkpoint_part = request.GET.get('checkpoint_part')
-    checkpoint_type = request.GET.get('checkpoint_type')
-    auto_start = request.GET.get('auto_start', 'false').lower() == 'true'
-    
-    # Create new room
+    """Creates a new game room"""
+    # Create new room with default content type
     room = GameRoom.objects.create(
-        creator=request.user
+        creator=request.user,
+        current_content_part=5,
+        current_content_type='JUD'
     )
     room.players.add(request.user)
-    room.current_turn = request.user
-    room.save()
     
-    # Store content information in session
-    content_source = {}
+    # Set initial game content
+    room.set_game_content_type(
+        part=5,
+        type='JUD'
+    )
     
-    # Check if we have topic-based parameters
-    if topic_group_id and summary_id:
-        try:
-            from dynamicDB.models import MainTopic, SubTopic
-            # Try to get the topic group and summary topic
-            topic_group = MainTopic.objects.get(pk=topic_group_id)
-            summary_topic = SubTopic.objects.get(pk=summary_id, topic_group=topic_group)
-            
-            # Store in session for later use
-            request.session['topic_group_id'] = topic_group_id
-            request.session['summary_id'] = summary_id
-            request.session['topic_group_title'] = topic_group.title
-            request.session['summary_topic_title'] = summary_topic.title
-            request.session['summary_topic_description'] = summary_topic.description
-            request.session['using_dynamic_content'] = True
-            
-            # Create mapping to part/type for compatibility with existing code
-            # Determine part/type equivalent based on position
-            try:
-                from dynamicDB.models import ActiveTopicGroups
-                active_groups = ActiveTopicGroups.get_active_groups()
-                active_group_ids = [group.topic_group.id for group in active_groups]
-                
-                if int(topic_group_id) in active_group_ids:
-                    # Find position in active groups (0 = Part 5, 1 = Part 6)
-                    group_index = active_group_ids.index(int(topic_group_id))
-                    part = 5 if group_index == 0 else 6
-                    
-                    # Get all summary topics for this group
-                    summary_topics = list(SubTopic.objects.filter(topic_group=topic_group).order_by('order'))
-                    if int(summary_id) in [topic.id for topic in summary_topics]:
-                        topic_index = [topic.id for topic in summary_topics].index(int(summary_id))
-                        # Map index to type (0 = JUD, 1 = LEG, 2+ = EXEC)
-                        if topic_index == 0:
-                            type_code = 'JUD'
-                        elif topic_index == 1:
-                            type_code = 'LEG'
-                        else:
-                            type_code = 'EXEC'
-                        
-                        # Store legacy part/type for backward compatibility
-                        request.session['checkpoint_part'] = part
-                        request.session['checkpoint_type'] = type_code
-                        
-                        # Set room's content type
-                        room.current_content_part = part
-                        room.current_content_type = type_code
-                        room.save()
-                        
-                        # Set content_source for messages
-                        content_source = {
-                            'title': summary_topic.title,
-                            'is_dynamic': True
-                        }
-            except Exception as e:
-                print(f"Error mapping to part/type: {e}")
-                
-            messages.success(request, f"Room created with content from '{summary_topic.title}'")
-            
-        except Exception as e:
-            print(f"Error loading dynamic content: {e}")
-            messages.warning(request, "Could not load the specified dynamic content. Using default content.")
-            
-    # Check for traditional part/type parameters if no topic-based content
-    elif checkpoint_part and checkpoint_type:
-        try:
-            part = int(checkpoint_part)
-            type_code = checkpoint_type
-            
-            # Store in session
-            request.session['checkpoint_part'] = part
-            request.session['checkpoint_type'] = type_code
-            request.session['using_dynamic_content'] = False
-            
-            # Set room's content type
-            room.current_content_part = part
-            room.current_content_type = type_code
-            room.save()
-            
-            # Get display name for the type
-            type_names = {
-                'JUD': 'Judiciary',
-                'LEG': 'Legislative',
-                'EXEC': 'Executive'
-            }
-            
-            # Set content_source for messages
-            content_source = {
-                'title': f"Part {part} {type_names.get(type_code, type_code)}",
-                'is_dynamic': False
-            }
-            
-            messages.success(request, f"Room created with content from Part {part} {type_names.get(type_code, type_code)}")
-            
-        except Exception as e:
-            print(f"Error setting part/type: {e}")
-            messages.warning(request, "Could not set the specified part and type. Using default content.")
-    
-    # If no specific content source, use active topic groups if available
-    if not content_source:
-        try:
-            from dynamicDB.models import ActiveTopicGroups, SubTopic
-            active_groups = ActiveTopicGroups.get_active_groups()
-            
-            if active_groups.exists():
-                # Use the first active topic group
-                topic_group = active_groups.first().topic_group
-                
-                # Look for summary topics in this group
-                summary_topics = SubTopic.objects.filter(topic_group=topic_group).order_by('order')
-                
-                if summary_topics.exists():
-                    # Use the first summary topic
-                    summary_topic = summary_topics.first()
-                    
-                    # Store in session
-                    request.session['topic_group_id'] = topic_group.id
-                    request.session['summary_id'] = summary_topic.id
-                    request.session['topic_group_title'] = topic_group.title
-                    request.session['summary_topic_title'] = summary_topic.title
-                    request.session['summary_topic_description'] = summary_topic.description
-                    request.session['using_dynamic_content'] = True
-                    
-                    # Map to part/type (first topic group = part 5, first summary = JUD)
-                    request.session['checkpoint_part'] = 5
-                    request.session['checkpoint_type'] = 'JUD'
-                    
-                    # Set room's content type
-                    room.current_content_part = 5
-                    room.current_content_type = 'JUD'
-                    room.save()
-                    
-                    messages.success(request, f"Room created with content from active topic '{summary_topic.title}'")
-                    
-                    # Set content_source
-                    content_source = {
-                        'title': summary_topic.title,
-                        'is_dynamic': True
-                    }
-            
-            # If still no content_source, fall back to default
-            if not content_source:
-                # Set default part/type
-                room.current_content_part = 5
-                room.current_content_type = 'JUD'
-                room.save()
-                
-                # Store in session
-                request.session['checkpoint_part'] = 5
-                request.session['checkpoint_type'] = 'JUD'
-                request.session['using_dynamic_content'] = False
-                
-                messages.info(request, "Using default content (Part 5 Judiciary).")
-                
-                # Set content_source
-                content_source = {
-                    'title': "Part 5 Judiciary",
-                    'is_dynamic': False
-                }
-                
-        except Exception as e:
-            print(f"Error finding active content: {e}")
-            # Set default part/type
-            room.current_content_part = 5
-            room.current_content_type = 'JUD'
-            room.save()
-            
-            # Store in session
-            request.session['checkpoint_part'] = 5
-            request.session['checkpoint_type'] = 'JUD'
-            request.session['using_dynamic_content'] = False
-            
-            messages.info(request, "Using default content (Part 5 Judiciary).")
-    
-    # Automatically start the game if requested
-    if auto_start:
-        return start_game(request, room.room_id)
-    
-    # Return the created room's detail page
     return redirect('snake_ladder:room_detail', room_id=room.room_id)
 
 @login_required
 def room_detail(request, room_id):
-    """View a game room and its details"""
+    """
+    Shows room joining page with:
+    1. Room details and player list
+    2. QR code for easy joining
+    3. Shareable room link
+    """
     room = get_object_or_404(GameRoom, room_id=room_id)
     
-    # Get summary topic info from session
-    summary_id = request.session.get('summary_id')
-    summary_topic_title = request.session.get('summary_topic_title')
-    summary_topic_description = request.session.get('summary_topic_description')
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    room_url = request.build_absolute_uri(reverse('snake_ladder:join_room', args=[room_id]))
+    qr.add_data(room_url)
+    qr.make(fit=True)
     
-    # If we don't have summary info in session but room has players, try to get it from the first player's session
-    if not summary_topic_title and room.players.exists():
-        try:
-            from django.contrib.sessions.models import Session
-            from django.contrib.sessions.backends.db import SessionStore
-            from dynamicDB.models import SubTopic
-            
-            # Try to get summary topic details if we have the ID
-            if summary_id:
-                summary_topic = SubTopic.objects.get(pk=summary_id)
-                summary_topic_title = summary_topic.title
-                summary_topic_description = summary_topic.description
-        except Exception as e:
-            print(f"Error retrieving summary topic info: {e}")
-    
-    # Check if game is started
-    is_started = not room.is_active and room.current_turn is not None
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    qr_code = b64encode(buffer.getvalue()).decode()
     
     context = {
         'room': room,
-        'is_creator': request.user == room.creator,
-        'is_started': is_started,
-        'player_count': room.players.count(),
-        'player_colors': room.get_player_color(),
-        'summary_id': summary_id,
-        'summary_topic_title': summary_topic_title,
-        'summary_topic_description': summary_topic_description,
+        'qr_code': qr_code,
+        'room_url': room_url
     }
-    
-    return render(request, 'snake_ladder/room_detail.html', context)
+    return render(request, 'room_detail.html', context)
 
 @login_required
 def join_room(request, room_id):
@@ -685,44 +489,7 @@ def game_state(request, room_id):
 
 @login_required
 def home(request):
-    """Homepage for the Snake & Ladder game with room creation options"""
-    # Get active rooms
-    active_rooms = GameRoom.objects.filter(is_active=True).order_by('-created_at')
-    
-    # Get active summary topics
-    summary_topics = []
-    first_summary_id = None
-    try:
-        from dynamicDB.models import SubTopic, ActiveTopicGroups
-        active_groups = ActiveTopicGroups.get_active_groups()
-        
-        for group in active_groups:
-            topic_group = group.topic_group
-            group_summary_topics = SubTopic.objects.filter(topic_group=topic_group)
-            
-            for topic in group_summary_topics:
-                main_topics_count = topic.main_topics.count()
-                summary_topics.append({
-                    'id': topic.id,
-                    'title': topic.title,
-                    'description': topic.description[:100] + '...' if len(topic.description) > 100 else topic.description,
-                    'main_topics_count': main_topics_count,
-                    'topic_group': topic_group.title
-                })
-                
-                # Remember the first summary topic ID
-                if first_summary_id is None:
-                    first_summary_id = topic.id
-    except Exception as e:
-        print(f"Error fetching summary topics: {e}")
-    
-    context = {
-        'active_rooms': active_rooms,
-        'summary_topics': summary_topics,
-        'first_summary_id': first_summary_id
-    }
-    
-    return render(request, 'snake_ladder/home.html', context)
+    return render(request, 'home.html')
 
 def verify_board(request):
     """
@@ -770,7 +537,7 @@ def generate_mcq(request, room_id):
 
         # Use content from current_content
         content_for_question = source_cell.current_content.content if source_cell.current_content else "Default content"
-        topic_for_question = source_cell.current_content.topic if source_cell.current_content else "IKS"
+        topic_for_question = source_cell.current_content.topic if source_cell.current_content else "iks"
 
         print(f"[DEBUG] Generating MCQ for content: {content_for_question[:100]}...")
         print(f"[DEBUG] Topic: {topic_for_question}")
@@ -858,7 +625,7 @@ def answer_mcq(request, room_id):
             correct_answer=data.get('correct_option', ''),
             answer_correct=is_correct,
             time_to_answer=time_taken,
-            topic_category=data.get('topic_category', 'Constitutional Law'),
+            topic_category=data.get('topic_category', 'iks'),
             options=json.dumps(data.get('all_options', [])),
             source_cell=source_cell,
             difficulty_level='MEDIUM',
@@ -1300,188 +1067,42 @@ def room_state(request, room_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-def initialize_cells():
-    """
-    Creates all 100 cells for the game board if they don't exist
-    Sets up snake and ladder positions
-    This should be called before starting any game
-    """
-    # Check if cells already exist
-    if Cell.objects.exists():
-        print("Cells already initialized")
-        return
-        
-    print("Initializing cells for the first time...")
-    
-    # Define snake and ladder cells
-    snake_ladder_cells = [
-        # Some key snake/ladder positions
-        4, 9, 17, 20, 28, 40, 51, 54, 62, 63, 71, 80, 87, 93, 95, 99
-    ]
-    
-    # Create all cells in a single transaction for efficiency
-    with transaction.atomic():
-        for i in range(1, 101):
-            cell_type = 'SNAKE_LADDER' if i in snake_ladder_cells else 'NORMAL'
-            Cell.objects.create(
-                number=i,
-                cell_type=cell_type
-            )
-    
-    print(f"Created 100 cells with {len(snake_ladder_cells)} snake/ladder cells")
-
 @login_required
 def start_game(request, room_id):
-    """Start a game with the selected content"""
-    room = get_object_or_404(GameRoom, room_id=room_id)
-    
-    # Check if user is the creator of the room
-    if request.user != room.creator:
-        messages.error(request, "Only the room creator can start the game.")
-        return redirect('snake_ladder:room_detail', room_id=room_id)
-    
-    # Check if game is already active
-    if not room.is_active:
-        return redirect('snake_ladder:game_board', room_id=room_id)
-    
-    # Initialize cells if they don't exist
-    initialize_cells()
-    
-    # Prepare cells with content
-    reset_all_cells = Cell.objects.all()
-    for cell in reset_all_cells:
-        cell.contents.clear()
-        cell.current_content = None
-        cell.save()
-    
-    # Get content for this game based on session
-    using_dynamic_content = request.session.get('using_dynamic_content', False)
-    content_source = None
-    
-    if using_dynamic_content:
-        # Get session data
-        topic_group_id = request.session.get('topic_group_id')
-        summary_id = request.session.get('summary_id')
+    """API endpoint to start the game"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
         
-        if topic_group_id and summary_id:
-            try:
-                from dynamicDB.models import MainTopic, SubTopic
-                # Get the topic and summary
-                topic_group = MainTopic.objects.get(pk=topic_group_id)
-                summary_topic = SubTopic.objects.get(pk=summary_id, topic_group=topic_group)
-                
-                # Get all main topics and their chapters
-                all_content = []
-                
-                for main_topic in summary_topic.main_topics.all():
-                    for chapter in main_topic.chapters.all():
-                        all_content.append({
-                            'title': f"{main_topic.title}: {chapter.title}",
-                            'content': chapter.content
-                        })
-                
-                # If we have content, use it for the game
-                if all_content:
-                    content_source = all_content
-                    print(f"Using dynamic content with {len(all_content)} items")
-            except Exception as e:
-                print(f"Error loading dynamic content: {e}")
-    
-    # If no dynamic content, use traditional part/type
-    if not content_source:
-        # Get part and type from session or room
-        part = request.session.get('checkpoint_part', room.current_content_part or 5)
-        type_code = request.session.get('checkpoint_type', room.current_content_type or 'JUD')
+    try:
+        room = get_object_or_404(GameRoom, room_id=room_id)
         
-        # Ensure room content type is set
-        if not room.current_content_part:
-            room.current_content_part = part
-            room.current_content_type = type_code
-            room.save()
+        if request.user != room.creator:
+            return JsonResponse({'error': 'Only creator can start game'}, status=403)
+            
+        if not room.is_active:
+            return JsonResponse({'error': 'Game already started'}, status=400)
+            
+        # Initialize game
+        room.current_turn = room.creator
+        room.is_active = False
+        room.save()
         
-        print(f"Using traditional content from Part {part} {type_code}")
-    
-    # Prepare the board with content
-    cells = Cell.objects.all().order_by('number')
-    
-    # Use the appropriate content source
-    if content_source:
-        # Use the dynamic content for all cells (including snake and ladder cells)
-        for cell in cells:
-            # Pick a random content item
-            if content_source:
-                content_item = random.choice(content_source)
-                
-                # Create a CellContent object
-                cell_content = CellContent.objects.create(
-                    content=content_item['content'],
-                    topic=content_item['title']
-                )
-                
-                # Add to cell
-                cell.contents.add(cell_content)
-                cell.current_content = cell_content
-                cell.save()
-    else:
-        # Use the traditional game content method, but ensure snake/ladder cells also get content
-        # First, set up normal cells using the existing method
-        room.set_game_content_type(part=room.current_content_part, type=room.current_content_type)
+        # Set initial positions
+        for player in room.players.all():
+            PlayerPosition.objects.get_or_create(
+                room=room,
+                player=player,
+                defaults={'position': 1}
+            )
+            
+        return JsonResponse({
+            'success': True,
+            'redirect_url': reverse('snake_ladder:game_board', args=[room_id])
+        })
         
-        # Now handle snake/ladder cells that might not have content
-        snake_ladder_cells = Cell.objects.filter(cell_type='SNAKE_LADDER')
-        
-        # Get available facts to use for snake/ladder cells
-        facts = []
-        try:
-            # Try to get GameFacts
-            from snake_ladder.models import GameFact
-            facts = list(GameFact.objects.all())
-        except:
-            # Fallback to existing cell content
-            normal_cell_content = CellContent.objects.filter(cells__cell_type='NORMAL').distinct()
-            if normal_cell_content.exists():
-                facts = list(normal_cell_content)
-        
-        # If we have facts, assign to snake/ladder cells
-        if facts:
-            for cell in snake_ladder_cells:
-                if not cell.current_content:  # Only update if content is missing
-                    # Get a random fact
-                    fact = random.choice(facts)
-                    
-                    # Create a CellContent or use existing
-                    if hasattr(fact, 'content'):
-                        # It's a CellContent object
-                        cell_content = fact
-                    else:
-                        # It's a GameFact object
-                        cell_content = CellContent.objects.create(
-                            content=fact.fact_text,
-                            topic="Snake & Ladder Special",
-                            part=room.current_content_part,
-                            type=room.current_content_type
-                        )
-                    
-                    # Add to cell
-                    cell.contents.add(cell_content)
-                    cell.current_content = cell_content
-                    cell.save()
-    
-    # Create initial positions for all players
-    for player in room.players.all():
-        PlayerPosition.objects.get_or_create(
-            room=room,
-            player=player,
-            defaults={'position': 1}
-        )
-    
-    # Mark game as started
-    room.is_active = False  # This means game has started (active=false means game in progress)
-    room.save()
-        
-    # Redirect to game board
-    messages.success(request, "Game started! Roll the dice to begin.")
-    return redirect('snake_ladder:game_board', room_id=room_id)
+    except Exception as e:
+        print(f"Error starting game: {str(e)}")  # Server-side logging
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def snake_ladder_intro(request):
@@ -1617,7 +1238,7 @@ def cell_content_details(request, part=None, type=None):
         'bookmark': bookmark_info,
         'selected_part': selected_part,
         'selected_type': selected_type,
-        'PART_CHOICES': {5: 'Part 5', 6: 'Part 6'},
+        'PART_CHOICES': dict(CellContent.PART_CHOICES),
         'TYPE_CHOICES': {
             'JUD': 'Judiciary',
             'LEG': 'Legislative',
@@ -1664,156 +1285,3 @@ def get_bookmark(request):
         })
     except CellBookmark.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'No bookmark found'})
-
-@login_required
-def generate_cell_content(request, room_id):
-    """
-    Generates cell content for the game based on room context
-    1. Uses AI to generate relevant content if needed
-    2. Creates cell content entries for the game
-    3. Redirects back to room page with success message
-    """
-    room = get_object_or_404(GameRoom, room_id=room_id)
-    
-    # Check if user is the creator of the room
-    if request.user != room.creator:
-        messages.error(request, "Only the room creator can generate content.")
-        return redirect('snake_ladder:room_detail', room_id=room_id)
-    
-    try:
-        # Initialize cells if they don't exist
-        initialize_cells()
-        
-        # Determine content source (from session or room)
-        using_dynamic_content = request.session.get('using_dynamic_content', False)
-        
-        if using_dynamic_content:
-            # Get session data
-            topic_group_id = request.session.get('topic_group_id')
-            summary_id = request.session.get('summary_id')
-            
-            if topic_group_id and summary_id:
-                try:
-                    from dynamicDB.models import MainTopic, SubTopic
-                    # Get the topic and summary
-                    topic_group = MainTopic.objects.get(pk=topic_group_id)
-                    summary_topic = SubTopic.objects.get(pk=summary_id, topic_group=topic_group)
-                    
-                    # Get main topics and chapters
-                    for main_topic in summary_topic.main_topics.all():
-                        for chapter in main_topic.chapters.all():
-                            # Create cell content
-                            CellContent.objects.create(
-                                content=chapter.content,
-                                topic=f"{main_topic.title}: {chapter.title}",
-                                part=room.current_content_part or 5,
-                                type=room.current_content_type or 'JUD'
-                            )
-                    
-                    messages.success(request, f"Content generated successfully from '{summary_topic.title}'!")
-                except Exception as e:
-                    print(f"Error generating dynamic content: {e}")
-                    messages.warning(request, "Could not generate content from dynamic source.")
-            else:
-                messages.warning(request, "Missing topic information for content generation.")
-        else:
-            # Traditional content creation from part/type
-            part = room.current_content_part or request.session.get('checkpoint_part', 5)
-            type_code = room.current_content_type or request.session.get('checkpoint_type', 'JUD')
-            
-            # Check if we already have content for this part/type
-            existing_content = CellContent.objects.filter(part=part, type=type_code)
-            
-            if existing_content.exists():
-                messages.info(request, f"Using existing content for Part {part} {type_code}.")
-            else:
-                # Generate facts from CSV or use AI to create some basic content
-                try:
-                    # Try to import CSV data
-                    import csv
-                    import os
-                    from django.conf import settings
-                    
-                    csv_path = os.path.join(settings.BASE_DIR, 'snake_ladder', 'iks1.csv')
-                    if os.path.exists(csv_path):
-                        with open(csv_path, newline='', encoding='utf-8') as csvfile:
-                            reader = csv.reader(csvfile)
-                            next(reader)  # Skip header
-                            count = 0
-                            for row in reader:
-                                if len(row) >= 2 and count < 100:  # Limit to 100 facts
-                                    topic = row[0] if row[0] else "Constitutional Fact"
-                                    content = row[1] if len(row) > 1 else "Important constitutional fact"
-                                    
-                                    CellContent.objects.create(
-                                        content=content,
-                                        topic=topic,
-                                        part=part,
-                                        type=type_code
-                                    )
-                                    count += 1
-                        
-                        messages.success(request, f"Generated {count} content items from CSV data!")
-                    else:
-                        # Use AI to create basic content if CSV not found
-                        genai.configure(api_key='AIzaSyA8DaPlDtUTyzwjo8M6aOwFcfGDLU7itJg')
-                        model = genai.GenerativeModel('gemini-1.5-pro')
-                        
-                        # Create prompts for different content types
-                        type_names = {
-                            'JUD': 'Judiciary',
-                            'LEG': 'Legislative',
-                            'EXEC': 'Executive'
-                        }
-                        
-                        prompt = f"""Generate 20 educational facts about the Indian Constitution related to Part {part} {type_names.get(type_code, type_code)}.
-                        Each fact should be 2-3 sentences long and informative for educational purposes.
-                        For each fact, also provide a short 2-3 word topic title.
-                        
-                        Format: JSON array with objects containing 'topic' and 'content' keys.
-                        Example: [
-                            {{"topic": "Fundamental Rights", "content": "Article 14 guarantees equality before law. It ensures that no person shall be denied equality before the law or equal protection of the laws."}},
-                            {{"topic": "Directive Principles", "content": "Article 39 directs the state to ensure that citizens have the right to adequate means of livelihood. It also aims to prevent concentration of wealth and means of production."}}
-                        ]
-                        """
-                        
-                        response = model.generate_content(prompt)
-                        try:
-                            # Parse the response as JSON
-                            import json
-                            response_text = response.text.strip()
-                            
-                            # Handle markdown code blocks
-                            if response_text.startswith("```json") and response_text.endswith("```"):
-                                response_text = response_text[7:-3].strip()
-                            
-                            facts = json.loads(response_text)
-                            for fact in facts:
-                                CellContent.objects.create(
-                                    content=fact.get('content', 'Constitutional fact'),
-                                    topic=fact.get('topic', 'Constitution'),
-                                    part=part,
-                                    type=type_code
-                                )
-                            
-                            messages.success(request, f"Generated {len(facts)} content items using AI!")
-                        except json.JSONDecodeError:
-                            # Fallback to creating a few basic entries
-                            topics = ["Fundamental Rights", "Directive Principles", "Parliament", "Executive", "Judiciary"]
-                            for i in range(10):
-                                CellContent.objects.create(
-                                    content=f"Important fact about {type_names.get(type_code, type_code)} in the Constitution of India (#{i+1}).",
-                                    topic=random.choice(topics),
-                                    part=part,
-                                    type=type_code
-                                )
-                            messages.success(request, "Generated 10 basic content items!")
-                except Exception as e:
-                    print(f"Error generating content: {e}")
-                    messages.warning(request, f"Error generating content: {str(e)}")
-        
-        # Return to room detail page
-        return redirect('snake_ladder:room_detail', room_id=room_id)
-    except Exception as e:
-        messages.error(request, f"Error generating content: {str(e)}")
-        return redirect('snake_ladder:room_detail', room_id=room_id)

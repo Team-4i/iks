@@ -15,7 +15,6 @@ urlpatterns = [
     path('report/<uuid:room_id>/', views.player_game_report, name='game_report'),
     path('api/room/<uuid:room_id>/state/', views.room_state, name='room_state'),
     path('api/room/<uuid:room_id>/start/', views.start_game, name='start_game'),
-    path('room/<uuid:room_id>/generate-content/', views.generate_cell_content, name='generate_cell_content'),
     path('intro/', views.snake_ladder_intro, name='snake_ladder_intro'),
     path('cell-contents/', views.cell_content_details, name='cell_content_details'),
     path('update-bookmark/', views.update_bookmark, name='update_bookmark'),

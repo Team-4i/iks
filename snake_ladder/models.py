@@ -4,33 +4,30 @@ import uuid
 import random
 
 class CellContent(models.Model):
-    """Model to store educational content for game cells"""
+    """Model to store educational content segregated by part and type"""
+    PART_CHOICES = [
+        (5, 'Part 5'),
+        (6, 'Part 6'),
+    ]
+    
+    TYPE_CHOICES = [
+        ('JUD', 'Judiciary'),
+        ('LEG', 'Legislative'),
+        ('EXEC', 'Executive'),
+    ]
+
     content = models.TextField(help_text="Educational content")
     topic = models.CharField(max_length=100, null=True, blank=True)
-    
-    # Legacy fields - kept for backward compatibility
-    part = models.IntegerField(choices=[(5, 'Part 5'), (6, 'Part 6')], null=True, blank=True)
-    type = models.CharField(
-        max_length=4, 
-        choices=[('JUD', 'Judiciary'), ('LEG', 'Legislative'), ('EXEC', 'Executive')], 
-        null=True, 
-        blank=True
-    )
-    
-    # New field to track which main topic the content is from
-    source_id = models.IntegerField(null=True, blank=True, 
-                                   help_text="ID of the Topic this content relates to")
+    part = models.IntegerField(choices=PART_CHOICES, null=True, blank=True)
+    type = models.CharField(max_length=4, choices=TYPE_CHOICES, null=True, blank=True)
     
     def __str__(self):
-        if self.source_id:
-            return f"Content - {self.topic}: {self.content[:30]}..."
-        else:
-            part_display = f"Part {self.part}" if self.part else "No Part"
-            type_display = self.get_type_display() if self.type else "No Type"
-            return f"Content - {part_display} {type_display}: {self.topic or 'No topic'}"
+        part_display = f"Part {self.part}" if self.part else "No Part"
+        type_display = self.get_type_display() if self.type else "No Type"
+        return f"Content - {part_display} {type_display}: {self.topic or 'No topic'}"
 
     class Meta:
-        ordering = ['topic']
+        ordering = ['part', 'type']
 
 class Cell(models.Model):
     number = models.IntegerField(unique=True)
@@ -125,12 +122,12 @@ class GameRoom(models.Model):
     
     # Add these new fields to track current content type
     current_content_part = models.IntegerField(
-        choices=[(5, 'Part 5'), (6, 'Part 6')],
+        choices=CellContent.PART_CHOICES,
         null=True
     )
     current_content_type = models.CharField(
         max_length=4,
-        choices=[('JUD', 'Judiciary'), ('LEG', 'Legislative'), ('EXEC', 'Executive')],
+        choices=CellContent.TYPE_CHOICES,
         null=True
     )
     
@@ -217,21 +214,11 @@ class GameRoom(models.Model):
         self.current_content_type = type
         self.save()
         
-        # Get all available facts
+        # Update all normal cells with content from GameFact model
+        normal_cells = Cell.objects.filter(cell_type='NORMAL')
         available_facts = list(GameFact.objects.all())
         
         print(f"[DEBUG] Found {len(available_facts)} facts for the game")  # Debug log
-        
-        # First, create a pool of facts for snake/ladder cells
-        # We'll reserve about 20% of facts for special cells
-        snake_ladder_facts = []
-        if len(available_facts) > 25:  # Only reserve if we have enough facts
-            snake_ladder_count = min(20, int(len(available_facts) * 0.2))  # Reserve up to 20 facts
-            snake_ladder_facts = available_facts[:snake_ladder_count]
-            available_facts = available_facts[snake_ladder_count:]  # Remove reserved facts from available pool
-        
-        # Update all normal cells with content from GameFact model
-        normal_cells = Cell.objects.filter(cell_type='NORMAL')
         
         for cell in normal_cells:
             if available_facts:
@@ -252,92 +239,6 @@ class GameRoom(models.Model):
                 cell.save()
             else:
                 print(f"[DEBUG] Warning: No facts left for Cell {cell.number}")  # Debug log
-        
-        # Now handle snake/ladder cells
-        snake_ladder_cells = Cell.objects.filter(cell_type='SNAKE_LADDER')
-        
-        # If we have reserved facts, use them for snake/ladder cells
-        if snake_ladder_facts:
-            print(f"[DEBUG] Assigning {len(snake_ladder_facts)} reserved facts to Snake & Ladder cells")
-            
-            for cell in snake_ladder_cells:
-                if snake_ladder_facts:
-                    # Get a fact from the reserved pool
-                    fact = random.choice(snake_ladder_facts)
-                    snake_ladder_facts.remove(fact)
-                    
-                    # Create a temporary CellContent object for this fact
-                    temp_content = CellContent.objects.create(
-                        content=fact.fact_text,
-                        topic="Special: Snake & Ladder Cell",  # Mark as special
-                        part=part,
-                        type=type
-                    )
-                    
-                    # Assign to cell
-                    cell.current_content = temp_content
-                    cell.save()
-                else:
-                    # If we run out of reserved facts but still have regular facts
-                    if available_facts:
-                        fact = random.choice(available_facts)
-                        available_facts.remove(fact)
-                        
-                        temp_content = CellContent.objects.create(
-                            content=fact.fact_text,
-                            topic="Snake & Ladder Cell",
-                            part=part,
-                            type=type
-                        )
-                        
-                        cell.current_content = temp_content
-                        cell.save()
-                    else:
-                        print(f"[DEBUG] Warning: No facts left for Snake & Ladder Cell {cell.number}")
-        else:
-            # If we didn't reserve any facts, try to use remaining facts
-            print(f"[DEBUG] No reserved facts, using remaining facts for Snake & Ladder cells")
-            
-            # Create some generic content for snake/ladder cells if no facts are available
-            if not available_facts:
-                generic_content = [
-                    "Special cell: Move forward or backward on the snake or ladder!",
-                    "Constitutional Special: This snake or ladder represents checks and balances!",
-                    "Challenge cell: Test your knowledge to advance!",
-                    "Shortcut or setback: Constitutional principles at work!",
-                    "Snake & Ladder Special: Your journey through constitutional concepts continues!"
-                ]
-                
-                for cell in snake_ladder_cells:
-                    content_text = random.choice(generic_content)
-                    
-                    temp_content = CellContent.objects.create(
-                        content=content_text,
-                        topic="Snake & Ladder Special",
-                        part=part,
-                        type=type
-                    )
-                    
-                    cell.current_content = temp_content
-                    cell.save()
-            else:
-                # Use remaining facts
-                for cell in snake_ladder_cells:
-                    if available_facts:
-                        fact = random.choice(available_facts)
-                        available_facts.remove(fact)
-                        
-                        temp_content = CellContent.objects.create(
-                            content=fact.fact_text,
-                            topic="Snake & Ladder Special",
-                            part=part,
-                            type=type
-                        )
-                        
-                        cell.current_content = temp_content
-                        cell.save()
-                    else:
-                        print(f"[DEBUG] Warning: No facts left for Snake & Ladder Cell {cell.number}")
 
 class PlayerPosition(models.Model):
     room = models.ForeignKey(GameRoom, on_delete=models.CASCADE, related_name='player_positions')
